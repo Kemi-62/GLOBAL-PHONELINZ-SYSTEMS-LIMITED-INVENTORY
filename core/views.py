@@ -30,12 +30,20 @@ def custom_login(request):
             user.save()
             login(request, user_auth)
 
-            if user.role == 'staff':
-                return redirect('staff_dashboard')
-            elif user.role == 'manager':
-                return redirect('manager_dashboard')
-            else:
-                return redirect('director_dashboard')
+            if user.is_superuser:
+    return redirect('director_dashboard')
+
+elif user.role == 'director':
+    return redirect('director_dashboard')
+
+elif user.role == 'manager':
+    return redirect('manager_dashboard')
+
+elif user.role == 'staff':
+    return redirect('staff_dashboard')
+
+else:
+    return HttpResponse("Not allowed")
 
         else:
             user.failed_login_count += 1
