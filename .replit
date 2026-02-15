@@ -41,10 +41,10 @@ args = "Django Server"
 name = "Django Server"
 author = "agent"
 
+[workflows.workflow.metadata]
+outputType = "webview"
+
 [[workflows.workflow.tasks]]
 task = "shell.exec"
 args = "python manage.py runserver 0.0.0.0:5000"
 waitForPort = 5000
-
-[workflows.workflow.metadata]
-outputType = "webview"
