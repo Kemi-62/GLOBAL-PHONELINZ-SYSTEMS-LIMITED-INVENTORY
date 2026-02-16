@@ -4,7 +4,7 @@ from django.contrib import messages
 from django.http import HttpResponseForbidden
 from django.contrib.auth.decorators import login_required
 from datetime import date
-from .models import *
+from .models import User, Branch, DeviceTag, ServiceTarget, ServiceActivity
 
 # -----------------------
 # Custom Login
@@ -61,7 +61,7 @@ def custom_login(request):
 # -----------------------
 @login_required
 def staff_dashboard(request):
-    if request.user.role != 'staff' and not request.user.is_superuser:
+    if not request.user.is_superuser and request.user.role != 'staff':
         return HttpResponseForbidden("Not allowed")
 
     today = date.today()
@@ -75,7 +75,7 @@ def staff_dashboard(request):
 
     if request.method == 'POST':
         service_type = request.POST.get('service_type')
-        quantity = int(request.POST.get('quantity'))
+        quantity = int(request.POST.get('quantity') or 0)
         device_tag_id = request.POST.get('device_tag')
 
         device_tag = None
@@ -106,7 +106,7 @@ def staff_dashboard(request):
 # -----------------------
 @login_required
 def manager_dashboard(request):
-    if request.user.role != 'manager' and not request.user.is_superuser:
+    if not request.user.is_superuser and request.user.role != 'manager':
         return HttpResponseForbidden("Not allowed")
 
     today = date.today()
@@ -144,7 +144,7 @@ def director_dashboard(request):
         branch_id = request.POST.get('branch')
         service_type = request.POST.get('service_type')
         target_number = request.POST.get('target_number')
-        target_date = request.POST.get('date')
+        target_date = request.POST.get('date') or today
 
         ServiceTarget.objects.update_or_create(
             branch_id=branch_id,
@@ -162,5 +162,6 @@ def director_dashboard(request):
 
     return render(request, 'director_dashboard.html', {
         'branches': branches,
-        'targets': targets
+        'targets': targets,
+        'today': today.isoformat()
     })
