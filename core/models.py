@@ -106,3 +106,15 @@ class ServiceActivity(models.Model):
     def __str__(self):
         return f"{self.service_type} - {self.quantity}"
 
+from django.conf import settings
+
+class Performance(models.Model):
+    staff = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.CASCADE)
+    branch = models.ForeignKey(Branch, on_delete=models.CASCADE)
+    service_type = models.CharField(max_length=100)
+    number_achieved = models.IntegerField()
+    date = models.DateField()
+
+    def __str__(self):
+        return f"{self.staff.username} - {self.service_type}"
+        
