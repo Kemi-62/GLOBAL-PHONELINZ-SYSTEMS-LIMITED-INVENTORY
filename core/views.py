@@ -2,6 +2,7 @@ from django.shortcuts import render, redirect
 from django.contrib.auth import authenticate, login
 from django.contrib import messages
 from django.http import HttpResponseForbidden
+from django.contrib.auth.decorators import login_required
 from datetime import date
 from .models import *
 
@@ -30,20 +31,21 @@ def custom_login(request):
             user.save()
             login(request, user_auth)
 
-            if user.is_superuser:
-    return redirect('director_dashboard')
+            # ✅ Allow Django superuser automatically
+            if user_auth.is_superuser:
+                return redirect('director_dashboard')
 
-elif user.role == 'director':
-    return redirect('director_dashboard')
+            role = getattr(user_auth, 'role', None)
 
-elif user.role == 'manager':
-    return redirect('manager_dashboard')
-
-elif user.role == 'staff':
-    return redirect('staff_dashboard')
-
-else:
-    return HttpResponse("Not allowed")
+            if role == 'staff':
+                return redirect('staff_dashboard')
+            elif role == 'manager':
+                return redirect('manager_dashboard')
+            elif role in ['director', 'super_admin']:
+                return redirect('director_dashboard')
+            else:
+                messages.error(request, "No role assigned. Contact Admin.")
+                return redirect('login')
 
         else:
             user.failed_login_count += 1
@@ -57,7 +59,11 @@ else:
 # -----------------------
 # Staff Dashboard
 # -----------------------
+@login_required
 def staff_dashboard(request):
+    if request.user.role != 'staff' and not request.user.is_superuser:
+        return HttpResponseForbidden("Not allowed")
+
     today = date.today()
 
     targets = ServiceTarget.objects.filter(
@@ -73,8 +79,11 @@ def staff_dashboard(request):
         device_tag_id = request.POST.get('device_tag')
 
         device_tag = None
-        if service_type == 'sim_registration':
-            device_tag = DeviceTag.objects.get(id=device_tag_id)
+        if service_type == 'sim_registration' and device_tag_id:
+            try:
+                device_tag = DeviceTag.objects.get(id=device_tag_id, branch=request.user.branch)
+            except DeviceTag.DoesNotExist:
+                pass
 
         ServiceActivity.objects.create(
             branch=request.user.branch,
@@ -95,7 +104,11 @@ def staff_dashboard(request):
 # -----------------------
 # Manager Dashboard
 # -----------------------
+@login_required
 def manager_dashboard(request):
+    if request.user.role != 'manager' and not request.user.is_superuser:
+        return HttpResponseForbidden("Not allowed")
+
     today = date.today()
 
     targets = ServiceTarget.objects.filter(
@@ -117,10 +130,12 @@ def manager_dashboard(request):
 # -----------------------
 # Director / Super Admin Dashboard
 # -----------------------
+@login_required
 def director_dashboard(request):
-
-    if request.user.role not in ['director', 'super_admin']:
-        return HttpResponseForbidden("Not allowed")
+    # Allow Django superuser automatically
+    if not request.user.is_superuser:
+        if request.user.role not in ['director', 'super_admin']:
+            return HttpResponseForbidden("Not allowed")
 
     today = date.today()
     branches = Branch.objects.all()
@@ -149,4 +164,3 @@ def director_dashboard(request):
         'branches': branches,
         'targets': targets
     })
-    

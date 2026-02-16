@@ -1,0 +1,37 @@
+<h2>Director Dashboard</h2>
+
+<form method="POST">
+    {% csrf_token %}
+
+    <label>Branch:</label>
+    <select name="branch">
+        {% for branch in branches %}
+            <option value="{{ branch.id }}">{{ branch.name }}</option>
+        {% endfor %}
+    </select>
+
+    <br><br>
+
+    <label>Service Type:</label>
+    <select name="service_type">
+        <option value="sim_registration">SIM Registration</option>
+        <option value="sim_swap">SIM Swap</option>
+        <option value="sim_upgrade">SIM Upgrade</option>
+        <option value="gotv">GOTV</option>
+        <option value="dstv">DSTV</option>
+    </select>
+
+    <br><br>
+
+    <label>Target Number:</label>
+    <input type="number" name="target_number">
+
+    <br><br>
+
+    <label>Date:</label>
+    <input type="date" name="date">
+
+    <br><br>
+
+    <button type="submit">Set Target</button>
+</form>
