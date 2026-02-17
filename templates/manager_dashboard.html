@@ -1,0 +1,77 @@
+{% extends "base.html" %}
+{% load static %}
+
+{% block content %}
+<h1>Manager Dashboard</h1>
+
+<hr>
+
+<h2>This Month's Target Performance</h2>
+
+{% if target_data %}
+<table border="1" cellpadding="6" cellspacing="0">
+    <thead>
+        <tr>
+            <th>Service Type</th>
+            <th>Target</th>
+            <th>Achieved So Far</th>
+            <th>Remaining</th>
+            <th>Completion (%)</th>
+        </tr>
+    </thead>
+    <tbody>
+        {% for item in target_data %}
+        <tr>
+            <td>{{ item.service_type|title }}</td>
+            <td>{{ item.target_number }}</td>
+            <td>{{ item.achieved }}</td>
+            <td>{{ item.remaining }}</td>
+            <td>
+                {{ item.percentage }}%
+            </td>
+        </tr>
+        {% endfor %}
+    </tbody>
+</table>
+{% else %}
+<p>No targets set for this month.</p>
+{% endif %}
+
+<hr>
+
+<h2>This Month's Service Activities</h2>
+
+{% if activities %}
+<table border="1" cellpadding="6" cellspacing="0">
+    <thead>
+        <tr>
+            <th>Staff</th>
+            <th>Service Type</th>
+            <th>Quantity</th>
+            <th>Device Tag</th>
+            <th>Date</th>
+        </tr>
+    </thead>
+    <tbody>
+        {% for activity in activities %}
+        <tr>
+            <td>{{ activity.staff.username }}</td>
+            <td>{{ activity.service_type|title }}</td>
+            <td>{{ activity.quantity }}</td>
+            <td>
+                {% if activity.device_tag %}
+                    {{ activity.device_tag.name }}
+                {% else %}
+                    -
+                {% endif %}
+            </td>
+            <td>{{ activity.date }}</td>
+        </tr>
+        {% endfor %}
+    </tbody>
+</table>
+{% else %}
+<p>No service activities logged this month.</p>
+{% endif %}
+
+{% endblock %}

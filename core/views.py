@@ -104,27 +104,54 @@ def staff_dashboard(request):
 # -----------------------
 # Manager Dashboard
 # -----------------------
+from datetime import date
+from django.db.models import Sum
+
 @login_required
 def manager_dashboard(request):
-    if not request.user.is_superuser and request.user.role != 'manager':
-        return HttpResponseForbidden("Not allowed")
-
     today = date.today()
 
+    # Monthly targets
     targets = ServiceTarget.objects.filter(
         branch=request.user.branch,
-        date=today
+        date__year=today.year,
+        date__month=today.month
     )
 
+    # Monthly activities
     activities = ServiceActivity.objects.filter(
         branch=request.user.branch,
-        date=today
+        date__year=today.year,
+        date__month=today.month
     )
 
-    return render(request, 'manager_dashboard.html', {
-        'targets': targets,
+    target_data = []
+
+    for target in targets:
+        total_achieved = activities.filter(
+            service_type=target.service_type
+        ).aggregate(total=Sum('quantity'))['total'] or 0
+
+        remaining = target.target_number - total_achieved
+        percentage = 0
+
+        if target.target_number > 0:
+            percentage = (total_achieved / target.target_number) * 100
+
+        target_data.append({
+            'service_type': target.service_type,
+            'target_number': target.target_number,
+            'achieved': total_achieved,
+            'remaining': remaining if remaining > 0 else 0,
+            'percentage': round(percentage, 2)
+        })
+
+    context = {
+        'target_data': target_data,
         'activities': activities
-    })
+    }
+
+    return render(request, 'manager_dashboard.html', context)
 
 
 # -----------------------
