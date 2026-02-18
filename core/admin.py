@@ -1,11 +1,21 @@
 from django.contrib import admin
-from django.contrib.auth.admin import UserAdmin
+from django.contrib.auth.admin import UserAdmin as BaseUserAdmin
 from .models import User, Branch, ServiceTarget, ServiceActivity, DeviceTag
 
-# Register Custom User
-admin.site.register(User, UserAdmin)
+class CustomUserAdmin(BaseUserAdmin):
+    fieldsets = BaseUserAdmin.fieldsets + (
+        ('Additional Info', {
+            'fields': ('role', 'branch'),
+        }),
+    )
 
-# Register other models
+    add_fieldsets = BaseUserAdmin.add_fieldsets + (
+        ('Additional Info', {
+            'fields': ('role', 'branch'),
+        }),
+    )
+
+admin.site.register(User, CustomUserAdmin)
 admin.site.register(Branch)
 admin.site.register(ServiceTarget)
 admin.site.register(ServiceActivity)
