@@ -109,6 +109,9 @@ from django.db.models import Sum
 
 @login_required
 def manager_dashboard(request):
+    if not request.user.is_superuser and request.user.role != 'manager':
+        return HttpResponseForbidden("Not allowed")
+
     today = date.today()
 
     # Monthly targets
