@@ -10,6 +10,12 @@ from .models import User, Branch, DeviceTag, ServiceTarget, ServiceActivity
 # Custom Login
 # -----------------------
 def custom_login(request):
+    # Log out user if they are already logged in to prevent session conflicts
+    if request.user.is_authenticated and request.method == 'GET':
+        from django.contrib.auth import logout
+        logout(request)
+        return redirect('login')
+        
     if request.method == 'POST':
         username = request.POST.get('username')
         password = request.POST.get('password')
@@ -62,9 +68,9 @@ def custom_login(request):
     
         
 
-# -----------------------
-# Staff Dashboard
-# -----------------------
+def csrf_failure(request, reason=""):
+    messages.error(request, "Your session expired or was interrupted. Please try again.")
+    return redirect('login')
 @login_required
 def staff_dashboard(request):
     if not request.user.is_superuser and request.user.role != 'staff':
