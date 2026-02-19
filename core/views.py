@@ -15,20 +15,20 @@ def custom_login(request):
         password = request.POST.get('password')
 
         try:
-            user = User.objects.get(username=username)
+            user_record = User.objects.get(username=username)
         except User.DoesNotExist:
             messages.error(request, "Invalid credentials")
             return redirect('login')
 
-        if user.failed_login_count >= 3:
+        if user_record.failed_login_count >= 3:
             messages.error(request, "Account locked. Contact Admin.")
             return redirect('login')
 
         user_auth = authenticate(request, username=username, password=password)
 
-        if user_auth:
-            user.failed_login_count = 0
-            user.save()
+        if user_auth is not None:
+            user_record.failed_login_count = 0
+            user_record.save()
             login(request, user_auth)
 
             # ✅ Allow Django superuser automatically
@@ -46,10 +46,9 @@ def custom_login(request):
             else:
                 messages.error(request, "No role assigned. Contact Admin.")
                 return redirect('login')
-
         else:
-            user.failed_login_count += 1
-            user.save()
+            user_record.failed_login_count += 1
+            user_record.save()
             messages.error(request, "Invalid credentials")
             return redirect('login')
 
@@ -104,7 +103,6 @@ def staff_dashboard(request):
 # -----------------------
 # Manager Dashboard
 # -----------------------
-from datetime import date
 from django.db.models import Sum
 
 @login_required

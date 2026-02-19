@@ -26,9 +26,14 @@ SECRET_KEY = 'django-insecure-4ju2n@$f9d0c=h)_g0lbb%k9&@rf(xa$d$g$&5ri$uf)*gev^4
 DEBUG = True
 
 ALLOWED_HOSTS = os.environ["REPLIT_DOMAINS"].split(',') + ['127.0.0.1', 'localhost', '0.0.0.0']
-CSRF_TRUSTED_ORIGINS = [
-    "https://" + domain for domain in os.environ["REPLIT_DOMAINS"].split(',')
-]
+CSRF_TRUSTED_ORIGINS = (
+    ["https://" + domain for domain in os.environ["REPLIT_DOMAINS"].split(',')] +
+    ["http://" + domain for domain in os.environ["REPLIT_DOMAINS"].split(',')]
+)
+
+CSRF_COOKIE_SECURE = True
+SESSION_COOKIE_SECURE = True
+SECURE_PROXY_SSL_HEADER = ('HTTP_X_FORWARDED_PROTO', 'https')
 
 # Application definition
 
