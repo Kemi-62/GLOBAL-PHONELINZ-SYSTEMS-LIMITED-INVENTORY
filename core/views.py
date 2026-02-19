@@ -20,14 +20,17 @@ def custom_login(request):
             messages.error(request, "Invalid credentials")
             return redirect('login')
 
-        if user_record.failed_login_count >= 3:
+        if hasattr(user_record, 'is_locked') and user_record.is_locked:
             messages.error(request, "Account locked. Contact Admin.")
             return redirect('login')
 
         user_auth = authenticate(request, username=username, password=password)
 
         if user_auth is not None:
-            user_record.failed_login_count = 0
+            if hasattr(user_record, 'failed_login_count'):
+                user_record.failed_login_count = 0
+            if hasattr(user_record, 'failed_attempts'):
+                user_record.failed_attempts = 0
             user_record.save()
             login(request, user_auth)
 
@@ -47,13 +50,17 @@ def custom_login(request):
                 messages.error(request, "No role assigned. Contact Admin.")
                 return redirect('login')
         else:
-            user_record.failed_login_count += 1
+            if hasattr(user_record, 'failed_login_count'):
+                user_record.failed_login_count += 1
+            if hasattr(user_record, 'failed_attempts'):
+                user_record.failed_attempts += 1
             user_record.save()
             messages.error(request, "Invalid credentials")
             return redirect('login')
 
     return render(request, 'login.html')
-
+    
+        
 
 # -----------------------
 # Staff Dashboard
