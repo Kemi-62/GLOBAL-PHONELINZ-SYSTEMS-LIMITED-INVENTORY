@@ -9,7 +9,13 @@
     {% csrf_token %}
     
     <label>Service Type:</label>
-    <input type="text" name="service_type" required><br><br>
+<select name="service_type" required>
+    <option value="">Select Service</option>
+    {% for service in service_types %}
+        <option value="{{ service }}">{{ service }}</option>
+    {% endfor %}
+</select>
+<br><br>
 
     <label>Quantity:</label>
     <input type="number" name="quantity" required><br><br>

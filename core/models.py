@@ -89,18 +89,23 @@ class ServiceTarget(models.Model):
 # Service Activity (Daily Work Entry)
 # -----------------------
 class ServiceActivity(models.Model):
-    SERVICE_CHOICES = ServiceTarget.SERVICE_CHOICES
+    SERVICE_CHOICES = (
+        ('SIM_REG', 'SIM Registration'),
+        ('SIM_SWAP', 'SIM Swap'),
+        ('SIM_RET', 'SIM Retrieval'),
+        ('NIN_LINK', 'NIN Linking'),
+        ('MIFI', 'MiFi Sale'),
+    )
 
-    branch = models.ForeignKey(Branch, on_delete=models.CASCADE)
     staff = models.ForeignKey(User, on_delete=models.CASCADE)
-    service_type = models.CharField(max_length=50, choices=SERVICE_CHOICES)
-    quantity = models.PositiveIntegerField(default=1)
+    branch = models.ForeignKey(Branch, on_delete=models.CASCADE)
+    service_type = models.CharField(max_length=20, choices=SERVICE_CHOICES)
+    quantity = models.IntegerField()
+    device_tag = models.ForeignKey(DeviceTag, on_delete=models.CASCADE, null=True, blank=True)
     date = models.DateField(auto_now_add=True)
 
-    device_tag = models.ForeignKey(DeviceTag, null=True, blank=True, on_delete=models.SET_NULL)
-
     def save(self, *args, **kwargs):
-        if self.service_type != 'sim_registration':
+        if self.service_type != 'SIM_REG':
             self.device_tag = None
         super().save(*args, **kwargs)
 
