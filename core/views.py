@@ -71,46 +71,80 @@ def custom_login(request):
 def csrf_failure(request, reason=""):
     messages.error(request, "Your session expired or was interrupted. Please try again.")
     return redirect('login')
+
+
+
+from datetime import date
+from django.db.models import Sum
+from django.contrib.auth.decorators import login_required
+from django.shortcuts import render, redirect
+from .models import ServiceTarget, ServiceActivity, DeviceTag
+
 @login_required
 def staff_dashboard(request):
-    if not request.user.is_superuser and request.user.role != 'staff':
-        return HttpResponseForbidden("Not allowed")
 
     today = date.today()
 
+    # Get monthly targets for staff branch
     targets = ServiceTarget.objects.filter(
         branch=request.user.branch,
-        date=today
+        date__year=today.year,
+        date__month=today.month
     )
 
-    device_tags = DeviceTag.objects.filter(branch=request.user.branch)
+    # Get staff's own activities for current month
+    activities = ServiceActivity.objects.filter(
+        staff=request.user,
+        date__year=today.year,
+        date__month=today.month
+    )
 
-    if request.method == 'POST':
-        service_type = request.POST.get('service_type')
-        quantity = int(request.POST.get('quantity') or 0)
-        device_tag_id = request.POST.get('device_tag')
-
-        device_tag = None
-        if service_type == 'sim_registration' and device_tag_id:
-            try:
-                device_tag = DeviceTag.objects.get(id=device_tag_id, branch=request.user.branch)
-            except DeviceTag.DoesNotExist:
-                pass
+    # Handle form submission
+    if request.method == "POST":
+        service_type = request.POST.get("service_type")
+        quantity = int(request.POST.get("quantity"))
+        device_tag_id = request.POST.get("device_tag")
 
         ServiceActivity.objects.create(
-            branch=request.user.branch,
             staff=request.user,
+            branch=request.user.branch,
             service_type=service_type,
             quantity=quantity,
-            device_tag=device_tag
+            device_tag_id=device_tag_id
         )
 
-        return redirect('staff_dashboard')
+        return redirect("staff_dashboard")
 
-    return render(request, 'staff_dashboard.html', {
-        'targets': targets,
-        'device_tags': device_tags
-    })
+    target_data = []
+
+    for target in targets:
+        achieved = activities.filter(
+            service_type=target.service_type
+        ).aggregate(total=Sum("quantity"))["total"] or 0
+
+        remaining = target.target_number - achieved
+        percentage = 0
+
+        if target.target_number > 0:
+            percentage = (achieved / target.target_number) * 100
+
+        target_data.append({
+            "service_type": target.service_type,
+            "target_number": target.target_number,
+            "achieved": achieved,
+            "remaining": remaining if remaining > 0 else 0,
+            "percentage": round(percentage, 2),
+        })
+
+    device_tags = DeviceTag.objects.all()
+
+    context = {
+        "target_data": target_data,
+        "device_tags": device_tags,
+        "activities": activities
+    }
+
+    return render(request, "staff_dashboard.html", context)
 
 
 # -----------------------
@@ -173,36 +207,35 @@ def manager_dashboard(request):
 # -----------------------
 @login_required
 def director_dashboard(request):
-    # Allow Django superuser automatically
-    if not request.user.is_superuser:
-        if request.user.role not in ['director', 'super_admin']:
-            return HttpResponseForbidden("Not allowed")
 
     today = date.today()
-    branches = Branch.objects.all()
 
-    if request.method == 'POST':
-        branch_id = request.POST.get('branch')
-        service_type = request.POST.get('service_type')
-        target_number = request.POST.get('target_number')
-        target_date = request.POST.get('date') or today
+    targets = ServiceTarget.objects.filter(
+        date__year=today.year,
+        date__month=today.month
+    )
 
-        ServiceTarget.objects.update_or_create(
-            branch_id=branch_id,
-            service_type=service_type,
-            date=target_date,
-            defaults={
-                'target_number': target_number,
-                'created_by': request.user
-            }
-        )
+    activities = ServiceActivity.objects.filter(
+        date__year=today.year,
+        date__month=today.month
+    )
 
-        return redirect('director_dashboard')
+    total_target = targets.aggregate(total=Sum("target_number"))["total"] or 0
+    total_achieved = activities.aggregate(total=Sum("quantity"))["total"] or 0
 
-    targets = ServiceTarget.objects.filter(date=today)
+    overall_percentage = 0
+    if total_target > 0:
+        overall_percentage = (total_achieved / total_target) * 100
 
-    return render(request, 'director_dashboard.html', {
-        'branches': branches,
-        'targets': targets,
-        'today': today.isoformat()
-    })
+    top_staff = activities.values("staff__username") \
+        .annotate(total=Sum("quantity")) \
+        .order_by("-total")[:5]
+
+    context = {
+        "total_target": total_target,
+        "total_achieved": total_achieved,
+        "overall_percentage": round(overall_percentage, 2),
+        "top_staff": top_staff
+    }
+
+    return render(request, "director_dashboard.html", context)

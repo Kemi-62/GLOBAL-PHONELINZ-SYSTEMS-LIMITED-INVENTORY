@@ -1,75 +1,41 @@
 {% extends "base.html" %}
-{% load static %}
-
 {% block content %}
-<h1>Staff Dashboard</h1>
 
-<h2>Today's Targets</h2>
-{% if targets %}
-    <table border="1" cellpadding="5" cellspacing="0">
-        <thead>
-            <tr>
-                <th>Service Type</th>
-                <th>Target Number</th>
-            </tr>
-        </thead>
-        <tbody>
-            {% for target in targets %}
-            <tr>
-                <td>{{ target.service_type|title }}</td>
-                <td>{{ target.target_number }}</td>
-            </tr>
-            {% endfor %}
-        </tbody>
-    </table>
-{% else %}
-    <p>No targets set for today.</p>
-{% endif %}
+<h2>Staff Dashboard</h2>
+
+<h3>Submit Service Activity</h3>
+
+<form method="POST">
+    {% csrf_token %}
+    
+    <label>Service Type:</label>
+    <input type="text" name="service_type" required><br><br>
+
+    <label>Quantity:</label>
+    <input type="number" name="quantity" required><br><br>
+
+    <label>Device Tag:</label>
+    <select name="device_tag">
+        {% for device in device_tags %}
+            <option value="{{ device.id }}">{{ device.name }}</option>
+        {% endfor %}
+    </select><br><br>
+
+    <button type="submit">Submit</button>
+</form>
 
 <hr>
 
-<h2>Log Service Activity</h2>
-<form method="POST">
-    {% csrf_token %}
-    <label for="service_type">Service Type:</label>
-    <select name="service_type" id="service_type" onchange="toggleDeviceTag()" required>
-        <option value="">Select Service</option>
-        <option value="sim_registration">SIM Registration</option>
-        <option value="sim_retrieval">SIM Retrieval</option>
-        <option value="sim_upgrade">SIM Upgrade</option>
-        <option value="mifi_router_sale">MIFI / Router Sale</option>
-        <option value="nin">NIN</option>
-    </select>
-    <br><br>
+<h3>Monthly Performance</h3>
 
-    <div id="device_tag_div" style="display:none;">
-        <label for="device_tag">Device Tag:</label>
-        <select name="device_tag" id="device_tag">
-            <option value="">Select Device Tag</option>
-            {% for tag in device_tags %}
-            <option value="{{ tag.id }}">{{ tag.name }}</option>
-            {% endfor %}
-        </select>
-        <br><br>
-    </div>
-
-    <label for="quantity">Quantity:</label>
-    <input type="number" name="quantity" id="quantity" min="1" required>
-    <br><br>
-
-    <button type="submit">Log Activity</button>
-</form>
-
-<script>
-function toggleDeviceTag() {
-    const serviceType = document.getElementById('service_type').value;
-    const deviceDiv = document.getElementById('device_tag_div');
-    if (serviceType === 'sim_registration') {
-        deviceDiv.style.display = 'block';
-    } else {
-        deviceDiv.style.display = 'none';
-    }
-}
-</script>
+{% for item in target_data %}
+<div class="card">
+    <strong>{{ item.service_type }}</strong><br>
+    Target: {{ item.target_number }}<br>
+    Achieved: {{ item.achieved }}<br>
+    Remaining: {{ item.remaining }}<br>
+    Percentage: {{ item.percentage }}%
+</div>
+{% endfor %}
 
 {% endblock %}

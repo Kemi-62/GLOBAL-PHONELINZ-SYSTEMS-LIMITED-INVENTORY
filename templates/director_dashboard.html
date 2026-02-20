@@ -61,6 +61,20 @@
         </tr>
         {% endfor %}
     </table>
+<h2>Director Overview</h2>
 
+<div class="card">
+    <strong>Total Target:</strong> {{ total_target }}<br>
+    <strong>Total Achieved:</strong> {{ total_achieved }}<br>
+    <strong>Overall %:</strong> {{ overall_percentage }}%
+</div>
+
+<h3>Top Performing Staff</h3>
+
+{% for staff in top_staff %}
+<div class="card">
+    {{ staff.staff__username }} - {{ staff.total }}
+</div>
+{% endfor %}
 </body>
 </html>
