@@ -106,8 +106,11 @@ def staff_dashboard(request):
 
     target_data = []
     for target in targets:
+        
+        # Only calculate target for SIM Registration
         achieved = activities.filter(
-            service_type=target.service_type
+            service_type="SIM_REG",
+            device_tag=target.device_tag
         ).aggregate(total=Sum("quantity"))["total"] or 0
 
         remaining = target.target_number - achieved
