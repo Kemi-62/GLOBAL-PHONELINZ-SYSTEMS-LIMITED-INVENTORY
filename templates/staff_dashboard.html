@@ -24,8 +24,9 @@
 
     <label>Device Tag:</label>
     <select name="device_tag">
+        <option value="">None</option>
         {% for device in device_tags %}
-            <option value="{{ device.id }}">{{ device.name }}</option>
+            <option value="{{ device.id }}">{{ device.tag_name }}</option>
         {% endfor %}
     </select><br><br>
 
