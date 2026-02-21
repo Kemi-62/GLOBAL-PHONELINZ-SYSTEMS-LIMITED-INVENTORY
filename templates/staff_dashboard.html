@@ -33,17 +33,24 @@
 </form>
 
 <hr>
+<h3>SIM Registration Performance (Per Device)</h3>
 
-<h3>Monthly Performance</h3>
-
-{% for item in target_data %}
-<div class="card">
-    <strong>{{ item.service_type }}</strong><br>
-    Target: {{ item.target_number }}<br>
-    Achieved: {{ item.achieved }}<br>
-    Remaining: {{ item.remaining }}<br>
-    Percentage: {{ item.percentage }}%
-</div>
-{% endfor %}
+{% if device_progress %}
+    {% for item in device_progress %}
+        <div class="card">
+            <strong>Device: {{ item.device }}</strong><br>
+            Target: {{ item.target }}<br>
+            Achieved: {{ item.achieved }}<br>
+            Remaining: {{ item.remaining }}<br>
+            Percentage: {{ item.percentage }}%
+            
+            {% if item.exceeded %}
+                <p style="color:red;">⚠ Target Exceeded — Manager Approval Required</p>
+            {% endif %}
+        </div>
+    {% endfor %}
+{% else %}
+    <p>No SIM Registration targets set for this month.</p>
+{% endif %}
 
 {% endblock %}

@@ -104,38 +104,33 @@ def staff_dashboard(request):
         )
         return redirect("staff_dashboard")
 
-    target_data = []
-    for target in targets:
-        # Calculate achieved for the current target's service type
-        # Mapping service types to handle inconsistencies if any
-        service_map = {
-            'sim_registration': 'SIM_REG',
-            'sim_swap': 'SIM_SWAP',
-            # Add other mappings if necessary
-        }
-        search_type = service_map.get(target.service_type, target.service_type)
-        
+    sim_targets = targets.filter(service_type="SIM_REG")
+    device_progress = []
+
+    for target in sim_targets:
         achieved = activities.filter(
-            service_type=search_type
+            service_type="SIM_REG",
+            device_tag=target.device_tag
         ).aggregate(total=Sum("quantity"))["total"] or 0
 
         remaining = target.target_number - achieved
+
         percentage = 0
         if target.target_number > 0:
             percentage = (achieved / target.target_number) * 100
 
-        target_data.append({
-            "service_type": target.service_type,
-            "target_number": target.target_number,
+        device_progress.append({
+            "device": target.device_tag.tag_name if target.device_tag else "Generic",
+            "target": target.target_number,
             "achieved": achieved,
-            "remaining": max(remaining, 0),
+            "remaining": remaining if remaining > 0 else 0,
             "percentage": round(percentage, 2),
+            "exceeded": achieved > target.target_number
         })
 
-    device_tags = DeviceTag.objects.filter(branch=request.user.branch)
     context = {
-        "target_data": target_data,
-        "device_tags": device_tags,
+        "device_progress": device_progress,
+        "device_tags": DeviceTag.objects.filter(branch=request.user.branch),
         "activities": activities
     }
     return render(request, "staff_dashboard.html", context)

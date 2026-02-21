@@ -49,21 +49,22 @@ class DeviceTag(models.Model):
 # -----------------------
 class ServiceTarget(models.Model):
     SERVICE_CHOICES = [
-        ('sim_registration', 'SIM Registration'),
-        ('sim_swap', 'SIM Swap'),
-        ('sim_upgrade', 'SIM Upgrade'),
-        ('gotv', 'GOTV Subscription'),
-        ('dstv', 'DSTV Subscription'),
+        ('SIM_REG', 'SIM Registration'),
+        ('SIM_SWAP', 'SIM Swap'),
+        ('SIM_UPGRADE', 'SIM Upgrade'),
+        ('GOTV', 'GOTV Subscription'),
+        ('DSTV', 'DSTV Subscription'),
     ]
 
     branch = models.ForeignKey(Branch, on_delete=models.CASCADE)
     service_type = models.CharField(max_length=50, choices=SERVICE_CHOICES)
+    device_tag = models.ForeignKey(DeviceTag, on_delete=models.CASCADE, null=True, blank=True)
     target_number = models.PositiveIntegerField()
     date = models.DateField()
     created_by = models.ForeignKey(User, on_delete=models.SET_NULL, null=True)
 
     class Meta:
-        unique_together = ('branch', 'service_type', 'date')
+        unique_together = ('branch', 'service_type', 'device_tag', 'date')
 
     def achieved(self):
         total = ServiceActivity.objects.filter(
