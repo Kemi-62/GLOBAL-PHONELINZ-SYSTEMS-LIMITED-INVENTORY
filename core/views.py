@@ -106,11 +106,17 @@ def staff_dashboard(request):
 
     target_data = []
     for target in targets:
+        # Calculate achieved for the current target's service type
+        # Mapping service types to handle inconsistencies if any
+        service_map = {
+            'sim_registration': 'SIM_REG',
+            'sim_swap': 'SIM_SWAP',
+            # Add other mappings if necessary
+        }
+        search_type = service_map.get(target.service_type, target.service_type)
         
-        # Only calculate target for SIM Registration
         achieved = activities.filter(
-            service_type="SIM_REG",
-            device_tag=target.device_tag
+            service_type=search_type
         ).aggregate(total=Sum("quantity"))["total"] or 0
 
         remaining = target.target_number - achieved
