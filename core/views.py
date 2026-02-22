@@ -141,7 +141,8 @@ def staff_dashboard(request):
     for target in sim_targets:
         achieved = activities.filter(
             service_type="SIM_REG",
-            device_tag=target.device_tag
+            device_tag=target.device_tag,
+            approved=True
         ).aggregate(total=Sum("quantity"))["total"] or 0
 
         remaining = target.target_number - achieved
@@ -156,13 +157,22 @@ def staff_dashboard(request):
             "achieved": achieved,
             "remaining": remaining if remaining > 0 else 0,
             "percentage": round(percentage, 2),
-            "exceeded": achieved > target.target_number
+            "exceeded": achieved >= target.target_number
         })
+
+    approved_activities = activities.filter(approved=True)
+    pending_activities = activities.filter(approved=False, requires_approval=True)
+
+    monthly_total = approved_activities.aggregate(
+        total=Sum("quantity")
+    )["total"] or 0
 
     context = {
         "device_progress": device_progress,
         "device_tags": DeviceTag.objects.filter(branch=request.user.branch),
-        "activities": activities
+        "activities": activities,
+        "pending_activities": pending_activities,
+        "monthly_total": monthly_total,
     }
     return render(request, "staff_dashboard.html", context)
 

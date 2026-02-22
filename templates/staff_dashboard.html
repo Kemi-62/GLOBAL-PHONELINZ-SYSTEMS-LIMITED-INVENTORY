@@ -34,24 +34,61 @@
 </form>
 
 <hr>
+
+<h2>Monthly Summary</h2>
+
+<div class="card" style="padding:15px; border:1px solid #ddd; border-radius:8px; background:#f8f9fa; margin-bottom:20px;">
+    <strong>Total Approved This Month:</strong> {{ monthly_total }}
+</div>
+
+{% if pending_activities %}
+    <div class="card" style="background:#fff3cd; padding:15px; border:1px solid #ffeeba; border-radius:8px; margin-bottom:20px;">
+        <strong style="color:#856404;">Pending Approvals:</strong>
+        <ul style="margin-top:10px;">
+            {% for item in pending_activities %}
+                <li>
+                    {{ item.device_tag.tag_name|default:"Generic" }} - {{ item.quantity }} units
+                </li>
+            {% endfor %}
+        </ul>
+    </div>
+{% endif %}
+
+<hr>
+
 <h3>SIM Registration Performance (Per Device)</h3>
 
-{% if device_progress %}
-    {% for item in device_progress %}
-        <div class="card">
-            <strong>Device: {{ item.device }}</strong><br>
-            Target: {{ item.target }}<br>
-            Achieved: {{ item.achieved }}<br>
-            Remaining: {{ item.remaining }}<br>
-            Percentage: {{ item.percentage }}%
-            
-            {% if item.exceeded %}
-                <p style="color:red;">⚠ Target Exceeded — Manager Approval Required</p>
-            {% endif %}
+{% for item in device_progress %}
+    <div class="card" style="margin-bottom:15px; padding:15px; border:1px solid #ddd; border-radius:8px;">
+
+        <strong>Device: {{ item.device }}</strong><br>
+        Target: {{ item.target }}<br>
+        Achieved: {{ item.achieved }}<br>
+        Remaining: {{ item.remaining }}<br>
+
+        <div style="background:#e9ecef; height:24px; width:100%; margin-top:10px; border-radius:12px; overflow:hidden;">
+            <div style="
+                height:24px;
+                width:{{ item.percentage }}%;
+                background:{% if item.exceeded %}#dc3545{% else %}#28a745{% endif %};
+                text-align:center;
+                color:white;
+                font-size:14px;
+                line-height:24px;
+                transition: width 0.5s ease-in-out;">
+                {{ item.percentage }}%
+            </div>
         </div>
-    {% endfor %}
-{% else %}
+
+        {% if item.exceeded %}
+            <p style="color:#dc3545; margin-top:10px; font-weight:bold;">
+                ⚠ Target Exceeded — Awaiting Manager Approval
+            </p>
+        {% endif %}
+
+    </div>
+{% empty %}
     <p>No SIM Registration targets set for this month.</p>
-{% endif %}
+{% endfor %}
 
 {% endblock %}
