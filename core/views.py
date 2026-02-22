@@ -243,43 +243,33 @@ def approve_activity(request, activity_id):
         pass
     return redirect('manager_dashboard')
 
-# -----------------------
-# Director Dashboard
-# -----------------------
 @login_required
 def director_dashboard(request):
     if not request.user.is_superuser and request.user.role not in ['director', 'super_admin']:
         return HttpResponseForbidden("Not allowed")
 
     today = date.today()
-    targets = ServiceTarget.objects.filter(
-        date__year=today.year,
-        date__month=today.month
-    )
+    device_filter = request.GET.get("device")
 
     activities = ServiceActivity.objects.filter(
         date__year=today.year,
-        date__month=today.month
+        date__month=today.month,
+        approved=True
     )
 
-    total_target = targets.aggregate(total=Sum("target_number"))["total"] or 0
-    total_achieved = activities.aggregate(total=Sum("quantity"))["total"] or 0
+    if device_filter:
+        activities = activities.filter(device_tag_id=device_filter)
 
-    overall_percentage = 0
-    if total_target > 0:
-        overall_percentage = (total_achieved / total_target) * 100
+    branch_summary = activities.values("branch__name").annotate(
+        total=Sum("quantity")
+    ).order_by("-total")
 
-    top_staff = activities.values("staff__username") \
-        .annotate(total=Sum("quantity")) \
-        .order_by("-total")[:5]
+    device_tags = DeviceTag.objects.all()
 
     context = {
-        "total_target": total_target,
-        "total_achieved": total_achieved,
-        "overall_percentage": round(overall_percentage, 2),
-        "top_staff": top_staff,
-        "targets": targets,
-        "branches": Branch.objects.all(),
-        "today": today.isoformat()
+        "branch_summary": branch_summary,
+        "device_tags": device_tags,
+        "selected_device": device_filter
     }
+
     return render(request, "director_dashboard.html", context)
