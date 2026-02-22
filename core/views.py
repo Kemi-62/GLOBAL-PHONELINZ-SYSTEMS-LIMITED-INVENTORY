@@ -94,13 +94,44 @@ def staff_dashboard(request):
         service_type = request.POST.get("service_type")
         quantity = int(request.POST.get("quantity") or 0)
         device_tag_id = request.POST.get("device_tag")
+        device_tag = None
+        if device_tag_id:
+            try:
+                device_tag = DeviceTag.objects.get(id=device_tag_id)
+            except DeviceTag.DoesNotExist:
+                pass
+
+        requires_approval = False
+        if service_type == "SIM_REG":
+            target = ServiceTarget.objects.filter(
+                branch=request.user.branch,
+                service_type="SIM_REG",
+                device_tag=device_tag,
+                date__year=today.year,
+                date__month=today.month
+            ).first()
+
+            if target:
+                achieved = ServiceActivity.objects.filter(
+                    branch=request.user.branch,
+                    service_type="SIM_REG",
+                    device_tag=device_tag,
+                    date__year=today.year,
+                    date__month=today.month,
+                    approved=True
+                ).aggregate(total=Sum('quantity'))['total'] or 0
+
+                if achieved >= target.target_number:
+                    requires_approval = True
 
         ServiceActivity.objects.create(
-            staff=request.user,
             branch=request.user.branch,
+            staff=request.user,
             service_type=service_type,
+            device_tag=device_tag,
             quantity=quantity,
-            device_tag_id=device_tag_id
+            requires_approval=requires_approval,
+            approved=not requires_approval
         )
         return redirect("staff_dashboard")
 
@@ -157,6 +188,12 @@ def manager_dashboard(request):
         date__month=today.month
     )
 
+    pending_approvals = ServiceActivity.objects.filter(
+        branch=request.user.branch,
+        requires_approval=True,
+        approved=False
+    )
+
     target_data = []
     for target in targets:
         total_achieved = activities.filter(
@@ -178,9 +215,23 @@ def manager_dashboard(request):
 
     context = {
         'target_data': target_data,
-        'activities': activities
+        'activities': activities,
+        'pending_approvals': pending_approvals
     }
     return render(request, 'manager_dashboard.html', context)
+
+@login_required
+def approve_activity(request, activity_id):
+    if not request.user.is_superuser and request.user.role != 'manager':
+        return HttpResponseForbidden("Not allowed")
+    try:
+        activity = ServiceActivity.objects.get(id=activity_id, branch=request.user.branch)
+        activity.approved = True
+        activity.requires_approval = False
+        activity.save()
+    except ServiceActivity.DoesNotExist:
+        pass
+    return redirect('manager_dashboard')
 
 # -----------------------
 # Director Dashboard

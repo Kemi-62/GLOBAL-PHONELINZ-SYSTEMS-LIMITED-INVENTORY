@@ -98,12 +98,15 @@ class ServiceActivity(models.Model):
         ('MIFI', 'MiFi Sale'),
     )
 
-    staff = models.ForeignKey(User, on_delete=models.CASCADE)
     branch = models.ForeignKey(Branch, on_delete=models.CASCADE)
-    service_type = models.CharField(max_length=20, choices=SERVICE_CHOICES)
-    quantity = models.IntegerField()
+    staff = models.ForeignKey(User, on_delete=models.CASCADE)
+    service_type = models.CharField(max_length=50)
     device_tag = models.ForeignKey(DeviceTag, on_delete=models.CASCADE, null=True, blank=True)
+    quantity = models.PositiveIntegerField()
     date = models.DateField(auto_now_add=True)
+
+    approved = models.BooleanField(default=False)
+    requires_approval = models.BooleanField(default=False)
 
     def save(self, *args, **kwargs):
         if self.service_type != 'SIM_REG':

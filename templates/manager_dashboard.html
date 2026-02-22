@@ -8,6 +8,22 @@
 
 <h2>This Month's Target Performance</h2>
 
+{% if pending_approvals %}
+    <hr>
+    <h3>Pending Approvals (Target Exceeded)</h3>
+    {% for activity in pending_approvals %}
+        <div class="card" style="border: 1px solid #ccc; padding: 10px; margin-bottom: 10px;">
+            <p>
+                <strong>Staff:</strong> {{ activity.staff.username }} |
+                <strong>Device:</strong> {{ activity.device_tag.tag_name|default:"None" }} |
+                <strong>Qty:</strong> {{ activity.quantity }}
+                <a href="{% url 'approve_activity' activity.id %}" style="margin-left: 20px; color: green; font-weight: bold;">Approve</a>
+            </p>
+        </div>
+    {% endfor %}
+    <hr>
+{% endif %}
+
 {% if target_data %}
 <table border="1" cellpadding="6" cellspacing="0">
     <thead>
