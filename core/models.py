@@ -18,10 +18,12 @@ class Branch(models.Model):
 # -----------------------
 class User(AbstractUser):
     ROLE_CHOICES = (
-        ('staff', 'Staff'),
-        ('manager', 'Manager'),
-        ('director', 'Director'),
-        ('super_admin', 'Super Admin'),
+    ('SUPERADMIN', 'Super Admin'),
+    ('DIRECTOR', 'Director'),
+    ('MANAGER', 'Manager'),
+    ('TELECOM', 'Telecom Staff'),
+    ('RETAIL', 'Phones & Accessories Staff'),
+    ('MULTICHOICE', 'MultiChoice Staff'),
     )
 
     role = models.CharField(max_length=20, choices=ROLE_CHOICES)
@@ -127,4 +129,62 @@ class Performance(models.Model):
 
     def __str__(self):
         return f"{self.staff.username} - {self.service_type}"
-        
+
+class RetailCategory(models.Model):
+    name = models.CharField(max_length=100)
+
+    def __str__(self):
+        return self.name
+
+class RetailSubCategory(models.Model):
+    category = models.ForeignKey(RetailCategory, on_delete=models.CASCADE)
+    name = models.CharField(max_length=100)
+
+    def __str__(self):
+        return f"{self.category.name} - {self.name}"
+
+class Product(models.Model):
+    subcategory = models.ForeignKey(RetailSubCategory, on_delete=models.CASCADE)
+    model_name = models.CharField(max_length=100)
+
+    cost_price = models.DecimalField(max_digits=12, decimal_places=2)
+    selling_price = models.DecimalField(max_digits=12, decimal_places=2)
+
+    def __str__(self):
+        return f"{self.model_name}"
+
+class BranchSafeStock(models.Model):
+    branch = models.ForeignKey(Branch, on_delete=models.CASCADE)
+    product = models.ForeignKey(Product, on_delete=models.CASCADE)
+    quantity = models.PositiveIntegerField(default=0)
+
+    def __str__(self):
+        return f"{self.branch.name} - {self.product.model_name}"
+
+class StaffStock(models.Model):
+    staff = models.ForeignKey(User, on_delete=models.CASCADE)
+    product = models.ForeignKey(Product, on_delete=models.CASCADE)
+    quantity = models.PositiveIntegerField(default=0)
+
+    def __str__(self):
+        return f"{self.staff.username} - {self.product.model_name}"
+
+class StockMovement(models.Model):
+    MOVEMENT_TYPE = (
+        ('IN', 'Stock Entry'),
+        ('OUT', 'Stock Release to Staff'),
+        ('RETURN', 'Returned to Safe'),
+    )
+
+    branch = models.ForeignKey(Branch, on_delete=models.CASCADE)
+    product = models.ForeignKey(Product, on_delete=models.CASCADE)
+    quantity = models.PositiveIntegerField()
+
+    movement_type = models.CharField(max_length=10, choices=MOVEMENT_TYPE)
+    performed_by = models.ForeignKey(User, on_delete=models.CASCADE)
+
+    date = models.DateField(auto_now_add=True)
+    time = models.TimeField(auto_now_add=True)
+
+    def __str__(self):
+        return f"{self.product.model_name} - {self.movement_type}"
