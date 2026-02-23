@@ -44,12 +44,18 @@ def custom_login(request):
                 return redirect('director_dashboard')
 
             role = getattr(user_auth, 'role', None)
-            if role == 'staff':
-                return redirect('staff_dashboard')
-            elif role == 'manager':
-                return redirect('manager_dashboard')
-            elif role in ['director', 'super_admin']:
-                return redirect('director_dashboard')
+            if role == "TELECOM":
+                return redirect("staff_dashboard")
+            elif role == "RETAIL":
+                return redirect("retail_dashboard")
+            elif role == "MULTICHOICE":
+                return redirect("multichoice_dashboard")
+            elif role == "MANAGER":
+                return redirect("manager_dashboard")
+            elif role == "DIRECTOR":
+                return redirect("director_dashboard")
+            elif role == "SUPERADMIN":
+                return redirect("/admin/")
             else:
                 messages.error(request, "No role assigned. Contact Admin.")
                 return redirect('login')
@@ -73,7 +79,7 @@ def csrf_failure(request, reason=""):
 # -----------------------
 @login_required
 def staff_dashboard(request):
-    if not request.user.is_superuser and request.user.role != 'staff':
+    if not request.user.is_superuser and request.user.role != 'TELECOM':
         return HttpResponseForbidden("Not allowed")
 
     today = date.today()
@@ -181,7 +187,7 @@ def staff_dashboard(request):
 # -----------------------
 @login_required
 def manager_dashboard(request):
-    if not request.user.is_superuser and request.user.role != 'manager':
+    if not request.user.is_superuser and request.user.role != 'MANAGER':
         return HttpResponseForbidden("Not allowed")
 
     today = date.today()
@@ -232,7 +238,7 @@ def manager_dashboard(request):
 
 @login_required
 def approve_activity(request, activity_id):
-    if not request.user.is_superuser and request.user.role != 'manager':
+    if not request.user.is_superuser and request.user.role != 'MANAGER':
         return HttpResponseForbidden("Not allowed")
     try:
         activity = ServiceActivity.objects.get(id=activity_id, branch=request.user.branch)
@@ -244,8 +250,20 @@ def approve_activity(request, activity_id):
     return redirect('manager_dashboard')
 
 @login_required
+def retail_dashboard(request):
+    if not request.user.is_superuser and request.user.role != 'RETAIL':
+        return HttpResponseForbidden("Not allowed")
+    return render(request, "retail_dashboard.html")
+
+@login_required
+def multichoice_dashboard(request):
+    if not request.user.is_superuser and request.user.role != 'MULTICHOICE':
+        return HttpResponseForbidden("Not allowed")
+    return render(request, "multichoice_dashboard.html")
+
+@login_required
 def director_dashboard(request):
-    if not request.user.is_superuser and request.user.role not in ['director', 'super_admin']:
+    if not request.user.is_superuser and request.user.role not in ['DIRECTOR', 'SUPERADMIN']:
         return HttpResponseForbidden("Not allowed")
 
     today = date.today()
