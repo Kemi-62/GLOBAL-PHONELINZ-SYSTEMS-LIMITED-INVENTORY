@@ -9,4 +9,6 @@ urlpatterns = [
     path('retail/', views.retail_dashboard, name='retail_dashboard'),
     path('multichoice/', views.multichoice_dashboard, name='multichoice_dashboard'),
     path('approve/<int:activity_id>/', views.approve_activity, name='approve_activity'),
+    path('add-stock-safe/', views.add_stock_to_safe, name='add_stock_to_safe'),
+    path('release-stock/', views.release_stock, name='release_stock'),
 ]

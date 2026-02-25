@@ -124,8 +124,65 @@ function showSection(id) {
 
 <!-- RETAIL INVENTORY SECTION -->
 <div id="retail" class="section">
-    <h3>Branch Safe Stock</h3>
+    <h3>Retail Inventory Management</h3>
 
+    <div class="row" style="display: flex; gap: 20px; flex-wrap: wrap; margin-bottom: 20px;">
+        <div class="card" style="flex: 1; min-width: 300px;">
+            <h4>Add Stock to Safe (From Director)</h4>
+            <form method="POST" action="{% url 'add_stock_to_safe' %}">
+                {% csrf_token %}
+                <div style="margin-bottom: 10px;">
+                    <label>Product:</label><br>
+                    <select name="product" required style="width: 100%; padding: 8px;">
+                        {% for stock in safe_stocks %}
+                            <option value="{{ stock.product.id }}">
+                                {{ stock.product.model_name }}
+                            </option>
+                        {% endfor %}
+                    </select>
+                </div>
+                <div style="margin-bottom: 10px;">
+                    <label>Quantity Received:</label><br>
+                    <input type="number" name="quantity" placeholder="Quantity Received" required style="width: 100%; padding: 8px; box-sizing: border-box;">
+                </div>
+                <button type="submit" class="nav-btn" style="background: #28a745; color: white; border: none; width: 100%;">Add to Safe</button>
+            </form>
+        </div>
+
+        <div class="card" style="flex: 1; min-width: 300px;">
+            <h4>Release Stock to Retail Staff</h4>
+            <form method="POST" action="{% url 'release_stock' %}">
+                {% csrf_token %}
+                <div style="margin-bottom: 10px;">
+                    <label>Staff Member:</label><br>
+                    <select name="staff" required style="width: 100%; padding: 8px;">
+                        {% for user in request.user.branch.user_set.all %}
+                            {% if user.role == "RETAIL" %}
+                                <option value="{{ user.id }}">{{ user.username }}</option>
+                            {% endif %}
+                        {% endfor %}
+                    </select>
+                </div>
+                <div style="margin-bottom: 10px;">
+                    <label>Product:</label><br>
+                    <select name="product" required style="width: 100%; padding: 8px;">
+                        {% for stock in safe_stocks %}
+                            <option value="{{ stock.product.id }}">
+                                {{ stock.product.model_name }} ({{ stock.quantity }} available)
+                            </option>
+                        {% endfor %}
+                    </select>
+                </div>
+                <div style="margin-bottom: 10px;">
+                    <label>Quantity to Release:</label><br>
+                    <input type="number" name="quantity" placeholder="Quantity to Release" required style="width: 100%; padding: 8px; box-sizing: border-box;">
+                </div>
+                <button type="submit" class="nav-btn" style="background: #007bff; color: white; border: none; width: 100%;">Release</button>
+            </form>
+        </div>
+    </div>
+
+    <h3>Branch Safe Stock</h3>
     <table>
         <thead>
             <tr>

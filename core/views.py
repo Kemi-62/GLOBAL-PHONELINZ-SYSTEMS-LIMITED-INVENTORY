@@ -6,7 +6,7 @@ from django.contrib.auth.decorators import login_required
 from datetime import date
 from django.db.models import Sum
 from django.utils import timezone
-from .models import User, Branch, DeviceTag, ServiceTarget, ServiceActivity, BranchSafeStock, StockMovement, MultiChoiceActivity
+from .models import User, Branch, DeviceTag, ServiceTarget, ServiceActivity, BranchSafeStock, StockMovement, MultiChoiceActivity, Product, StaffStock
 
 # -----------------------
 # Custom Login
@@ -317,3 +317,74 @@ def director_dashboard(request):
     }
 
     return render(request, "director_dashboard.html", context)
+
+@login_required
+def add_stock_to_safe(request):
+    if request.method == "POST" and request.user.role == "MANAGER":
+        branch = request.user.branch
+        product_id = request.POST.get("product")
+        quantity = int(request.POST.get("quantity"))
+
+        product = Product.objects.get(id=product_id)
+
+        safe_stock, created = BranchSafeStock.objects.get_or_create(
+            branch=branch,
+            product=product
+        )
+
+        safe_stock.quantity += quantity
+        safe_stock.save()
+
+        StockMovement.objects.create(
+            branch=branch,
+            product=product,
+            quantity=quantity,
+            movement_type="IN",
+            performed_by=request.user
+        )
+
+    return redirect("manager_dashboard")
+
+@login_required
+def release_stock(request):
+    if request.method == "POST" and request.user.role == "MANAGER":
+        branch = request.user.branch
+        staff_id = request.POST.get("staff")
+        product_id = request.POST.get("product")
+        quantity = int(request.POST.get("quantity"))
+
+        product = Product.objects.get(id=product_id)
+        staff = User.objects.get(id=staff_id, branch=branch)
+
+        safe_stock = BranchSafeStock.objects.get(
+            branch=branch,
+            product=product
+        )
+
+        # Prevent Over Release
+        if quantity > safe_stock.quantity:
+            return redirect("manager_dashboard")
+
+        # Reduce Safe Stock
+        safe_stock.quantity -= quantity
+        safe_stock.save()
+
+        # Increase Staff Stock
+        staff_stock, created = StaffStock.objects.get_or_create(
+            staff=staff,
+            product=product
+        )
+
+        staff_stock.quantity += quantity
+        staff_stock.save()
+
+        # Log Movement
+        StockMovement.objects.create(
+            branch=branch,
+            product=product,
+            quantity=quantity,
+            movement_type="OUT",
+            performed_by=request.user
+        )
+
+    return redirect("manager_dashboard")
