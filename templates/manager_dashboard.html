@@ -90,4 +90,33 @@
 <p>No service activities logged this month.</p>
 {% endif %}
 
+
+<hr>
+<h2>Retail Inventory (Safe Stock)</h2>
+<table border="1" cellpadding="6" cellspacing="0" style="width: 100%; border-collapse: collapse; margin-top: 10px;">
+    <thead style="background-color: #f8f9fa;">
+        <tr>
+            <th style="text-align: left; padding: 8px;">Product</th>
+            <th style="text-align: right; padding: 8px;">Quantity</th>
+        </tr>
+    </thead>
+    <tbody>
+        {% for stock in safe_stocks %}
+        <tr>
+            <td style="padding: 8px; border: 1px solid #ddd;">{{ stock.product.model_name }}</td>
+            <td style="padding: 8px; border: 1px solid #ddd; text-align: right;">{{ stock.quantity }}</td>
+        </tr>
+        {% empty %}
+        <tr><td colspan="2" style="text-align: center; padding: 8px;">No safe stock found.</td></tr>
+        {% endfor %}
+    </tbody>
+</table>
+<p style="margin-top: 10px;"><strong>Total Stock Issued Today:</strong> {{ total_stock_out }}</p>
+
+<hr>
+<h2>MultiChoice Performance</h2>
+<div class="card" style="padding: 15px; border: 1px solid #ddd; border-radius: 8px; background: #f8f9fa;">
+    <p style="margin: 0; font-size: 1.2em;"><strong>Total Subscriptions Today:</strong> {{ multichoice_today }}</p>
+</div>
+
 {% endblock %}

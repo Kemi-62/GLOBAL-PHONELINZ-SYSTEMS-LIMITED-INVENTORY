@@ -188,3 +188,11 @@ class StockMovement(models.Model):
 
     def __str__(self):
         return f"{self.product.model_name} - {self.movement_type}"
+class MultiChoiceActivity(models.Model):
+    staff = models.ForeignKey(User, on_delete=models.CASCADE)
+    service_type = models.CharField(max_length=50)
+    quantity = models.PositiveIntegerField()
+    date = models.DateField(auto_now_add=True)
+
+    def __str__(self):
+        return f"{self.staff.username} - {self.service_type}"

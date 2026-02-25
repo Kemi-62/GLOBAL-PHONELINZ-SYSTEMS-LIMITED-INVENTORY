@@ -5,7 +5,8 @@ from django.http import HttpResponseForbidden
 from django.contrib.auth.decorators import login_required
 from datetime import date
 from django.db.models import Sum
-from .models import User, Branch, DeviceTag, ServiceTarget, ServiceActivity
+from django.utils import timezone
+from .models import User, Branch, DeviceTag, ServiceTarget, ServiceActivity, BranchSafeStock, StockMovement, MultiChoiceActivity
 
 # -----------------------
 # Custom Login
@@ -229,12 +230,37 @@ def manager_dashboard(request):
             'percentage': round(percentage, 2)
         })
 
+    branch = request.user.branch
+    today_date = timezone.now().date()
+
+    # ---------------- RETAIL SAFE STOCK ----------------
+    safe_stocks = BranchSafeStock.objects.filter(branch=branch)
+
+    today_movements = StockMovement.objects.filter(
+        branch=branch,
+        date=today_date
+    )
+
+    total_stock_out = today_movements.filter(
+        movement_type="OUT"
+    ).aggregate(total=Sum("quantity"))["total"] or 0
+
+    # ---------------- MULTICHOICE DATA ----------------
+    multichoice_today = MultiChoiceActivity.objects.filter(
+        staff__branch=branch,
+        date=today_date
+    ).aggregate(total=Sum("quantity"))["total"] or 0
+
     context = {
         'target_data': target_data,
         'activities': activities,
-        'pending_approvals': pending_approvals
+        'pending_approvals': pending_approvals,
+        "safe_stocks": safe_stocks,
+        "today_movements": today_movements,
+        "total_stock_out": total_stock_out,
+        "multichoice_today": multichoice_today,
     }
-    return render(request, 'manager_dashboard.html', context)
+    return render(request, "manager_dashboard.html", context)
 
 @login_required
 def approve_activity(request, activity_id):
