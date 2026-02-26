@@ -196,3 +196,20 @@ class MultiChoiceActivity(models.Model):
 
     def __str__(self):
         return f"{self.staff.username} - {self.service_type}"
+
+class RetailSale(models.Model):
+    staff = models.ForeignKey(User, on_delete=models.CASCADE)
+    branch = models.ForeignKey(Branch, on_delete=models.CASCADE)
+    product = models.ForeignKey(Product, on_delete=models.CASCADE)
+
+    quantity = models.PositiveIntegerField()
+    selling_price = models.DecimalField(max_digits=12, decimal_places=2)
+
+    date = models.DateField(auto_now_add=True)
+    time = models.TimeField(auto_now_add=True)
+
+    def total_amount(self):
+        return self.quantity * self.selling_price
+
+    def __str__(self):
+        return f"{self.product.model_name} - {self.quantity} sold by {self.staff.username}"

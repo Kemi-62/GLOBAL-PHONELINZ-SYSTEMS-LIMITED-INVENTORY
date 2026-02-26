@@ -232,6 +232,59 @@ function showSection(id) {
             {% endfor %}
         </tbody>
     </table>
+
+    <hr>
+    <h3>Retail Summary Today</h3>
+    <div class="row" style="display: flex; gap: 20px; margin-bottom: 20px;">
+        <div class="card" style="flex: 1; border-left: 5px solid #17a2b8;">
+            <p style="margin: 0;"><strong>Total Items Sold:</strong> {{ total_retail_quantity }}</p>
+        </div>
+        <div class="card" style="flex: 1; border-left: 5px solid #28a745;">
+            <p style="margin: 0;"><strong>Total Revenue:</strong> ₦{{ total_retail_revenue|floatformat:2 }}</p>
+        </div>
+    </div>
+
+    <h4>Sales Per Staff</h4>
+    <table>
+        <thead>
+            <tr>
+                <th>Staff</th>
+                <th style="text-align: right;">Total Quantity</th>
+                <th style="text-align: right;">Total Revenue</th>
+            </tr>
+        </thead>
+        <tbody>
+            {% for staff in sales_per_staff %}
+            <tr>
+                <td>{{ staff.staff__username }}</td>
+                <td style="text-align: right;">{{ staff.total_qty }}</td>
+                <td style="text-align: right;">₦{{ staff.total_revenue|floatformat:2 }}</td>
+            </tr>
+            {% empty %}
+            <tr><td colspan="3" style="text-align: center;">No sales recorded today.</td></tr>
+            {% endfor %}
+        </tbody>
+    </table>
+
+    <h4>Top Selling Products Today</h4>
+    <table>
+        <thead>
+            <tr>
+                <th>Product</th>
+                <th style="text-align: right;">Total Sold</th>
+            </tr>
+        </thead>
+        <tbody>
+            {% for product in top_products %}
+            <tr>
+                <td>{{ product.product__model_name }}</td>
+                <td style="text-align: right;">{{ product.total_qty }}</td>
+            </tr>
+            {% empty %}
+            <tr><td colspan="2" style="text-align: center;">No product sales today.</td></tr>
+            {% endfor %}
+        </tbody>
+    </table>
 </div>
 
 <!-- MULTICHOICE SECTION -->

@@ -4,9 +4,9 @@ from django.contrib import messages
 from django.http import HttpResponseForbidden
 from django.contrib.auth.decorators import login_required
 from datetime import date
-from django.db.models import Sum
+from django.db.models import Sum, F
 from django.utils import timezone
-from .models import User, Branch, DeviceTag, ServiceTarget, ServiceActivity, BranchSafeStock, StockMovement, MultiChoiceActivity, Product, StaffStock
+from .models import User, Branch, DeviceTag, ServiceTarget, ServiceActivity, BranchSafeStock, StockMovement, MultiChoiceActivity, Product, StaffStock, RetailSale
 
 # -----------------------
 # Custom Login
@@ -251,6 +251,35 @@ def manager_dashboard(request):
         date=today_date
     ).aggregate(total=Sum("quantity"))["total"] or 0
 
+    # ---------------- RETAIL SALES TODAY ----------------
+    retail_sales_today = RetailSale.objects.filter(
+        branch=branch,
+        date=today_date
+    )
+
+    total_retail_quantity = retail_sales_today.aggregate(
+        total=Sum("quantity")
+    )["total"] or 0
+
+    total_retail_revenue = retail_sales_today.aggregate(
+        total=Sum(F("quantity") * F("selling_price"))
+    )["total"] or 0
+
+    # ---------------- SALES PER STAFF ----------------
+    sales_per_staff = retail_sales_today.values(
+        "staff__username"
+    ).annotate(
+        total_qty=Sum("quantity"),
+        total_revenue=Sum(F("quantity") * F("selling_price"))
+    )
+
+    # ---------------- TOP PRODUCTS ----------------
+    top_products = retail_sales_today.values(
+        "product__model_name"
+    ).annotate(
+        total_qty=Sum("quantity")
+    ).order_by("-total_qty")[:5]
+
     context = {
         'target_data': target_data,
         'activities': activities,
@@ -259,6 +288,10 @@ def manager_dashboard(request):
         "today_movements": today_movements,
         "total_stock_out": total_stock_out,
         "multichoice_today": multichoice_today,
+        "total_retail_quantity": total_retail_quantity,
+        "total_retail_revenue": total_retail_revenue,
+        "sales_per_staff": sales_per_staff,
+        "top_products": top_products,
     }
     return render(request, "manager_dashboard.html", context)
 
@@ -277,9 +310,57 @@ def approve_activity(request, activity_id):
 
 @login_required
 def retail_dashboard(request):
-    if not request.user.is_superuser and request.user.role != 'RETAIL':
-        return HttpResponseForbidden("Not allowed")
-    return render(request, "retail_dashboard.html")
+    if request.user.role != "RETAIL":
+        return redirect("login")
+
+    staff = request.user
+    staff_stock = StaffStock.objects.filter(staff=staff)
+
+    return render(request, "retail_dashboard.html", {
+        "staff_stock": staff_stock
+    })
+
+@login_required
+def record_retail_sale(request):
+    if request.method == "POST" and request.user.role == "RETAIL":
+        staff = request.user
+        branch = staff.branch
+
+        product_id = request.POST.get("product")
+        quantity = int(request.POST.get("quantity"))
+        selling_price = float(request.POST.get("selling_price"))
+
+        product = Product.objects.get(id=product_id)
+
+        try:
+            staff_stock = StaffStock.objects.get(
+                staff=staff,
+                product=product
+            )
+        except StaffStock.DoesNotExist:
+            messages.error(request, "Insufficient stock.")
+            return redirect("retail_dashboard")
+
+        # Prevent selling more than available
+        if quantity > staff_stock.quantity:
+            messages.error(request, "Insufficient stock.")
+            return redirect("retail_dashboard")
+
+        # Deduct stock
+        staff_stock.quantity -= quantity
+        staff_stock.save()
+
+        # Create sale record
+        RetailSale.objects.create(
+            staff=staff,
+            branch=branch,
+            product=product,
+            quantity=quantity,
+            selling_price=selling_price
+        )
+        messages.success(request, "Sale recorded successfully.")
+
+    return redirect("retail_dashboard")
 
 @login_required
 def multichoice_dashboard(request):
