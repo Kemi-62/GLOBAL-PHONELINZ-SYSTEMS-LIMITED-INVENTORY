@@ -3,304 +3,243 @@
 
 {% block content %}
 <style>
-    .section { display: none; }
+    .section { display: none; transition: opacity 0.3s ease; }
     .active { display: block; }
-    button.nav-btn { 
-        margin: 5px; 
-        padding: 10px 15px; 
-        cursor: pointer; 
-        border-radius: 4px; 
-        border: 1px solid #ccc; 
-        background: #f8f9fa; 
-        font-weight: bold;
-    }
-    button.nav-btn:hover { background: #e2e6ea; }
     .nav-tabs { 
-        margin-bottom: 20px; 
-        border-bottom: 1px solid #ddd; 
-        padding-bottom: 15px; 
-        display: flex;
-        flex-wrap: wrap;
+        display: flex; 
+        gap: 10px; 
+        margin-bottom: 2rem; 
+        border-bottom: 1px solid #dee2e6; 
+        padding-bottom: 10px;
+        overflow-x: auto;
     }
-    table { width: 100%; border-collapse: collapse; margin-top: 10px; margin-bottom: 20px; border: 1px solid #ddd; }
-    th, td { border: 1px solid #ddd; padding: 12px; text-align: left; }
-    th { background-color: #f8f9fa; }
-    .card { border: 1px solid #ccc; padding: 15px; margin-bottom: 15px; border-radius: 8px; background: #fff; box-shadow: 0 2px 4px rgba(0,0,0,0.05); }
-    h3, h4 { color: #333; margin-top: 20px; }
+    .nav-btn {
+        padding: 0.8rem 1.2rem;
+        border: none;
+        background: none;
+        color: #666;
+        font-weight: 600;
+        cursor: pointer;
+        border-radius: 6px;
+        white-space: nowrap;
+    }
+    .nav-btn:hover { background: #eee; }
+    .nav-btn.active-tab { background: var(--accent-color); color: white; }
+    
+    .grid-summary {
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
+        gap: 1.5rem;
+        margin-bottom: 2rem;
+    }
 </style>
 
 <script>
-function showSection(id) {
+function showSection(id, btn) {
     document.querySelectorAll('.section').forEach(s => s.classList.remove('active'));
     document.getElementById(id).classList.add('active');
+    document.querySelectorAll('.nav-btn').forEach(b => b.classList.remove('active-tab'));
+    btn.classList.add('active-tab');
 }
 </script>
 
-<h1>Manager Dashboard</h1>
+<div class="card">
+    <h2 style="margin: 0;">Manager Dashboard</h2>
+    <p style="color: #666;">Branch: <strong>{{ request.user.branch.name }}</strong></p>
+</div>
 
 <div class="nav-tabs">
-    <button class="nav-btn" onclick="showSection('telecom')">Telecom Reports</button>
-    <button class="nav-btn" onclick="showSection('retail')">Retail Inventory</button>
-    <button class="nav-btn" onclick="showSection('multichoice')">MultiChoice</button>
-    <button class="nav-btn" onclick="showSection('summary')">Daily Summary</button>
+    <button class="nav-btn active-tab" onclick="showSection('telecom', this)">Telecom Reports</button>
+    <button class="nav-btn" onclick="showSection('retail', this)">Retail Inventory</button>
+    <button class="nav-btn" onclick="showSection('multichoice', this)">MultiChoice</button>
+    <button class="nav-btn" onclick="showSection('summary', this)">Daily Summary</button>
 </div>
 
 <!-- TELECOM SECTION -->
 <div id="telecom" class="section active">
-    <h3>Telecom Reports</h3>
-    
     {% if pending_approvals %}
-        <div style="background: #fff3cd; padding: 15px; border: 1px solid #ffeeba; border-radius: 8px; margin-bottom: 20px;">
-            <h4 style="margin-top: 0; color: #856404;">⚠ Pending Approvals (Target Exceeded)</h4>
-            {% for activity in pending_approvals %}
-                <div class="card">
-                    <p style="margin: 0;">
-                        <strong>Staff:</strong> {{ activity.staff.username }} |
-                        <strong>Device:</strong> {{ activity.device_tag.tag_name|default:"None" }} |
-                        <strong>Qty:</strong> {{ activity.quantity }}
-                        <a href="{% url 'approve_activity' activity.id %}" style="margin-left: 20px; color: #28a745; font-weight: bold; text-decoration: none; border: 1px solid #28a745; padding: 2px 8px; border-radius: 4px;">Approve</a>
-                    </p>
-                </div>
-            {% endfor %}
+        <div class="card" style="background: #fffcf0; border-left: 5px solid var(--warning-color);">
+            <h3 style="margin-top: 0; color: var(--warning-color);">⚠ Pending Approvals (Target Exceeded)</h3>
+            <div style="display: grid; gap: 10px;">
+                {% for activity in pending_approvals %}
+                    <div style="display: flex; justify-content: space-between; align-items: center; padding: 10px; background: white; border-radius: 6px; border: 1px solid #ffeeba;">
+                        <span>
+                            <strong>{{ activity.staff.username }}</strong> | 
+                            {{ activity.device_tag.tag_name|default:"Generic" }} | 
+                            Qty: {{ activity.quantity }}
+                        </span>
+                        <a href="{% url 'approve_activity' activity.id %}" class="btn btn-success" style="padding: 5px 15px; font-size: 0.9rem;">Approve</a>
+                    </div>
+                {% endfor %}
+            </div>
         </div>
     {% endif %}
 
-    <h4>This Month's Target Performance</h4>
-    {% if target_data %}
-    <table>
-        <thead>
-            <tr>
-                <th>Service Type</th>
-                <th>Target</th>
-                <th>Achieved So Far</th>
-                <th>Remaining</th>
-                <th>Completion (%)</th>
-            </tr>
-        </thead>
-        <tbody>
-            {% for item in target_data %}
-            <tr>
-                <td>{{ item.service_type|title }}</td>
-                <td>{{ item.target_number }}</td>
-                <td>{{ item.achieved }}</td>
-                <td>{{ item.remaining }}</td>
-                <td>{{ item.percentage }}%</td>
-            </tr>
-            {% endfor %}
-        </tbody>
-    </table>
-    {% else %}
-    <p>No targets set for this month.</p>
-    {% endif %}
+    <div class="card">
+        <h3>Target Performance (This Month)</h3>
+        <table>
+            <thead>
+                <tr>
+                    <th>Service Type</th>
+                    <th style="text-align: right;">Target</th>
+                    <th style="text-align: right;">Achieved</th>
+                    <th style="text-align: right;">Remaining</th>
+                    <th style="text-align: right;">Progress</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for item in target_data %}
+                <tr>
+                    <td>{{ item.service_type|title }}</td>
+                    <td style="text-align: right;">{{ item.target_number }}</td>
+                    <td style="text-align: right; color: var(--success-color); font-weight: 600;">{{ item.achieved }}</td>
+                    <td style="text-align: right;">{{ item.remaining }}</td>
+                    <td style="text-align: right;">
+                        <span class="badge {% if item.percentage >= 100 %}badge-success{% elif item.percentage > 0 %}badge-warning{% else %}badge-danger{% endif %}">
+                            {{ item.percentage }}%
+                        </span>
+                    </td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
 
-    <h4>This Month's Service Activities</h4>
-    {% if activities %}
-    <table>
-        <thead>
-            <tr>
-                <th>Staff</th>
-                <th>Service Type</th>
-                <th>Quantity</th>
-                <th>Device Tag</th>
-                <th>Date</th>
-            </tr>
-        </thead>
-        <tbody>
-            {% for activity in activities %}
-            <tr>
-                <td>{{ activity.staff.username }}</td>
-                <td>{{ activity.service_type|title }}</td>
-                <td>{{ activity.quantity }}</td>
-                <td>{{ activity.device_tag.tag_name|default:"-" }}</td>
-                <td>{{ activity.date }}</td>
-            </tr>
-            {% endfor %}
-        </tbody>
-    </table>
-    {% else %}
-    <p>No service activities logged this month.</p>
-    {% endif %}
+    <div class="card">
+        <h3>Recent Service Activities</h3>
+        <table>
+            <thead>
+                <tr>
+                    <th>Staff</th>
+                    <th>Service</th>
+                    <th style="text-align: right;">Qty</th>
+                    <th>Device</th>
+                    <th>Date</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for activity in activities|slice:":10" %}
+                <tr>
+                    <td>{{ activity.staff.username }}</td>
+                    <td>{{ activity.service_type|title }}</td>
+                    <td style="text-align: right;">{{ activity.quantity }}</td>
+                    <td>{{ activity.device_tag.tag_name|default:"-" }}</td>
+                    <td>{{ activity.date|date:"M d, Y" }}</td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
 </div>
 
 <!-- RETAIL INVENTORY SECTION -->
 <div id="retail" class="section">
-    <h3>Retail Inventory Management</h3>
-
-    <div class="row" style="display: flex; gap: 20px; flex-wrap: wrap; margin-bottom: 20px;">
+    <div class="row" style="display: flex; gap: 2rem; flex-wrap: wrap; margin-bottom: 2rem;">
         <div class="card" style="flex: 1; min-width: 300px;">
-            <h4>Add Stock to Safe (From Director)</h4>
+            <h3>Add Stock to Safe</h3>
             <form method="POST" action="{% url 'add_stock_to_safe' %}">
                 {% csrf_token %}
-                <div style="margin-bottom: 10px;">
-                    <label>Product:</label><br>
-                    <select name="product" required style="width: 100%; padding: 8px;">
-                        {% for stock in safe_stocks %}
-                            <option value="{{ stock.product.id }}">
-                                {{ stock.product.model_name }}
-                            </option>
-                        {% endfor %}
-                    </select>
-                </div>
-                <div style="margin-bottom: 10px;">
-                    <label>Quantity Received:</label><br>
-                    <input type="number" name="quantity" placeholder="Quantity Received" required style="width: 100%; padding: 8px; box-sizing: border-box;">
-                </div>
-                <button type="submit" class="nav-btn" style="background: #28a745; color: white; border: none; width: 100%;">Add to Safe</button>
+                <label>Product</label>
+                <select name="product" required>
+                    {% for stock in safe_stocks %}
+                        <option value="{{ stock.product.id }}">{{ stock.product.model_name }}</option>
+                    {% endfor %}
+                </select>
+                <label style="display: block; margin-top: 1rem;">Quantity Received</label>
+                <input type="number" name="quantity" required placeholder="0">
+                <button type="submit" class="btn btn-success" style="width: 100%; margin-top: 1.5rem;">Update Safe</button>
             </form>
         </div>
 
         <div class="card" style="flex: 1; min-width: 300px;">
-            <h4>Release Stock to Retail Staff</h4>
+            <h3>Release to Staff</h3>
             <form method="POST" action="{% url 'release_stock' %}">
                 {% csrf_token %}
-                <div style="margin-bottom: 10px;">
-                    <label>Staff Member:</label><br>
-                    <select name="staff" required style="width: 100%; padding: 8px;">
-                        {% for user in request.user.branch.user_set.all %}
-                            {% if user.role == "RETAIL" %}
-                                <option value="{{ user.id }}">{{ user.username }}</option>
-                            {% endif %}
-                        {% endfor %}
-                    </select>
-                </div>
-                <div style="margin-bottom: 10px;">
-                    <label>Product:</label><br>
-                    <select name="product" required style="width: 100%; padding: 8px;">
-                        {% for stock in safe_stocks %}
-                            <option value="{{ stock.product.id }}">
-                                {{ stock.product.model_name }} ({{ stock.quantity }} available)
-                            </option>
-                        {% endfor %}
-                    </select>
-                </div>
-                <div style="margin-bottom: 10px;">
-                    <label>Quantity to Release:</label><br>
-                    <input type="number" name="quantity" placeholder="Quantity to Release" required style="width: 100%; padding: 8px; box-sizing: border-box;">
-                </div>
-                <button type="submit" class="nav-btn" style="background: #007bff; color: white; border: none; width: 100%;">Release</button>
+                <label>Staff Member</label>
+                <select name="staff" required>
+                    {% for user in request.user.branch.user_set.all %}
+                        {% if user.role == "RETAIL" %}
+                            <option value="{{ user.id }}">{{ user.username }}</option>
+                        {% endif %}
+                    {% endfor %}
+                </select>
+                <label style="display: block; margin-top: 1rem;">Product</label>
+                <select name="product" required>
+                    {% for stock in safe_stocks %}
+                        <option value="{{ stock.product.id }}">{{ stock.product.model_name }} ({{ stock.quantity }} in safe)</option>
+                    {% endfor %}
+                </select>
+                <label style="display: block; margin-top: 1rem;">Quantity</label>
+                <input type="number" name="quantity" required placeholder="0">
+                <button type="submit" class="btn btn-primary" style="width: 100%; margin-top: 1.5rem;">Release Stock</button>
             </form>
         </div>
     </div>
 
-    <h3>Branch Safe Stock</h3>
-    <table>
-        <thead>
-            <tr>
-                <th>Product</th>
-                <th>Quantity</th>
-            </tr>
-        </thead>
-        <tbody>
-            {% for stock in safe_stocks %}
-            <tr>
-                <td>{{ stock.product.model_name }}</td>
-                <td>{{ stock.quantity }}</td>
-            </tr>
-            {% empty %}
-            <tr>
-                <td colspan="2" style="text-align: center; padding: 20px;">No stock available in safe.</td>
-            </tr>
-            {% endfor %}
-        </tbody>
-    </table>
-
-    <h4>Today's Movements</h4>
-
-    <table>
-        <thead>
-            <tr>
-                <th>Product</th>
-                <th>Type</th>
-                <th>Quantity</th>
-                <th>By</th>
-                <th>Time</th>
-            </tr>
-        </thead>
-        <tbody>
-            {% for movement in today_movements %}
-            <tr>
-                <td>{{ movement.product.model_name }}</td>
-                <td>{{ movement.get_movement_type_display }}</td>
-                <td>{{ movement.quantity }}</td>
-                <td>{{ movement.performed_by.username }}</td>
-                <td>{{ movement.time|time:"H:i" }}</td>
-            </tr>
-            {% empty %}
-            <tr>
-                <td colspan="5" style="text-align: center; padding: 20px;">No stock movements recorded today.</td>
-            </tr>
-            {% endfor %}
-        </tbody>
-    </table>
-
-    <hr>
-    <h3>Retail Summary Today</h3>
-    <div class="row" style="display: flex; gap: 20px; margin-bottom: 20px;">
-        <div class="card" style="flex: 1; border-left: 5px solid #17a2b8;">
-            <p style="margin: 0;"><strong>Total Items Sold:</strong> {{ total_retail_quantity }}</p>
+    <div class="grid-summary">
+        <div class="card" style="border-left: 5px solid #17a2b8;">
+            <p class="stat-label">Items Sold Today</p>
+            <p class="stat-value">{{ total_retail_quantity }}</p>
         </div>
-        <div class="card" style="flex: 1; border-left: 5px solid #28a745;">
-            <p style="margin: 0;"><strong>Total Revenue:</strong> ₦{{ total_retail_revenue|floatformat:2 }}</p>
+        <div class="card" style="border-left: 5px solid var(--success-color);">
+            <p class="stat-label">Today's Revenue</p>
+            <p class="stat-value">₦{{ total_retail_revenue|floatformat:2 }}</p>
         </div>
     </div>
 
-    <h4>Sales Per Staff</h4>
-    <table>
-        <thead>
-            <tr>
-                <th>Staff</th>
-                <th style="text-align: right;">Total Quantity</th>
-                <th style="text-align: right;">Total Revenue</th>
-            </tr>
-        </thead>
-        <tbody>
-            {% for staff in sales_per_staff %}
-            <tr>
-                <td>{{ staff.staff__username }}</td>
-                <td style="text-align: right;">{{ staff.total_qty }}</td>
-                <td style="text-align: right;">₦{{ staff.total_revenue|floatformat:2 }}</td>
-            </tr>
-            {% empty %}
-            <tr><td colspan="3" style="text-align: center;">No sales recorded today.</td></tr>
-            {% endfor %}
-        </tbody>
-    </table>
-
-    <h4>Top Selling Products Today</h4>
-    <table>
-        <thead>
-            <tr>
-                <th>Product</th>
-                <th style="text-align: right;">Total Sold</th>
-            </tr>
-        </thead>
-        <tbody>
-            {% for product in top_products %}
-            <tr>
-                <td>{{ product.product__model_name }}</td>
-                <td style="text-align: right;">{{ product.total_qty }}</td>
-            </tr>
-            {% empty %}
-            <tr><td colspan="2" style="text-align: center;">No product sales today.</td></tr>
-            {% endfor %}
-        </tbody>
-    </table>
+    <div class="card">
+        <h3>Safe Stock Inventory</h3>
+        <table>
+            <thead>
+                <tr>
+                    <th>Product</th>
+                    <th style="text-align: right;">Quantity</th>
+                    <th>Status</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for stock in safe_stocks %}
+                <tr>
+                    <td>{{ stock.product.model_name }}</td>
+                    <td style="text-align: right; font-weight: 600;">{{ stock.quantity }}</td>
+                    <td>
+                        {% if stock.quantity < 5 %}
+                            <span class="badge badge-danger">Low Stock</span>
+                        {% else %}
+                            <span class="badge badge-success">Good</span>
+                        {% endif %}
+                    </td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
 </div>
 
 <!-- MULTICHOICE SECTION -->
 <div id="multichoice" class="section">
-    <h3>MultiChoice Summary Today</h3>
-    <div class="card" style="background: #f8f9fa; border-left: 5px solid #007bff;">
-        <p style="font-size: 1.3em; margin: 0; color: #333;"><strong>Total Activities Today:</strong> {{ multichoice_today }}</p>
+    <div class="card" style="text-align: center; padding: 3rem;">
+        <div style="font-size: 3rem; color: var(--accent-color); margin-bottom: 1rem;">{{ multichoice_today }}</div>
+        <h3>Total MultiChoice Activities Today</h3>
+        <p style="color: #666;">Subscriptions and activations processed across the branch.</p>
     </div>
 </div>
 
 <!-- DAILY SUMMARY SECTION -->
 <div id="summary" class="section">
-    <h3>Daily Branch Summary</h3>
-    <div class="card" style="background: #f8f9fa; border-left: 5px solid #28a745;">
-        <p style="font-size: 1.1em; margin-bottom: 10px;"><strong>Total Stock Released Today:</strong> {{ total_stock_out }} units</p>
-        <p style="font-size: 1.1em; margin: 0;"><strong>Total MultiChoice Activity:</strong> {{ multichoice_today }} subscriptions</p>
+    <div class="grid-summary">
+        <div class="card" style="border-left: 5px solid var(--accent-color);">
+            <p class="stat-label">Stock Out Today</p>
+            <p class="stat-value">{{ total_stock_out }}</p>
+        </div>
+        <div class="card" style="border-left: 5px solid var(--success-color);">
+            <p class="stat-label">Retail Revenue</p>
+            <p class="stat-value">₦{{ total_retail_revenue|floatformat:2 }}</p>
+        </div>
+        <div class="card" style="border-left: 5px solid var(--warning-color);">
+            <p class="stat-label">MultiChoice Total</p>
+            <p class="stat-value">{{ multichoice_today }}</p>
+        </div>
     </div>
 </div>
 {% endblock %}

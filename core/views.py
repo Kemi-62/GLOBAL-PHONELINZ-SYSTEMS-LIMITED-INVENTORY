@@ -280,6 +280,9 @@ def manager_dashboard(request):
         total_qty=Sum("quantity")
     ).order_by("-total_qty")[:5]
 
+    def replace_filter(value, arg):
+        return value.replace(arg.split(' ')[0], arg.split(' ')[1])
+
     context = {
         'target_data': target_data,
         'activities': activities,
@@ -343,7 +346,7 @@ def record_retail_sale(request):
 
         # Prevent selling more than available
         if quantity > staff_stock.quantity:
-            messages.error(request, "Insufficient stock.")
+            messages.error(request, f"Insufficient stock. You only have {staff_stock.quantity} units.")
             return redirect("retail_dashboard")
 
         # Deduct stock

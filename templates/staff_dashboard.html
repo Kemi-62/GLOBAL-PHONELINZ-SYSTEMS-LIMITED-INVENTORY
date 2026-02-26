@@ -1,94 +1,118 @@
 {% extends "base.html" %}
 {% block content %}
 
-<h2>Staff Dashboard</h2>
-
-<h3>Submit Service Activity</h3>
-
-<form method="POST">
-    {% csrf_token %}
-    
-    <label>Service Type:</label>
-<select name="service_type" required>
-    <option value="">Select Service</option>
-    <option value="SIM_REG">SIM Registration</option>
-    <option value="SIM_SWAP">SIM Swap</option>
-    <option value="SIM_RET">SIM Retrieval</option>
-    <option value="NIN_LINK">NIN Linking</option>
-    <option value="MIFI">MiFi Sale</option>
-</select>
-<br><br>
-
-    <label>Quantity:</label>
-    <input type="number" name="quantity" required><br><br>
-
-    <label>Device Tag:</label>
-    <select name="device_tag">
-        <option value="">None</option>
-        {% for device in device_tags %}
-            <option value="{{ device.id }}">{{ device.tag_name }}</option>
-        {% endfor %}
-    </select><br><br>
-
-    <button type="submit">Submit</button>
-</form>
-
-<hr>
-
-<h2>Monthly Summary</h2>
-
-<div class="card" style="padding:15px; border:1px solid #ddd; border-radius:8px; background:#f8f9fa; margin-bottom:20px;">
-    <strong>Total Approved This Month:</strong> {{ monthly_total }}
+<div class="card">
+    <h2 style="margin-top: 0;">Staff Dashboard</h2>
+    <p style="color: #666;">Submit your daily activities and track your progress.</p>
 </div>
 
-{% if pending_activities %}
-    <div class="card" style="background:#fff3cd; padding:15px; border:1px solid #ffeeba; border-radius:8px; margin-bottom:20px;">
-        <strong style="color:#856404;">Pending Approvals:</strong>
-        <ul style="margin-top:10px;">
-            {% for item in pending_activities %}
-                <li>
-                    {{ item.device_tag.tag_name|default:"Generic" }} - {{ item.quantity }} units
-                </li>
-            {% endfor %}
-        </ul>
+<div class="row" style="display: flex; gap: 2rem; flex-wrap: wrap;">
+    <div style="flex: 1; min-width: 350px;">
+        <div class="card">
+            <h3>Submit Service Activity</h3>
+            <form method="POST">
+                {% csrf_token %}
+                
+                <div style="margin-bottom: 1rem;">
+                    <label>Service Type:</label>
+                    <select name="service_type" required>
+                        <option value="">Select Service</option>
+                        <option value="SIM_REG">SIM Registration</option>
+                        <option value="SIM_SWAP">SIM Swap</option>
+                        <option value="SIM_RET">SIM Retrieval</option>
+                        <option value="NIN_LINK">NIN Linking</option>
+                        <option value="MIFI">MiFi Sale</option>
+                    </select>
+                </div>
+
+                <div style="margin-bottom: 1rem;">
+                    <label>Quantity:</label>
+                    <input type="number" name="quantity" required placeholder="Enter amount">
+                </div>
+
+                <div style="margin-bottom: 1.5rem;">
+                    <label>Device Tag:</label>
+                    <select name="device_tag">
+                        <option value="">None</option>
+                        {% for device in device_tags %}
+                            <option value="{{ device.id }}">{{ device.tag_name }}</option>
+                        {% endfor %}
+                    </select>
+                </div>
+
+                <button type="submit" class="btn btn-primary" style="width: 100%;">Submit Activity</button>
+            </form>
+        </div>
     </div>
-{% endif %}
 
-<hr>
-
-<h3>SIM Registration Performance (Per Device)</h3>
-
-{% for item in device_progress %}
-    <div class="card" style="margin-bottom:15px; padding:15px; border:1px solid #ddd; border-radius:8px;">
-
-        <strong>Device: {{ item.device }}</strong><br>
-        Target: {{ item.target }}<br>
-        Achieved: {{ item.achieved }}<br>
-        Remaining: {{ item.remaining }}<br>
-
-        <div style="background:#e9ecef; height:24px; width:100%; margin-top:10px; border-radius:12px; overflow:hidden;">
-            <div style="
-                height:24px;
-                width:{{ item.percentage }}%;
-                background:{% if item.exceeded %}#dc3545{% else %}#28a745{% endif %};
-                text-align:center;
-                color:white;
-                font-size:14px;
-                line-height:24px;
-                transition: width 0.5s ease-in-out;">
-                {{ item.percentage }}%
-            </div>
+    <div style="flex: 1; min-width: 350px;">
+        <div class="card" style="border-left: 5px solid var(--accent-color);">
+            <h3 style="margin-top: 0;">Monthly Total</h3>
+            <div style="font-size: 2.5rem; font-weight: bold; color: var(--primary-color);">{{ monthly_total }}</div>
+            <p style="color: #666; margin-top: 0.5rem;">Total Approved Units This Month</p>
         </div>
 
-        {% if item.exceeded %}
-            <p style="color:#dc3545; margin-top:10px; font-weight:bold;">
-                ⚠ Target Exceeded — Awaiting Manager Approval
-            </p>
+        {% if pending_activities %}
+            <div class="card" style="background:#fffcf0; border-left: 5px solid var(--warning-color);">
+                <h3 style="margin-top: 0; color: var(--warning-color);">⚠ Pending Approvals</h3>
+                <p>These activities exceeded your target and are awaiting manager review:</p>
+                <ul style="padding-left: 1.2rem; margin-bottom: 0;">
+                    {% for item in pending_activities %}
+                        <li style="margin-bottom: 0.5rem;">
+                            <strong>{{ item.device_tag.tag_name|default:"Generic" }}</strong>: {{ item.quantity }} units
+                        </li>
+                    {% endfor %}
+                </ul>
+            </div>
         {% endif %}
-
     </div>
-{% empty %}
-    <p>No SIM Registration targets set for this month.</p>
-{% endfor %}
+</div>
+
+<h3 style="margin-top: 2rem; border-bottom: 2px solid #eee; padding-bottom: 0.5rem;">SIM Registration Performance</h3>
+
+<div class="row" style="display: grid; grid-template-columns: repeat(auto-fill, minmax(300px, 1fr)); gap: 1.5rem; margin-top: 1.5rem;">
+    {% for item in device_progress %}
+        <div class="card" style="margin-bottom: 0;">
+            <h4 style="margin: 0 0 1rem 0; color: var(--secondary-color);">{{ item.device }}</h4>
+            
+            <div style="display: flex; justify-content: space-between; margin-bottom: 0.5rem;">
+                <span style="color: #666;">Target</span>
+                <span style="font-weight: 600;">{{ item.target }}</span>
+            </div>
+            <div style="display: flex; justify-content: space-between; margin-bottom: 0.5rem;">
+                <span style="color: #666;">Achieved</span>
+                <span style="font-weight: 600; color: var(--success-color);">{{ item.achieved }}</span>
+            </div>
+            <div style="display: flex; justify-content: space-between; margin-bottom: 1.5rem;">
+                <span style="color: #666;">Remaining</span>
+                <span style="font-weight: 600; color: {% if item.remaining > 0 %}#666{% else %}var(--success-color){% endif %};">
+                    {{ item.remaining }}
+                </span>
+            </div>
+
+            <div style="background:#e9ecef; height:12px; width:100%; border-radius:6px; overflow:hidden;">
+                <div style="
+                    height:100%;
+                    width:{{ item.percentage }}%;
+                    background:{% if item.exceeded %}var(--danger-color){% else %}var(--success-color){% endif %};
+                    transition: width 0.5s ease-in-out;">
+                </div>
+            </div>
+            <div style="text-align: right; margin-top: 0.5rem; font-size: 0.85rem; font-weight: bold; color: #666;">
+                {{ item.percentage }}% Complete
+            </div>
+
+            {% if item.exceeded %}
+                <div style="margin-top: 1rem; padding: 0.5rem; background: #fff5f5; border-radius: 4px; border: 1px solid #fed7d7; color: var(--danger-color); font-size: 0.85rem; font-weight: 600; text-align: center;">
+                    Target Exceeded - Approval Required
+                </div>
+            {% endif %}
+        </div>
+    {% empty %}
+        <div class="card" style="grid-column: 1 / -1; text-align: center; padding: 3rem;">
+            <p style="color: #666; font-size: 1.1rem;">No SIM Registration targets set for this month.</p>
+        </div>
+    {% endfor %}
+</div>
 
 {% endblock %}
