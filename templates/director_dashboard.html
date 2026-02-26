@@ -1,74 +1,164 @@
 {% extends "base.html" %}
 {% block content %}
-<h2>Director Analytics Dashboard</h2>
+<style>
+    .card { border: 1px solid #ddd; padding: 20px; border-radius: 8px; background: #fff; box-shadow: 0 2px 4px rgba(0,0,0,0.05); margin-bottom: 20px; }
+    table { width: 100%; border-collapse: collapse; margin-top: 10px; border: 1px solid #ddd; }
+    th, td { border: 1px solid #ddd; padding: 12px; text-align: left; }
+    th { background-color: #f8f9fa; }
+    .stat-card { flex: 1; min-width: 200px; text-align: center; }
+    .stat-value { font-size: 1.5em; font-weight: bold; color: #333; }
+    .stat-label { color: #666; font-size: 0.9em; }
+    .section-title { margin-top: 30px; border-bottom: 2px solid #eee; padding-bottom: 10px; color: #333; }
+</style>
 
-<form method="GET" id="filterForm">
+<h2>Director Retail Analytics</h2>
+
+<div class="row" style="display: flex; gap: 20px; flex-wrap: wrap;">
+    <div class="card stat-card" style="border-left: 5px solid #17a2b8;">
+        <div class="stat-value">{{ total_quantity }}</div>
+        <div class="stat-label">Total Items Sold Today</div>
+    </div>
+    <div class="card stat-card" style="border-left: 5px solid #28a745;">
+        <div class="stat-value">₦{{ total_revenue|floatformat:2 }}</div>
+        <div class="stat-label">Total Revenue Today</div>
+    </div>
+</div>
+
+<h3 class="section-title">Telecom Performance (SIM Reg)</h3>
+<form method="GET" id="filterForm" style="margin-bottom: 20px;">
     <label>Filter by Device:</label>
-    <select name="device" onchange="this.form.submit()">
+    <select name="device" onchange="this.form.submit()" style="padding: 8px; border-radius: 4px; border: 1px solid #ddd;">
         <option value="">All Devices</option>
         {% for device in device_tags %}
-            <option value="{{ device.id }}"
-                {% if selected_device == device.id|stringformat:"s" %}
-                    selected
-                {% endif %}
-            >
+            <option value="{{ device.id }}" {% if selected_device == device.id|stringformat:"s" %}selected{% endif %}>
                 {{ device.tag_name }}
             </option>
         {% endfor %}
     </select>
 </form>
 
-<hr>
-
 <div class="row" style="display: flex; gap: 20px; flex-wrap: wrap;">
-    <div class="col-md-6" style="flex: 1; min-width: 300px;">
-        <h3>Branch Performance (This Month)</h3>
-        <table border="1" cellpadding="10" style="width:100%; border-collapse: collapse; margin-top:10px; border: 1px solid #ddd;">
-            <thead style="background-color: #f8f9fa;">
+    <div style="flex: 1; min-width: 300px;">
+        <table>
+            <thead>
                 <tr>
-                    <th style="text-align:left;">Branch</th>
+                    <th>Branch</th>
                     <th style="text-align:right;">Total SIM Registrations</th>
                 </tr>
             </thead>
             <tbody>
                 {% for branch in branch_summary %}
                     <tr>
-                        <td style="border: 1px solid #ddd; padding: 8px;">{{ branch.branch__name }}</td>
-                        <td style="border: 1px solid #ddd; padding: 8px; text-align:right;">{{ branch.total }}</td>
+                        <td>{{ branch.branch__name }}</td>
+                        <td style="text-align:right;">{{ branch.total }}</td>
                     </tr>
                 {% empty %}
-                    <tr>
-                        <td colspan="2" style="text-align:center; padding:20px; border: 1px solid #ddd;">No data available for the selected filters.</td>
-                    </tr>
+                    <tr><td colspan="2" style="text-align:center; padding:20px;">No telecom data available.</td></tr>
                 {% endfor %}
             </tbody>
         </table>
     </div>
-    
-    <div class="col-md-6" style="flex: 1; min-width: 300px;">
-        <h3>Visual Representation</h3>
-        <div style="background: white; padding: 15px; border-radius: 8px; border: 1px solid #ddd; margin-top: 10px; box-shadow: 0 2px 4px rgba(0,0,0,0.05);">
+    <div style="flex: 1; min-width: 300px;">
+        <div class="card">
             <canvas id="branchChart" width="400" height="250"></canvas>
         </div>
     </div>
 </div>
 
-<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+<h3 class="section-title">Retail Branch Performance</h3>
+<table>
+    <thead>
+        <tr>
+            <th>Branch</th>
+            <th style="text-align: right;">Total Quantity</th>
+            <th style="text-align: right;">Total Revenue</th>
+        </tr>
+    </thead>
+    <tbody>
+        {% for branch in branch_performance %}
+        <tr>
+            <td>{{ branch.branch__name }}</td>
+            <td style="text-align: right;">{{ branch.total_qty }}</td>
+            <td style="text-align: right;">₦{{ branch.total_revenue|floatformat:2 }}</td>
+        </tr>
+        {% empty %}
+        <tr><td colspan="3" style="text-align: center;">No retail data today.</td></tr>
+        {% endfor %}
+    </tbody>
+</table>
 
+<h3 class="section-title">Top Performing Staff (Retail)</h3>
+<table>
+    <thead>
+        <tr>
+            <th>Staff</th>
+            <th>Branch</th>
+            <th style="text-align: right;">Quantity</th>
+            <th style="text-align: right;">Revenue</th>
+        </tr>
+    </thead>
+    <tbody>
+        {% for staff in staff_performance %}
+        <tr>
+            <td>{{ staff.staff__username }}</td>
+            <td>{{ staff.branch__name }}</td>
+            <td style="text-align: right;">{{ staff.total_qty }}</td>
+            <td style="text-align: right;">₦{{ staff.total_revenue|floatformat:2 }}</td>
+        </tr>
+        {% endfor %}
+    </tbody>
+</table>
+
+<div class="row" style="display: flex; gap: 20px; flex-wrap: wrap;">
+    <div style="flex: 1; min-width: 300px;">
+        <h3 class="section-title">Top Selling Products</h3>
+        <table>
+            <thead>
+                <tr>
+                    <th>Product</th>
+                    <th style="text-align: right;">Total Sold</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for product in top_products %}
+                <tr>
+                    <td>{{ product.product__model_name }}</td>
+                    <td style="text-align: right;">{{ product.total_qty }}</td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+    <div style="flex: 1; min-width: 300px;">
+        <h3 class="section-title" style="color: #dc3545;">Low Stock Alert (Below 5)</h3>
+        <table>
+            <thead>
+                <tr>
+                    <th>Branch</th>
+                    <th>Product</th>
+                    <th style="text-align: right;">Quantity</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for stock in low_stock %}
+                <tr>
+                    <td>{{ stock.branch.name }}</td>
+                    <td>{{ stock.product.model_name }}</td>
+                    <td style="text-align: right; color: #dc3545; font-weight: bold;">{{ stock.quantity }}</td>
+                </tr>
+                {% empty %}
+                <tr><td colspan="3" style="text-align: center;">No low stock alerts.</td></tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+</div>
+
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
 <script>
     document.addEventListener('DOMContentLoaded', function() {
-        const labels = [
-            {% for branch in branch_summary %}
-                "{{ branch.branch__name }}",
-            {% endfor %}
-        ];
-
-        const data = [
-            {% for branch in branch_summary %}
-                {{ branch.total }},
-            {% endfor %}
-        ];
-
+        const labels = [{% for branch in branch_summary %}"{{ branch.branch__name }}",{% endfor %}];
+        const data = [{% for branch in branch_summary %}{{ branch.total }},{% endfor %}];
         const ctx = document.getElementById('branchChart').getContext('2d');
         new Chart(ctx, {
             type: 'bar',
@@ -84,23 +174,8 @@
             },
             options: {
                 responsive: true,
-                maintainAspectRatio: true,
-                scales: {
-                    y: {
-                        beginAtZero: true,
-                        ticks: {
-                            precision: 0
-                        }
-                    }
-                },
-                plugins: {
-                    legend: {
-                        display: false
-                    },
-                    tooltip: {
-                        enabled: true
-                    }
-                }
+                scales: { y: { beginAtZero: true, ticks: { precision: 0 } } },
+                plugins: { legend: { display: false } }
             }
         });
     });

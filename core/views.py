@@ -373,9 +373,10 @@ def director_dashboard(request):
     if not request.user.is_superuser and request.user.role not in ['DIRECTOR', 'SUPERADMIN']:
         return HttpResponseForbidden("Not allowed")
 
-    today = date.today()
+    today = timezone.now().date()
     device_filter = request.GET.get("device")
 
+    # ---------------- TELECOM DATA ----------------
     activities = ServiceActivity.objects.filter(
         date__year=today.year,
         date__month=today.month,
@@ -391,10 +392,56 @@ def director_dashboard(request):
 
     device_tags = DeviceTag.objects.all()
 
+    # ---------------- ALL RETAIL SALES TODAY ----------------
+    all_sales_today = RetailSale.objects.filter(date=today)
+
+    total_quantity = all_sales_today.aggregate(
+        total=Sum("quantity")
+    )["total"] or 0
+
+    total_revenue = all_sales_today.aggregate(
+        total=Sum(F("quantity") * F("selling_price"))
+    )["total"] or 0
+
+    # ---------------- SALES PER BRANCH ----------------
+    branch_performance = all_sales_today.values(
+        "branch__name"
+    ).annotate(
+        total_qty=Sum("quantity"),
+        total_revenue=Sum(F("quantity") * F("selling_price"))
+    ).order_by("-total_revenue")
+
+    # ---------------- TOP STAFF ----------------
+    staff_performance = all_sales_today.values(
+        "staff__username",
+        "branch__name"
+    ).annotate(
+        total_qty=Sum("quantity"),
+        total_revenue=Sum(F("quantity") * F("selling_price"))
+    ).order_by("-total_revenue")[:10]
+
+    # ---------------- TOP PRODUCTS ----------------
+    top_products = all_sales_today.values(
+        "product__model_name"
+    ).annotate(
+        total_qty=Sum("quantity")
+    ).order_by("-total_qty")[:10]
+
+    # ---------------- LOW STOCK ALERT ----------------
+    low_stock = BranchSafeStock.objects.filter(
+        quantity__lt=5
+    )
+
     context = {
         "branch_summary": branch_summary,
         "device_tags": device_tags,
-        "selected_device": device_filter
+        "selected_device": device_filter,
+        "total_quantity": total_quantity,
+        "total_revenue": total_revenue,
+        "branch_performance": branch_performance,
+        "staff_performance": staff_performance,
+        "top_products": top_products,
+        "low_stock": low_stock,
     }
 
     return render(request, "director_dashboard.html", context)
