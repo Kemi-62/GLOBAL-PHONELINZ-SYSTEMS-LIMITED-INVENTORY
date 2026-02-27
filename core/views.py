@@ -233,6 +233,51 @@ def manager_dashboard(request):
     branch = request.user.branch
     today_date = timezone.now().date()
 
+    # ---------------- STOCK MOVEMENTS ----------------
+    today_movements = StockMovement.objects.filter(
+        branch=branch,
+        date=today_date
+    )
+
+    total_stock_out = today_movements.filter(
+        movement_type="OUT"
+    ).aggregate(total=Sum("quantity"))["total"] or 0
+
+    # ---------------- MULTICHOICE DATA ----------------
+    multichoice_today = MultiChoiceActivity.objects.filter(
+        staff__branch=branch,
+        date=today_date
+    ).aggregate(total=Sum("quantity"))["total"] or 0
+
+    # ---------------- RETAIL SALES TODAY ----------------
+    retail_sales_today = RetailSale.objects.filter(
+        branch=branch,
+        date=today_date
+    )
+
+    total_retail_quantity = retail_sales_today.aggregate(
+        total=Sum("quantity")
+    )["total"] or 0
+
+    total_retail_revenue = retail_sales_today.aggregate(
+        total=Sum(F("quantity") * F("selling_price"))
+    )["total"] or 0
+
+    # ---------------- SALES PER STAFF ----------------
+    sales_per_staff = retail_sales_today.values(
+        "staff__username"
+    ).annotate(
+        total_qty=Sum("quantity"),
+        total_revenue=Sum(F("quantity") * F("selling_price"))
+    )
+
+    # ---------------- TOP PRODUCTS ----------------
+    top_products = retail_sales_today.values(
+        "product__model_name"
+    ).annotate(
+        total_qty=Sum("quantity")
+    ).order_by("-total_qty")[:5]
+
     # ---------------- RETAIL DATA ----------------
     safe_stocks = BranchSafeStock.objects.filter(branch=branch)
     categories = RetailCategory.objects.all()
@@ -427,6 +472,7 @@ def add_stock_to_safe(request):
             product = Product.objects.create(
                 subcategory=subcategory,
                 subsubcategory=subsubcategory,
+                product_name=request.POST.get("product_name"),
                 model_name=request.POST.get("model_name"),
                 description=request.POST.get("description"),
                 imei_last_5=request.POST.get("imei"),
@@ -468,6 +514,7 @@ def staff_create_product(request):
         product = Product.objects.create(
             subcategory=subcategory,
             subsubcategory=subsubcategory,
+            product_name=request.POST.get("product_name"),
             model_name=request.POST.get("model_name"),
             description=request.POST.get("description"),
             imei_last_5=request.POST.get("imei"),

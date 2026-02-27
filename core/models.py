@@ -153,6 +153,7 @@ class RetailSubSubCategory(models.Model):
 class Product(models.Model):
     subsubcategory = models.ForeignKey(RetailSubSubCategory, on_delete=models.CASCADE, null=True, blank=True)
     subcategory = models.ForeignKey(RetailSubCategory, on_delete=models.CASCADE)
+    product_name = models.CharField(max_length=200, null=True, blank=True)
     model_name = models.CharField(max_length=100)
     description = models.TextField(null=True, blank=True)
     imei_last_5 = models.CharField(max_length=5, null=True, blank=True)
