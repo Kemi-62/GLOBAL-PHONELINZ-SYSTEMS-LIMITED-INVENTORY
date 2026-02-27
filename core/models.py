@@ -143,9 +143,19 @@ class RetailSubCategory(models.Model):
     def __str__(self):
         return f"{self.category.name} - {self.name}"
 
+class RetailSubSubCategory(models.Model):
+    subcategory = models.ForeignKey(RetailSubCategory, on_delete=models.CASCADE)
+    name = models.CharField(max_length=100)
+
+    def __str__(self):
+        return f"{self.subcategory} - {self.name}"
+
 class Product(models.Model):
+    subsubcategory = models.ForeignKey(RetailSubSubCategory, on_delete=models.CASCADE, null=True, blank=True)
     subcategory = models.ForeignKey(RetailSubCategory, on_delete=models.CASCADE)
     model_name = models.CharField(max_length=100)
+    description = models.TextField(null=True, blank=True)
+    imei_last_5 = models.CharField(max_length=5, null=True, blank=True)
 
     cost_price = models.DecimalField(max_digits=12, decimal_places=2)
     selling_price = models.DecimalField(max_digits=12, decimal_places=2)

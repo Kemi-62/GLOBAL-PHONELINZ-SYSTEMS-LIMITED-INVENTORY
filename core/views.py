@@ -6,7 +6,7 @@ from django.contrib.auth.decorators import login_required
 from datetime import date
 from django.db.models import Sum, F
 from django.utils import timezone
-from .models import User, Branch, DeviceTag, ServiceTarget, ServiceActivity, BranchSafeStock, StockMovement, MultiChoiceActivity, Product, StaffStock, RetailSale
+from .models import User, Branch, DeviceTag, ServiceTarget, ServiceActivity, BranchSafeStock, StockMovement, MultiChoiceActivity, Product, StaffStock, RetailSale, RetailCategory, RetailSubCategory, RetailSubSubCategory
 
 # -----------------------
 # Custom Login
@@ -233,61 +233,18 @@ def manager_dashboard(request):
     branch = request.user.branch
     today_date = timezone.now().date()
 
-    # ---------------- RETAIL SAFE STOCK ----------------
+    # ---------------- RETAIL DATA ----------------
     safe_stocks = BranchSafeStock.objects.filter(branch=branch)
-
-    today_movements = StockMovement.objects.filter(
-        branch=branch,
-        date=today_date
-    )
-
-    total_stock_out = today_movements.filter(
-        movement_type="OUT"
-    ).aggregate(total=Sum("quantity"))["total"] or 0
-
-    # ---------------- MULTICHOICE DATA ----------------
-    multichoice_today = MultiChoiceActivity.objects.filter(
-        staff__branch=branch,
-        date=today_date
-    ).aggregate(total=Sum("quantity"))["total"] or 0
-
-    # ---------------- RETAIL SALES TODAY ----------------
-    retail_sales_today = RetailSale.objects.filter(
-        branch=branch,
-        date=today_date
-    )
-
-    total_retail_quantity = retail_sales_today.aggregate(
-        total=Sum("quantity")
-    )["total"] or 0
-
-    total_retail_revenue = retail_sales_today.aggregate(
-        total=Sum(F("quantity") * F("selling_price"))
-    )["total"] or 0
-
-    # ---------------- SALES PER STAFF ----------------
-    sales_per_staff = retail_sales_today.values(
-        "staff__username"
-    ).annotate(
-        total_qty=Sum("quantity"),
-        total_revenue=Sum(F("quantity") * F("selling_price"))
-    )
-
-    # ---------------- TOP PRODUCTS ----------------
-    top_products = retail_sales_today.values(
-        "product__model_name"
-    ).annotate(
-        total_qty=Sum("quantity")
-    ).order_by("-total_qty")[:5]
-
-    def replace_filter(value, arg):
-        return value.replace(arg.split(' ')[0], arg.split(' ')[1])
+    categories = RetailCategory.objects.all()
+    retail_staff = User.objects.filter(branch=branch, role="RETAIL")
 
     context = {
         'target_data': target_data,
         'activities': activities,
         'pending_approvals': pending_approvals,
         "safe_stocks": safe_stocks,
+        "categories": categories,
+        "retail_staff": retail_staff,
         "today_movements": today_movements,
         "total_stock_out": total_stock_out,
         "multichoice_today": multichoice_today,
@@ -453,28 +410,78 @@ def director_dashboard(request):
 def add_stock_to_safe(request):
     if request.method == "POST" and request.user.role == "MANAGER":
         branch = request.user.branch
-        product_id = request.POST.get("product")
+        
+        # Check if creating new product
+        if request.POST.get("is_new_product") == "true":
+            cat_id = request.POST.get("category")
+            subcat_name = request.POST.get("new_subcategory")
+            subsubcat_name = request.POST.get("new_subsubcategory")
+            
+            category = RetailCategory.objects.get(id=cat_id)
+            subcategory, _ = RetailSubCategory.objects.get_or_create(category=category, name=subcat_name)
+            
+            subsubcategory = None
+            if subsubcat_name:
+                subsubcategory, _ = RetailSubSubCategory.objects.get_or_create(subcategory=subcategory, name=subsubcat_name)
+            
+            product = Product.objects.create(
+                subcategory=subcategory,
+                subsubcategory=subsubcategory,
+                model_name=request.POST.get("model_name"),
+                description=request.POST.get("description"),
+                imei_last_5=request.POST.get("imei"),
+                cost_price=request.POST.get("cost_price", 0),
+                selling_price=request.POST.get("selling_price")
+            )
+        else:
+            product_id = request.POST.get("product")
+            product = Product.objects.get(id=product_id)
+
         quantity = int(request.POST.get("quantity"))
-
-        product = Product.objects.get(id=product_id)
-
-        safe_stock, created = BranchSafeStock.objects.get_or_create(
-            branch=branch,
-            product=product
-        )
-
+        safe_stock, created = BranchSafeStock.objects.get_or_create(branch=branch, product=product)
         safe_stock.quantity += quantity
         safe_stock.save()
 
         StockMovement.objects.create(
-            branch=branch,
-            product=product,
-            quantity=quantity,
-            movement_type="IN",
-            performed_by=request.user
+            branch=branch, product=product, quantity=quantity,
+            movement_type="IN", performed_by=request.user
         )
+        messages.success(request, f"Added {quantity} of {product.model_name} to safe.")
 
     return redirect("manager_dashboard")
+
+@login_required
+def staff_create_product(request):
+    if request.method == "POST" and request.user.role == "RETAIL":
+        # Implementation for staff creating product directly (non-safe stock)
+        cat_id = request.POST.get("category")
+        subcat_name = request.POST.get("new_subcategory")
+        subsubcat_name = request.POST.get("new_subsubcategory")
+        
+        category = RetailCategory.objects.get(id=cat_id)
+        subcategory, _ = RetailSubCategory.objects.get_or_create(category=category, name=subcat_name)
+        
+        subsubcategory = None
+        if subsubcat_name:
+            subsubcategory, _ = RetailSubSubCategory.objects.get_or_create(subcategory=subcategory, name=subsubcat_name)
+        
+        product = Product.objects.create(
+            subcategory=subcategory,
+            subsubcategory=subsubcategory,
+            model_name=request.POST.get("model_name"),
+            description=request.POST.get("description"),
+            imei_last_5=request.POST.get("imei"),
+            cost_price=request.POST.get("cost_price", 0),
+            selling_price=request.POST.get("selling_price")
+        )
+        
+        quantity = int(request.POST.get("quantity"))
+        staff_stock, _ = StaffStock.objects.get_or_create(staff=request.user, product=product)
+        staff_stock.quantity += quantity
+        staff_stock.save()
+        
+        messages.success(request, f"Product {product.model_name} created and added to your stock.")
+    return redirect("retail_dashboard")
 
 @login_required
 def release_stock(request):

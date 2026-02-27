@@ -12,4 +12,5 @@ urlpatterns = [
     path('add-stock-safe/', views.add_stock_to_safe, name='add_stock_to_safe'),
     path('release-stock/', views.release_stock, name='release_stock'),
     path('record-sale/', views.record_retail_sale, name='record_retail_sale'),
+    path('staff-create-product/', views.staff_create_product, name='staff_create_product'),
 ]
