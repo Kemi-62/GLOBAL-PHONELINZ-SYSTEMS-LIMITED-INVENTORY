@@ -6,7 +6,7 @@ from django.contrib.auth.decorators import login_required
 from datetime import date
 from django.db.models import Sum, F
 from django.utils import timezone
-from .models import User, Branch, DeviceTag, ServiceTarget, ServiceActivity, BranchSafeStock, StockMovement, MultiChoiceActivity, Product, StaffStock, RetailSale, RetailCategory, RetailSubCategory, RetailSubSubCategory
+from .models import User, Branch, DeviceTag, ServiceTarget, ServiceActivity, BranchSafeStock, StockMovement, Product, StaffStock, RetailSale, RetailCategory, RetailSubCategory, RetailSubSubCategory, MultiChoiceSale
 
 # -----------------------
 # Custom Login
@@ -244,10 +244,14 @@ def manager_dashboard(request):
     ).aggregate(total=Sum("quantity"))["total"] or 0
 
     # ---------------- MULTICHOICE DATA ----------------
-    multichoice_today = MultiChoiceActivity.objects.filter(
-        staff__branch=branch,
+    multichoice_today_qs = MultiChoiceSale.objects.filter(
+        branch=branch,
         date=today_date
-    ).aggregate(total=Sum("quantity"))["total"] or 0
+    )
+
+    multichoice_revenue = multichoice_today_qs.aggregate(
+        total=Sum("amount")
+    )["total"] or 0
 
     # ---------------- RETAIL SALES TODAY ----------------
     retail_sales_today = RetailSale.objects.filter(
@@ -292,7 +296,7 @@ def manager_dashboard(request):
         "retail_staff": retail_staff,
         "today_movements": today_movements,
         "total_stock_out": total_stock_out,
-        "multichoice_today": multichoice_today,
+        "multichoice_revenue": multichoice_revenue,
         "total_retail_quantity": total_retail_quantity,
         "total_retail_revenue": total_retail_revenue,
         "sales_per_staff": sales_per_staff,
@@ -369,14 +373,48 @@ def record_retail_sale(request):
 
 @login_required
 def multichoice_dashboard(request):
-    if not request.user.is_superuser and request.user.role != 'MULTICHOICE':
-        return HttpResponseForbidden("Not allowed")
-    return render(request, "multichoice_dashboard.html")
+    if request.user.role != "MULTICHOICE":
+        return redirect("login")
+
+    from django.db.models import Sum
+    from django.utils import timezone
+
+    today = timezone.now().date()
+
+    today_sales = MultiChoiceSale.objects.filter(
+        staff=request.user,
+        date=today
+    )
+
+    total_today = today_sales.aggregate(
+        total=Sum("amount")
+    )["total"] or 0
+
+    return render(request, "multichoice_dashboard.html", {
+        "today_sales": today_sales,
+        "total_today": total_today,
+    })
+
+@login_required
+def record_multichoice_sale(request):
+    if request.method == "POST" and request.user.role == "MULTICHOICE":
+        MultiChoiceSale.objects.create(
+            staff=request.user,
+            branch=request.user.branch,
+            customer_name=request.POST.get("customer_name"),
+            package_type=request.POST.get("package_type"),
+            transaction_type=request.POST.get("transaction_type"),
+            amount=request.POST.get("amount"),
+        )
+    return redirect("multichoice_dashboard")
 
 @login_required
 def director_dashboard(request):
     if not request.user.is_superuser and request.user.role not in ['DIRECTOR', 'SUPERADMIN']:
         return HttpResponseForbidden("Not allowed")
+
+    from django.db.models import Sum, F, DecimalField, ExpressionWrapper
+    from django.utils import timezone
 
     today = timezone.now().date()
     device_filter = request.GET.get("device")
@@ -397,8 +435,13 @@ def director_dashboard(request):
 
     device_tags = DeviceTag.objects.all()
 
-    # ---------------- ALL RETAIL SALES TODAY ----------------
+    # ---------------- REVENUE & PROFIT LOGIC ----------------
     all_sales_today = RetailSale.objects.filter(date=today)
+
+    profit_expression = ExpressionWrapper(
+        (F("selling_price") - F("product__cost_price")) * F("quantity"),
+        output_field=DecimalField()
+    )
 
     total_quantity = all_sales_today.aggregate(
         total=Sum("quantity")
@@ -406,6 +449,38 @@ def director_dashboard(request):
 
     total_revenue = all_sales_today.aggregate(
         total=Sum(F("quantity") * F("selling_price"))
+    )["total"] or 0
+
+    total_profit = all_sales_today.aggregate(
+        total=Sum(profit_expression)
+    )["total"] or 0
+
+    # ---------------- MONTHLY ANALYTICS ----------------
+    current_month = today.month
+    current_year = today.year
+
+    monthly_sales = RetailSale.objects.filter(
+        date__month=current_month,
+        date__year=current_year
+    )
+
+    monthly_revenue = monthly_sales.aggregate(
+        total=Sum(F("quantity") * F("selling_price"))
+    )["total"] or 0
+
+    monthly_profit = monthly_sales.aggregate(
+        total=Sum(
+            ExpressionWrapper(
+                (F("selling_price") - F("product__cost_price")) * F("quantity"),
+                output_field=DecimalField()
+            )
+        )
+    )["total"] or 0
+
+    # ---------------- MULTICHOICE ANALYTICS ----------------
+    all_multichoice_today = MultiChoiceSale.objects.filter(date=today)
+    multichoice_total = all_multichoice_today.aggregate(
+        total=Sum("amount")
     )["total"] or 0
 
     # ---------------- SALES PER BRANCH ----------------
@@ -443,6 +518,10 @@ def director_dashboard(request):
         "selected_device": device_filter,
         "total_quantity": total_quantity,
         "total_revenue": total_revenue,
+        "total_profit": total_profit,
+        "monthly_revenue": monthly_revenue,
+        "monthly_profit": monthly_profit,
+        "multichoice_total": multichoice_total,
         "branch_performance": branch_performance,
         "staff_performance": staff_performance,
         "top_products": top_products,

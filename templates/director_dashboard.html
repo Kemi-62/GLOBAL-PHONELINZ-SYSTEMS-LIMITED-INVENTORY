@@ -21,7 +21,18 @@
     <div class="card stat-card" style="border-left: 5px solid #28a745;">
         <div class="stat-value">₦{{ total_revenue|floatformat:2 }}</div>
         <div class="stat-label">Total Revenue Today</div>
+        <p><strong>Total Profit: ₦{{ total_profit|floatformat:2 }}</strong></p>
     </div>
+    <div class="card stat-card" style="border-left: 5px solid #ffc107;">
+        <div class="stat-value">₦{{ multichoice_total|floatformat:2 }}</div>
+        <div class="stat-label">MultiChoice Revenue Today</div>
+    </div>
+</div>
+
+<div class="card">
+    <h3>Monthly Overview</h3>
+    <p>Monthly Revenue: ₦{{ monthly_revenue|floatformat:2 }}</p>
+    <p>Monthly Profit: ₦{{ monthly_profit|floatformat:2 }}</p>
 </div>
 
 <h3 class="section-title">Telecom Performance (SIM Reg)</h3>
@@ -61,6 +72,14 @@
     <div style="flex: 1; min-width: 300px;">
         <div class="card">
             <canvas id="branchChart" width="400" height="250"></canvas>
+        </div>
+    </div>
+</div>
+
+    <div style="flex: 1; min-width: 300px;">
+        <div class="card">
+            <h3>Revenue by Branch</h3>
+            <canvas id="branchRevenueChart" width="400" height="250"></canvas>
         </div>
     </div>
 </div>
@@ -173,11 +192,39 @@
                 }]
             },
             options: {
-                responsive: true,
-                scales: { y: { beginAtZero: true, ticks: { precision: 0 } } },
-                plugins: { legend: { display: false } }
-            }
-        });
+            responsive: true,
+            scales: { y: { beginAtZero: true, ticks: { precision: 0 } } },
+            plugins: { legend: { display: false } }
+        }
     });
+
+    const ctx2 = document.getElementById('branchRevenueChart').getContext('2d');
+    new Chart(ctx2, {
+        type: 'bar',
+        data: {
+            labels: [
+                {% for branch in branch_performance %}
+                    "{{ branch.branch__name }}",
+                {% endfor %}
+            ],
+            datasets: [{
+                label: 'Revenue',
+                data: [
+                    {% for branch in branch_performance %}
+                        {{ branch.total_revenue }},
+                    {% endfor %}
+                ],
+                backgroundColor: 'rgba(75, 192, 192, 0.7)',
+                borderColor: 'rgba(75, 192, 192, 1)',
+                borderWidth: 1
+            }]
+        },
+        options: {
+            responsive: true,
+            scales: { y: { beginAtZero: true } },
+            plugins: { legend: { display: false } }
+        }
+    });
+});
 </script>
 {% endblock %}

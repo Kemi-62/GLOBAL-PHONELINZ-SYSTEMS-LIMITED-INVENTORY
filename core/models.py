@@ -199,14 +199,28 @@ class StockMovement(models.Model):
 
     def __str__(self):
         return f"{self.product.model_name} - {self.movement_type}"
-class MultiChoiceActivity(models.Model):
+class MultiChoiceSale(models.Model):
     staff = models.ForeignKey(User, on_delete=models.CASCADE)
-    service_type = models.CharField(max_length=50)
-    quantity = models.PositiveIntegerField()
+    branch = models.ForeignKey(Branch, on_delete=models.CASCADE)
+
+    customer_name = models.CharField(max_length=150)
+    package_type = models.CharField(max_length=100)
+    transaction_type = models.CharField(
+        max_length=20,
+        choices=(
+            ("NEW", "New Subscription"),
+            ("RENEWAL", "Renewal"),
+            ("UPGRADE", "Upgrade"),
+        )
+    )
+
+    amount = models.DecimalField(max_digits=12, decimal_places=2)
+
     date = models.DateField(auto_now_add=True)
+    time = models.TimeField(auto_now_add=True)
 
     def __str__(self):
-        return f"{self.staff.username} - {self.service_type}"
+        return f"{self.customer_name} - {self.package_type}"
 
 class RetailSale(models.Model):
     staff = models.ForeignKey(User, on_delete=models.CASCADE)
