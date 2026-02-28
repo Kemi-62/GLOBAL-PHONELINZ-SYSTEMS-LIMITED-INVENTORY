@@ -14,4 +14,5 @@ urlpatterns = [
     path('record-sale/', views.record_retail_sale, name='record_retail_sale'),
     path('record-multichoice/', views.record_multichoice_sale, name='record_multichoice_sale'),
     path('staff-create-product/', views.staff_create_product, name='staff_create_product'),
+    path('add-category/', views.add_category, name='add_category'),
 ]

@@ -171,6 +171,16 @@ function showSection(id, btn) {
         </div>
 
         <div class="card" style="flex: 1; min-width: 300px;">
+            <h3>Quick Actions</h3>
+            <form method="POST" action="{% url 'add_category' %}" style="margin-bottom: 1.5rem;">
+                {% csrf_token %}
+                <label>Add New Main Category</label>
+                <div style="display: flex; gap: 5px;">
+                    <input type="text" name="name" placeholder="Category Name" required style="margin: 0;">
+                    <button type="submit" class="btn btn-primary" style="padding: 0.5rem 1rem;">Add</button>
+                </div>
+            </form>
+            
             <h3>Release to Staff</h3>
             <form method="POST" action="{% url 'release_stock' %}">
                 {% csrf_token %}

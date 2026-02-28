@@ -324,9 +324,11 @@ def retail_dashboard(request):
 
     staff = request.user
     staff_stock = StaffStock.objects.filter(staff=staff)
+    categories = RetailCategory.objects.all()
 
     return render(request, "retail_dashboard.html", {
-        "staff_stock": staff_stock
+        "staff_stock": staff_stock,
+        "categories": categories
     })
 
 @login_required
@@ -608,6 +610,15 @@ def staff_create_product(request):
         
         messages.success(request, f"Product {product.model_name} created and added to your stock.")
     return redirect("retail_dashboard")
+
+@login_required
+def add_category(request):
+    if request.method == "POST" and request.user.role in ["MANAGER", "SUPERADMIN"]:
+        name = request.POST.get("name")
+        if name:
+            RetailCategory.objects.get_or_create(name=name)
+            messages.success(request, f"Category '{name}' added.")
+    return redirect(request.META.get('HTTP_REFERER', 'manager_dashboard'))
 
 @login_required
 def release_stock(request):

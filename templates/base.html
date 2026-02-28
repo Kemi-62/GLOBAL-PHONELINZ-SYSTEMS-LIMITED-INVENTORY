@@ -89,6 +89,63 @@
         .badge-warning { background: #fff3cd; color: #856404; }
         .badge-danger { background: #f8d7da; color: #721c24; }
 
+        /* MTN Brand Colors & Sidebar */
+        :root {
+            --mtn-yellow: #FFCB05;
+            --mtn-blue: #004F9F;
+            --mtn-black: #000000;
+            --primary-color: var(--mtn-blue);
+            --accent-color: var(--mtn-yellow);
+        }
+        .navbar { background-color: var(--mtn-black) !important; border-bottom: 4px solid var(--mtn-yellow); }
+        .btn-primary { background-color: var(--mtn-blue) !important; color: white !important; }
+        .btn-success { background-color: #28a745 !important; }
+        .nav-btn.active-tab { background: var(--mtn-yellow) !important; color: var(--mtn-black) !important; font-weight: bold; border-bottom: 3px solid var(--mtn-blue); }
+        
+        .sidebar {
+            width: 280px;
+            background: var(--mtn-black);
+            color: white;
+            height: 100vh;
+            position: fixed;
+            left: -280px;
+            top: 0;
+            transition: 0.3s;
+            z-index: 1000;
+            padding: 2rem 1rem;
+            box-shadow: 5px 0 15px rgba(0,0,0,0.3);
+        }
+        .sidebar.open { left: 0; }
+        .sidebar-overlay {
+            display: none;
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0,0,0,0.5);
+            z-index: 999;
+        }
+        .sidebar-overlay.show { display: block; }
+        .menu-toggle {
+            cursor: pointer;
+            font-size: 1.5rem;
+            margin-right: 1rem;
+            color: var(--mtn-yellow);
+            display: inline-block;
+        }
+        .sidebar-link {
+            display: block;
+            color: white;
+            text-decoration: none;
+            padding: 12px 15px;
+            border-radius: 6px;
+            margin-bottom: 8px;
+            transition: 0.2s;
+            border-left: 3px solid transparent;
+        }
+        .sidebar-link:hover { background: rgba(255,203,5,0.1); border-left: 3px solid var(--mtn-yellow); color: var(--mtn-yellow); }
+        
         input, select {
             padding: 0.8rem;
             border: 1px solid #ddd;
@@ -100,11 +157,40 @@
         }
         label { font-weight: 600; color: var(--secondary-color); }
     </style>
+    <script>
+        function toggleSidebar() {
+            const sidebar = document.getElementById('sidebar');
+            const overlay = document.getElementById('overlay');
+            sidebar.classList.toggle('open');
+            overlay.classList.toggle('show');
+        }
+    </script>
 </head>
 <body>
 
+<div id="sidebar" class="sidebar">
+    <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 2rem;">
+        <h3 style="color: var(--mtn-yellow); margin: 0;">Inventory Categories</h3>
+        <span style="cursor: pointer; font-size: 1.5rem;" onclick="toggleSidebar()">×</span>
+    </div>
+    <hr style="border-color: rgba(255,255,255,0.1); margin-bottom: 1.5rem;">
+    <div id="category-list">
+        {% if categories %}
+            {% for cat in categories %}
+                <a href="#" class="sidebar-link">📁 {{ cat.name }}</a>
+            {% endfor %}
+        {% else %}
+            <p style="font-size: 0.9rem; opacity: 0.6; text-align: center; padding: 20px;">No categories found. Add one in the Manager Dashboard.</p>
+        {% endif %}
+    </div>
+</div>
+<div id="overlay" class="sidebar-overlay" onclick="toggleSidebar()"></div>
+
 <div class="navbar">
-    <h1>Service Performance System</h1>
+    <div style="display: flex; align-items: center;">
+        <span class="menu-toggle" onclick="toggleSidebar()">☰</span>
+        <h1 style="color: var(--mtn-yellow);">Service Performance System</h1>
+    </div>
     <div class="user-info">
         {% if user.is_authenticated %}
             <span>Welcome, {{ user.username }} ({{ user.get_role_display }})</span> | 
