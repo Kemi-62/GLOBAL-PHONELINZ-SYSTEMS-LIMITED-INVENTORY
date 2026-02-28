@@ -35,10 +35,10 @@
         .navbar h1 {
             margin: 0;
             font-size: 1.5rem;
-            color: var(--white);
+            color: var(--mtn-yellow);
         }
         .container {
-            max-width: 1200px;
+            max-width: 1400px;
             margin: 2rem auto;
             padding: 0 2rem;
         }
@@ -96,11 +96,17 @@
             --mtn-black: #000000;
             --primary-color: var(--mtn-blue);
             --accent-color: var(--mtn-yellow);
+            --bg-color: #f4f4f4;
         }
-        .navbar { background-color: var(--mtn-black) !important; border-bottom: 4px solid var(--mtn-yellow); }
-        .btn-primary { background-color: var(--mtn-blue) !important; color: white !important; }
-        .btn-success { background-color: #28a745 !important; }
-        .nav-btn.active-tab { background: var(--mtn-yellow) !important; color: var(--mtn-black) !important; font-weight: bold; border-bottom: 3px solid var(--mtn-blue); }
+        body { background-color: var(--bg-color); }
+        .navbar { background-color: var(--mtn-black) !important; border-bottom: 4px solid var(--mtn-yellow); padding: 0.5rem 2rem; position: sticky; top: 0; z-index: 900; }
+        .btn-primary { background-color: var(--mtn-blue) !important; color: white !important; border: none; }
+        .btn-warning { background-color: var(--mtn-yellow) !important; color: var(--mtn-black) !important; border: none; }
+        .nav-btn { transition: 0.3s; border: none; background: transparent; padding: 0.8rem 1.2rem; cursor: pointer; border-radius: 6px; font-weight: 600; color: #666; border-bottom: 3px solid transparent; }
+        .nav-btn:hover { background: #f0f0f0; }
+        .nav-btn.active-tab { background: var(--mtn-yellow) !important; color: var(--mtn-black) !important; font-weight: bold; border: none; border-bottom: 3px solid var(--mtn-blue); transform: translateY(-2px); }
+        .card { border-radius: 12px; border: none; box-shadow: 0 4px 20px rgba(0,0,0,0.08); transition: 0.3s; }
+        .card:hover { box-shadow: 0 6px 25px rgba(0,0,0,0.12); }
         
         .sidebar {
             width: 280px;
@@ -144,8 +150,14 @@
             transition: 0.2s;
             border-left: 3px solid transparent;
         }
-        .sidebar-link:hover { background: rgba(255,203,5,0.1); border-left: 3px solid var(--mtn-yellow); color: var(--mtn-yellow); }
+        .sidebar-link:hover { background: rgba(255,203,5,0.2); border-left: 3px solid var(--mtn-yellow); color: var(--mtn-yellow); }
+        .sidebar-link i { margin-right: 10px; width: 20px; text-align: center; }
         
+        @media print {
+            .navbar, .sidebar, .sidebar-overlay, .menu-toggle, .btn, form { display: none !important; }
+            .container { max-width: 100% !important; margin: 0 !important; padding: 0 !important; }
+            .card { box-shadow: none !important; border: 1px solid #eee !important; break-inside: avoid; }
+        }
         input, select {
             padding: 0.8rem;
             border: 1px solid #ddd;
@@ -156,6 +168,11 @@
             font-size: 1rem;
         }
         label { font-weight: 600; color: var(--secondary-color); }
+        .sidebar-link.active {
+            background: var(--mtn-yellow);
+            color: var(--mtn-black);
+            font-weight: bold;
+        }
     </style>
     <script>
         function toggleSidebar() {
@@ -177,8 +194,12 @@
     <div id="category-list">
         {% if categories %}
             {% for cat in categories %}
-                <a href="#" class="sidebar-link">📁 {{ cat.name }}</a>
+                <a href="?category={{ cat.id }}" class="sidebar-link">📁 {{ cat.name }}</a>
             {% endfor %}
+            <hr style="border-color: rgba(255,255,255,0.1); margin: 1rem 0;">
+            {% if request.user.role == "MANAGER" or request.user.is_superuser %}
+                <a href="{% url 'manager_dashboard' %}" class="sidebar-link" style="color: var(--mtn-yellow); font-size: 0.8rem;">+ Manage Categories</a>
+            {% endif %}
         {% else %}
             <p style="font-size: 0.9rem; opacity: 0.6; text-align: center; padding: 20px;">No categories found. Add one in the Manager Dashboard.</p>
         {% endif %}

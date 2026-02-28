@@ -162,7 +162,7 @@ class Product(models.Model):
     selling_price = models.DecimalField(max_digits=12, decimal_places=2)
 
     def __str__(self):
-        return f"{self.model_name}"
+        return f"{self.product_name or self.model_name} ({self.model_name})"
 
 class BranchSafeStock(models.Model):
     branch = models.ForeignKey(Branch, on_delete=models.CASCADE)

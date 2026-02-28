@@ -96,6 +96,9 @@ def staff_dashboard(request):
         date__year=today.year,
         date__month=today.month
     )
+    
+    # Global Category Context for Sidebar
+    categories = RetailCategory.objects.all()
 
     if request.method == "POST":
         service_type = request.POST.get("service_type")
@@ -180,6 +183,7 @@ def staff_dashboard(request):
         "activities": activities,
         "pending_activities": pending_activities,
         "monthly_total": monthly_total,
+        "categories": categories,
     }
     return render(request, "staff_dashboard.html", context)
 
@@ -287,6 +291,14 @@ def manager_dashboard(request):
     categories = RetailCategory.objects.all()
     retail_staff = User.objects.filter(branch=branch, role="RETAIL")
 
+    # Search and Filter logic for activities
+    search_query = request.GET.get('search', '')
+    if search_query:
+        activities = activities.filter(staff__username__icontains=search_query)
+
+    # Global Category Context for Sidebar
+    categories = RetailCategory.objects.all()
+
     context = {
         'target_data': target_data,
         'activities': activities,
@@ -301,6 +313,7 @@ def manager_dashboard(request):
         "total_retail_revenue": total_retail_revenue,
         "sales_per_staff": sales_per_staff,
         "top_products": top_products,
+        "search_query": search_query,
     }
     return render(request, "manager_dashboard.html", context)
 
@@ -323,7 +336,7 @@ def retail_dashboard(request):
         return redirect("login")
 
     staff = request.user
-    staff_stock = StaffStock.objects.filter(staff=staff)
+    staff_stock = StaffStock.objects.filter(staff=staff).select_related('product')
     categories = RetailCategory.objects.all()
 
     return render(request, "retail_dashboard.html", {
@@ -382,6 +395,7 @@ def multichoice_dashboard(request):
     from django.utils import timezone
 
     today = timezone.now().date()
+    categories = RetailCategory.objects.all()
 
     today_sales = MultiChoiceSale.objects.filter(
         staff=request.user,
@@ -395,6 +409,7 @@ def multichoice_dashboard(request):
     return render(request, "multichoice_dashboard.html", {
         "today_sales": today_sales,
         "total_today": total_today,
+        "categories": categories,
     })
 
 @login_required
@@ -426,7 +441,10 @@ def director_dashboard(request):
         date__year=today.year,
         date__month=today.month,
         approved=True
-    )
+    ).select_related('staff', 'branch', 'device_tag')
+    
+    # Global Category Context for Sidebar
+    categories = RetailCategory.objects.all()
 
     if device_filter:
         activities = activities.filter(device_tag_id=device_filter)
@@ -485,6 +503,10 @@ def director_dashboard(request):
         total=Sum("amount")
     )["total"] or 0
 
+    multichoice_by_branch = all_multichoice_today.values("branch__name").annotate(
+        total_revenue=Sum("amount")
+    ).order_by("-total_revenue")
+
     # ---------------- SALES PER BRANCH ----------------
     branch_performance = all_sales_today.values(
         "branch__name"
@@ -524,10 +546,12 @@ def director_dashboard(request):
         "monthly_revenue": monthly_revenue,
         "monthly_profit": monthly_profit,
         "multichoice_total": multichoice_total,
+        "multichoice_by_branch": multichoice_by_branch,
         "branch_performance": branch_performance,
         "staff_performance": staff_performance,
         "top_products": top_products,
         "low_stock": low_stock,
+        "categories": categories,
     }
 
     return render(request, "director_dashboard.html", context)
@@ -638,6 +662,7 @@ def release_stock(request):
 
         # Prevent Over Release
         if quantity > safe_stock.quantity:
+            messages.error(request, "Insufficient safe stock.")
             return redirect("manager_dashboard")
 
         # Reduce Safe Stock
@@ -661,5 +686,6 @@ def release_stock(request):
             movement_type="OUT",
             performed_by=request.user
         )
+        messages.success(request, f"Released {quantity} of {product.model_name} to {staff.username}.")
 
     return redirect("manager_dashboard")
