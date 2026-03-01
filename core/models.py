@@ -204,6 +204,7 @@ class MultiChoiceSale(models.Model):
     branch = models.ForeignKey(Branch, on_delete=models.CASCADE)
 
     customer_name = models.CharField(max_length=150)
+    service_type = models.CharField(max_length=20, choices=(("DSTV", "DSTV"), ("GOTV", "GOTV")), default="DSTV")
     package_type = models.CharField(max_length=100)
     transaction_type = models.CharField(
         max_length=20,
@@ -214,6 +215,7 @@ class MultiChoiceSale(models.Model):
         )
     )
 
+    cost_price = models.DecimalField(max_digits=12, decimal_places=2, default=0)
     amount = models.DecimalField(max_digits=12, decimal_places=2)
 
     date = models.DateField(auto_now_add=True)
@@ -221,6 +223,24 @@ class MultiChoiceSale(models.Model):
 
     def __str__(self):
         return f"{self.customer_name} - {self.package_type}"
+
+class MultiChoiceWeeklyReport(models.Model):
+    staff = models.ForeignKey(User, on_delete=models.CASCADE)
+    branch = models.ForeignKey(Branch, on_delete=models.CASCADE)
+    week_start_date = models.DateField()
+    opening_balance = models.DecimalField(max_digits=12, decimal_places=2, default=0)
+    additional_funds = models.DecimalField(max_digits=12, decimal_places=2, default=0)
+    closing_balance = models.DecimalField(max_digits=12, decimal_places=2, null=True, blank=True)
+    total_subscriptions = models.DecimalField(max_digits=12, decimal_places=2, default=0)
+    commission = models.DecimalField(max_digits=12, decimal_places=2, default=0)
+    is_closed = models.BooleanField(default=False)
+
+    def calculate_commission(self):
+        if self.closing_balance is not None:
+            # commission = (closing balance + subscription) - (opening balance + Additional funds)
+            self.commission = (self.closing_balance + self.total_subscriptions) - (self.opening_balance + self.additional_funds)
+            return self.commission
+        return 0
 
 class RetailSale(models.Model):
     staff = models.ForeignKey(User, on_delete=models.CASCADE)

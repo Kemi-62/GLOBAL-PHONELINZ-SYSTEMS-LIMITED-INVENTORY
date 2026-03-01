@@ -386,31 +386,93 @@ def record_retail_sale(request):
 
     return redirect("retail_dashboard")
 
+from datetime import date, timedelta
+from .models import User, Branch, DeviceTag, ServiceTarget, ServiceActivity, BranchSafeStock, StockMovement, Product, StaffStock, RetailSale, RetailCategory, RetailSubCategory, RetailSubSubCategory, MultiChoiceSale, MultiChoiceWeeklyReport
+
 @login_required
 def multichoice_dashboard(request):
     if request.user.role != "MULTICHOICE":
         return redirect("login")
 
-    from django.db.models import Sum
-    from django.utils import timezone
-
     today = timezone.now().date()
-    categories = RetailCategory.objects.all()
+    is_monday = today.weekday() == 0
+    is_saturday = today.weekday() == 5
+    
+    # Get week start (Monday)
+    week_start = today - timedelta(days=today.weekday())
+    
+    weekly_report = MultiChoiceWeeklyReport.objects.filter(
+        staff=request.user,
+        week_start_date=week_start
+    ).first()
 
     today_sales = MultiChoiceSale.objects.filter(
         staff=request.user,
         date=today
     )
 
-    total_today = today_sales.aggregate(
-        total=Sum("amount")
-    )["total"] or 0
+    total_today = today_sales.aggregate(total=Sum("amount"))["total"] or 0
+    categories = RetailCategory.objects.all()
+
+    # Calculate weekly total for closed reports
+    weekly_total_sales = 0
+    if weekly_report and weekly_report.is_closed:
+        weekly_total_sales = weekly_report.total_subscriptions
 
     return render(request, "multichoice_dashboard.html", {
         "today_sales": today_sales,
         "total_today": total_today,
         "categories": categories,
+        "weekly_report": weekly_report,
+        "is_monday": is_monday,
+        "is_saturday": is_saturday,
+        "weekly_total_sales": weekly_total_sales,
     })
+
+@login_required
+def start_weekly_report(request):
+    if request.method == "POST" and request.user.role == "MULTICHOICE":
+        today = timezone.now().date()
+        week_start = today - timedelta(days=today.weekday())
+        
+        MultiChoiceWeeklyReport.objects.get_or_create(
+            staff=request.user,
+            branch=request.user.branch,
+            week_start_date=week_start,
+            defaults={
+                'opening_balance': request.POST.get("opening_balance", 0),
+                'additional_funds': request.POST.get("additional_funds", 0)
+            }
+        )
+    return redirect("multichoice_dashboard")
+
+@login_required
+def close_weekly_report(request):
+    if request.method == "POST" and request.user.role == "MULTICHOICE":
+        today = timezone.now().date()
+        week_start = today - timedelta(days=today.weekday())
+        
+        report = MultiChoiceWeeklyReport.objects.filter(
+            staff=request.user,
+            week_start_date=week_start
+        ).first()
+        
+        if report and not report.is_closed:
+            report.closing_balance = request.POST.get("closing_balance")
+            
+            # Calculate total subscriptions for the week
+            week_total = MultiChoiceSale.objects.filter(
+                staff=request.user,
+                date__range=[week_start, today]
+            ).aggregate(total=Sum("amount"))["total"] or 0
+            
+            report.total_subscriptions = week_total
+            report.calculate_commission()
+            report.is_closed = True
+            report.save()
+            messages.success(request, f"Week closed. Commission: ₦{report.commission}")
+            
+    return redirect("multichoice_dashboard")
 
 @login_required
 def record_multichoice_sale(request):
@@ -419,8 +481,10 @@ def record_multichoice_sale(request):
             staff=request.user,
             branch=request.user.branch,
             customer_name=request.POST.get("customer_name"),
+            service_type=request.POST.get("service_type"),
             package_type=request.POST.get("package_type"),
             transaction_type=request.POST.get("transaction_type"),
+            cost_price=request.POST.get("cost_price", 0),
             amount=request.POST.get("amount"),
         )
     return redirect("multichoice_dashboard")

@@ -192,16 +192,20 @@
     </div>
     <hr style="border-color: rgba(255,255,255,0.1); margin-bottom: 1.5rem;">
     <div id="category-list">
-        {% if categories %}
-            {% for cat in categories %}
-                <a href="?category={{ cat.id }}" class="sidebar-link">📁 {{ cat.name }}</a>
-            {% endfor %}
-            <hr style="border-color: rgba(255,255,255,0.1); margin: 1rem 0;">
-            {% if request.user.role == "MANAGER" or request.user.is_superuser %}
-                <a href="{% url 'manager_dashboard' %}" class="sidebar-link" style="color: var(--mtn-yellow); font-size: 0.8rem;">+ Manage Categories</a>
+        {% if request.user.role == "TELECOM" or request.user.role == "RETAIL" or request.user.role == "MANAGER" %}
+            {% if categories %}
+                {% for cat in categories %}
+                    <a href="?category={{ cat.id }}" class="sidebar-link">📁 {{ cat.name }}</a>
+                {% endfor %}
+                <hr style="border-color: rgba(255,255,255,0.1); margin: 1rem 0;">
+                {% if request.user.role == "MANAGER" or request.user.is_superuser %}
+                    <a href="{% url 'manager_dashboard' %}" class="sidebar-link" style="color: var(--mtn-yellow); font-size: 0.8rem;">+ Manage Categories</a>
+                {% endif %}
+            {% else %}
+                <p style="font-size: 0.9rem; opacity: 0.6; text-align: center; padding: 20px;">No categories found. Add one in the Manager Dashboard.</p>
             {% endif %}
         {% else %}
-            <p style="font-size: 0.9rem; opacity: 0.6; text-align: center; padding: 20px;">No categories found. Add one in the Manager Dashboard.</p>
+            <p style="font-size: 0.9rem; opacity: 0.6; text-align: center; padding: 20px;">Inventory access restricted to Staff and Managers.</p>
         {% endif %}
     </div>
 </div>

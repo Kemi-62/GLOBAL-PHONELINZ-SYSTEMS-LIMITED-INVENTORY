@@ -13,6 +13,8 @@ urlpatterns = [
     path('release-stock/', views.release_stock, name='release_stock'),
     path('record-sale/', views.record_retail_sale, name='record_retail_sale'),
     path('record-multichoice/', views.record_multichoice_sale, name='record_multichoice_sale'),
+    path('multichoice/start-week/', views.start_weekly_report, name='start_weekly_report'),
+    path('multichoice/close-week/', views.close_weekly_report, name='close_weekly_report'),
     path('staff-create-product/', views.staff_create_product, name='staff_create_product'),
     path('add-category/', views.add_category, name='add_category'),
 ]

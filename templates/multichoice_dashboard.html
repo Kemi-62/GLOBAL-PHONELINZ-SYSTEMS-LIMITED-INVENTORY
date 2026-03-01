@@ -54,6 +54,44 @@ form input, form select {
 <h2>MultiChoice Staff Dashboard</h2>
 
 <div class="card">
+    <h3>Weekly Report Status</h3>
+    {% if weekly_report %}
+        <p>Week Starting: {{ weekly_report.week_start_date }}</p>
+        <p>Opening Balance: ₦{{ weekly_report.opening_balance }}</p>
+        <p>Additional Funds: ₦{{ weekly_report.additional_funds }}</p>
+        {% if not weekly_report.is_closed %}
+            {% if is_saturday %}
+            <form method="POST" action="{% url 'close_weekly_report' %}">
+                {% csrf_token %}
+                <input type="number" step="0.01" name="closing_balance" placeholder="Closing Balance" required>
+                <button type="submit" class="btn btn-danger">Close Week & Calculate Commission</button>
+            </form>
+            {% else %}
+            <p style="color: #666; font-style: italic;">Weekly report is active. Closing balance prompt will appear on Saturday.</p>
+            {% endif %}
+        {% else %}
+            <p>Closing Balance: ₦{{ weekly_report.closing_balance }}</p>
+            <p>Total Subscriptions (Week): ₦{{ weekly_report.total_subscriptions }}</p>
+            <p style="font-weight: bold; color: var(--success-color);">Commission: ₦{{ weekly_report.commission }}</p>
+            <div style="margin-top: 10px; padding: 10px; background: #e8f5e9; border-radius: 4px;">
+                <strong>Week's Total Sales: ₦{{ weekly_total_sales|floatformat:2 }}</strong>
+            </div>
+        {% endif %}
+    {% else %}
+        {% if is_monday %}
+        <form method="POST" action="{% url 'start_weekly_report' %}">
+            {% csrf_token %}
+            <input type="number" step="0.01" name="opening_balance" placeholder="Opening Balance" required>
+            <input type="number" step="0.01" name="additional_funds" placeholder="Additional Funds (if any)" value="0">
+            <button type="submit">Start New Week</button>
+        </form>
+        {% else %}
+        <p>No active weekly report. Reports start on Mondays.</p>
+        {% endif %}
+    {% endif %}
+</div>
+
+<div class="card">
     <h3>Record Subscription</h3>
     <form method="POST" action="{% url 'record_multichoice_sale' %}">
         {% csrf_token %}
@@ -63,11 +101,48 @@ form input, form select {
             <option value="RENEWAL">Renewal</option>
             <option value="UPGRADE">Upgrade</option>
         </select>
-        <input type="text" name="package_type" placeholder="Package Type" required>
+        
+        <select name="service_type" id="service_type" onchange="updatePackages()" required>
+            <option value="">-- Select Service --</option>
+            <option value="DSTV">DSTV</option>
+            <option value="GOTV">GOTV</option>
+        </select>
+
+        <select name="package_type" id="package_type" required disabled>
+            <option value="">-- Select Package --</option>
+        </select>
+
+        <input type="number" step="0.01" name="cost_price" placeholder="Cost Price" required>
         <input type="number" step="0.01" name="amount" placeholder="Amount" required>
         <button type="submit">Save</button>
     </form>
 </div>
+
+<script>
+const packages = {
+    "DSTV": ["Premium", "Compact+", "Compact", "Confam", "Yanga"],
+    "GOTV": ["Jinji", "Jolli", "Max", "Supa", "Supa+"]
+};
+
+function updatePackages() {
+    const serviceType = document.getElementById('service_type').value;
+    const packageSelect = document.getElementById('package_type');
+    
+    packageSelect.innerHTML = '<option value="">-- Select Package --</option>';
+    
+    if (serviceType && packages[serviceType]) {
+        packageSelect.disabled = false;
+        packages[serviceType].forEach(pkg => {
+            const opt = document.createElement('option');
+            opt.value = pkg;
+            opt.textContent = pkg;
+            packageSelect.appendChild(opt);
+        });
+    } else {
+        packageSelect.disabled = true;
+    }
+}
+</script>
 
 <div class="card">
     <h3>Today's Performance</h3>
