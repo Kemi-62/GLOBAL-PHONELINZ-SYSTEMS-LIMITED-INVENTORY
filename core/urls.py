@@ -17,4 +17,7 @@ urlpatterns = [
     path('multichoice/close-week/', views.close_weekly_report, name='close_weekly_report'),
     path('staff-create-product/', views.staff_create_product, name='staff_create_product'),
     path('add-category/', views.add_category, name='add_category'),
+    path('record-expense/', views.record_expense, name='record_expense'),
+    path('request-stock/', views.request_stock, name='request_stock'),
+    path('approve-stock-request/<int:request_id>/', views.approve_stock_request, name='approve_stock_request'),
 ]

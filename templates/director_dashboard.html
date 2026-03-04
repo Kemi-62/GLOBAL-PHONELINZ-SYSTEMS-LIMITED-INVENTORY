@@ -26,7 +26,9 @@
     <div class="card stat-card" style="border-left: 5px solid #28a745;">
         <div class="stat-value">₦{{ total_revenue|floatformat:2 }}</div>
         <div class="stat-label">Total Revenue Today</div>
-        <p><strong>Total Profit: ₦{{ total_profit|floatformat:2 }}</strong></p>
+        <p style="margin: 5px 0 0 0; font-size: 0.85rem; color: #666;">Gross Profit: ₦{{ gross_profit|floatformat:2 }}</p>
+        <p style="margin: 2px 0 0 0; font-size: 0.85rem; color: #dc3545;">Expenses: ₦{{ total_expenses|floatformat:2 }}</p>
+        <p style="margin: 5px 0 0 0; font-size: 1rem;"><strong>Net Profit: ₦{{ total_profit|floatformat:2 }}</strong></p>
     </div>
     <div class="card stat-card" style="border-left: 5px solid #ffc107;">
         <div class="stat-value">₦{{ multichoice_total|floatformat:2 }}</div>
@@ -36,8 +38,24 @@
 
 <div class="card">
     <h3>Monthly Overview</h3>
-    <p>Monthly Revenue: ₦{{ monthly_revenue|floatformat:2 }}</p>
-    <p>Monthly Profit: ₦{{ monthly_profit|floatformat:2 }}</p>
+    <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 1rem;">
+        <div>
+            <p class="stat-label">Monthly Revenue</p>
+            <p class="stat-value">₦{{ monthly_revenue|floatformat:2 }}</p>
+        </div>
+        <div>
+            <p class="stat-label">Monthly Gross Profit</p>
+            <p class="stat-value" style="color: var(--success-color);">₦{{ monthly_gross_profit|floatformat:2 }}</p>
+        </div>
+        <div>
+            <p class="stat-label">Monthly Expenses</p>
+            <p class="stat-value" style="color: var(--danger-color);">₦{{ monthly_expenses|floatformat:2 }}</p>
+        </div>
+        <div>
+            <p class="stat-label">Monthly Net Profit</p>
+            <p class="stat-value" style="font-weight: bold;">₦{{ monthly_profit|floatformat:2 }}</p>
+        </div>
+    </div>
 </div>
 
 <h3 class="section-title">Telecom Performance (SIM Reg)</h3>

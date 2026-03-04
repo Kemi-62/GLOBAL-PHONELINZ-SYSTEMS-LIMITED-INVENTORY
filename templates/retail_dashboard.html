@@ -36,6 +36,12 @@
                 <input type="number" name="quantity" required>
                 <label style="display: block; margin-top: 1rem;">Selling Price</label>
                 <input type="number" step="0.01" name="selling_price" required>
+                <label style="display: block; margin-top: 1rem;">Payment Method</label>
+                <select name="payment_method" required>
+                    <option value="CASH">Cash</option>
+                    <option value="TRANSFER">Transfer</option>
+                    <option value="POS">POS</option>
+                </select>
                 <button type="submit" class="btn btn-success" style="width: 100%; margin-top: 1.5rem;">Record Sale</button>
             </form>
         </div>
@@ -56,8 +62,8 @@
                 <input type="text" name="product_name" required>
                 <label style="display: block; margin-top: 1rem;">Model Name</label>
                 <input type="text" name="model_name" required>
-                <label style="display: block; margin-top: 1rem;">Last 5 IMEI</label>
-                <input type="text" name="imei" maxlength="5">
+                <label style="display: block; margin-top: 1rem;">Full IMEI / Serial</label>
+                <input type="text" name="imei" placeholder="Full IMEI or Serial Number">
                 <label style="display: block; margin-top: 1rem;">Selling Price</label>
                 <input type="number" step="0.01" name="selling_price" required>
                 <label style="display: block; margin-top: 1rem;">Initial Quantity</label>
@@ -79,6 +85,16 @@
                     {% endfor %}
                 </tbody>
             </table>
+        </div>
+
+        <div class="card">
+            <h3>Request Stock from Manager</h3>
+            <form method="POST" action="{% url 'request_stock' %}">
+                {% csrf_token %}
+                <input type="text" name="product_name" placeholder="Product Name/Model" required>
+                <input type="number" name="quantity" placeholder="Quantity Needed" required>
+                <button type="submit" class="btn btn-warning" style="width: 100%; margin-top: 1rem;">Submit Request</button>
+            </form>
         </div>
     </div>
 </div>

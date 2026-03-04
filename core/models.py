@@ -150,19 +150,37 @@ class RetailSubSubCategory(models.Model):
     def __str__(self):
         return f"{self.subcategory} - {self.name}"
 
+class Expense(models.Model):
+    EXPENSE_CATEGORIES = (
+        ('RENT', 'Rent'),
+        ('ELECTRICITY', 'Electricity'),
+        ('TRANSPORT', 'Transport'),
+        ('STATIONERY', 'Stationery'),
+        ('REPAIRS', 'Repairs'),
+        ('OTHER', 'Other'),
+    )
+    branch = models.ForeignKey(Branch, on_delete=models.CASCADE)
+    category = models.CharField(max_length=20, choices=EXPENSE_CATEGORIES)
+    amount = models.DecimalField(max_digits=12, decimal_places=2)
+    description = models.TextField(blank=True)
+    date = models.DateField(auto_now_add=True)
+
+    def __str__(self):
+        return f"{self.category} - {self.amount} at {self.branch.name}"
+
 class Product(models.Model):
     subsubcategory = models.ForeignKey(RetailSubSubCategory, on_delete=models.CASCADE, null=True, blank=True)
     subcategory = models.ForeignKey(RetailSubCategory, on_delete=models.CASCADE)
     product_name = models.CharField(max_length=200, null=True, blank=True)
     model_name = models.CharField(max_length=100)
     description = models.TextField(null=True, blank=True)
-    imei_last_5 = models.CharField(max_length=5, null=True, blank=True)
+    imei_serial = models.CharField(max_length=100, unique=True, null=True, blank=True)
 
     cost_price = models.DecimalField(max_digits=12, decimal_places=2)
     selling_price = models.DecimalField(max_digits=12, decimal_places=2)
 
     def __str__(self):
-        return f"{self.product_name or self.model_name} ({self.model_name})"
+        return f"{self.product_name or self.model_name} ({self.model_name}) - {self.imei_serial or 'No IMEI'}"
 
 class BranchSafeStock(models.Model):
     branch = models.ForeignKey(Branch, on_delete=models.CASCADE)
@@ -243,12 +261,18 @@ class MultiChoiceWeeklyReport(models.Model):
         return 0
 
 class RetailSale(models.Model):
+    PAYMENT_METHODS = (
+        ('CASH', 'Cash'),
+        ('TRANSFER', 'Transfer'),
+        ('POS', 'POS'),
+    )
     staff = models.ForeignKey(User, on_delete=models.CASCADE)
     branch = models.ForeignKey(Branch, on_delete=models.CASCADE)
     product = models.ForeignKey(Product, on_delete=models.CASCADE)
 
     quantity = models.PositiveIntegerField()
     selling_price = models.DecimalField(max_digits=12, decimal_places=2)
+    payment_method = models.CharField(max_length=10, choices=PAYMENT_METHODS, default='CASH')
 
     date = models.DateField(auto_now_add=True)
     time = models.TimeField(auto_now_add=True)
@@ -258,3 +282,19 @@ class RetailSale(models.Model):
 
     def __str__(self):
         return f"{self.product.model_name} - {self.quantity} sold by {self.staff.username}"
+
+class StockRequest(models.Model):
+    STATUS_CHOICES = (
+        ('PENDING', 'Pending'),
+        ('APPROVED', 'Approved'),
+        ('REJECTED', 'Rejected'),
+    )
+    staff = models.ForeignKey(User, on_delete=models.CASCADE)
+    branch = models.ForeignKey(Branch, on_delete=models.CASCADE)
+    product_name = models.CharField(max_length=200)
+    quantity = models.PositiveIntegerField()
+    status = models.CharField(max_length=10, choices=STATUS_CHOICES, default='PENDING')
+    date_requested = models.DateField(auto_now_add=True)
+
+    def __str__(self):
+        return f"{self.staff.username} requests {self.quantity} of {self.product_name}"

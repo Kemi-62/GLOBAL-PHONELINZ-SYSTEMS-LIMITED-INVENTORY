@@ -6,7 +6,7 @@ from django.contrib.auth.decorators import login_required
 from datetime import date
 from django.db.models import Sum, F
 from django.utils import timezone
-from .models import User, Branch, DeviceTag, ServiceTarget, ServiceActivity, BranchSafeStock, StockMovement, Product, StaffStock, RetailSale, RetailCategory, RetailSubCategory, RetailSubSubCategory, MultiChoiceSale
+from .models import User, Branch, DeviceTag, ServiceTarget, ServiceActivity, BranchSafeStock, StockMovement, Product, StaffStock, RetailSale, RetailCategory, RetailSubCategory, RetailSubSubCategory, MultiChoiceSale, MultiChoiceWeeklyReport, Expense, StockRequest
 
 # -----------------------
 # Custom Login
@@ -290,6 +290,9 @@ def manager_dashboard(request):
     safe_stocks = BranchSafeStock.objects.filter(branch=branch)
     categories = RetailCategory.objects.all()
     retail_staff = User.objects.filter(branch=branch, role="RETAIL")
+    
+    pending_stock_requests = StockRequest.objects.filter(branch=branch, status="PENDING")
+    expenses = Expense.objects.filter(branch=branch).order_by("-date")[:10]
 
     # Search and Filter logic for activities
     search_query = request.GET.get('search', '')
@@ -314,6 +317,8 @@ def manager_dashboard(request):
         "sales_per_staff": sales_per_staff,
         "top_products": top_products,
         "search_query": search_query,
+        "pending_stock_requests": pending_stock_requests,
+        "expenses": expenses,
     }
     return render(request, "manager_dashboard.html", context)
 
@@ -380,7 +385,8 @@ def record_retail_sale(request):
             branch=branch,
             product=product,
             quantity=quantity,
-            selling_price=selling_price
+            selling_price=selling_price,
+            payment_method=request.POST.get("payment_method", "CASH")
         )
         messages.success(request, "Sale recorded successfully.")
 
@@ -475,6 +481,39 @@ def close_weekly_report(request):
     return redirect("multichoice_dashboard")
 
 @login_required
+def record_expense(request):
+    if request.method == "POST" and request.user.role == "MANAGER":
+        Expense.objects.create(
+            branch=request.user.branch,
+            category=request.POST.get("category"),
+            amount=request.POST.get("amount"),
+            description=request.POST.get("description")
+        )
+        messages.success(request, "Expense recorded.")
+    return redirect("manager_dashboard")
+
+@login_required
+def request_stock(request):
+    if request.method == "POST" and request.user.role == "RETAIL":
+        StockRequest.objects.create(
+            staff=request.user,
+            branch=request.user.branch,
+            product_name=request.POST.get("product_name"),
+            quantity=request.POST.get("quantity")
+        )
+        messages.success(request, "Stock request submitted.")
+    return redirect("retail_dashboard")
+
+@login_required
+def approve_stock_request(request, request_id):
+    if request.user.role == "MANAGER":
+        stock_req = StockRequest.objects.get(id=request_id, branch=request.user.branch)
+        stock_req.status = "APPROVED"
+        stock_req.save()
+        messages.success(request, "Stock request approved.")
+    return redirect("manager_dashboard")
+
+@login_required
 def record_multichoice_sale(request):
     if request.method == "POST" and request.user.role == "MULTICHOICE":
         MultiChoiceSale.objects.create(
@@ -521,6 +560,8 @@ def director_dashboard(request):
 
     # ---------------- REVENUE & PROFIT LOGIC ----------------
     all_sales_today = RetailSale.objects.filter(date=today)
+    expenses_today = Expense.objects.filter(date=today)
+    total_expenses = expenses_today.aggregate(total=Sum("amount"))["total"] or 0
 
     profit_expression = ExpressionWrapper(
         (F("selling_price") - F("product__cost_price")) * F("quantity"),
@@ -535,9 +576,11 @@ def director_dashboard(request):
         total=Sum(F("quantity") * F("selling_price"))
     )["total"] or 0
 
-    total_profit = all_sales_today.aggregate(
+    gross_profit = all_sales_today.aggregate(
         total=Sum(profit_expression)
     )["total"] or 0
+    
+    net_profit = gross_profit - total_expenses
 
     # ---------------- MONTHLY ANALYTICS ----------------
     current_month = today.month
@@ -547,12 +590,16 @@ def director_dashboard(request):
         date__month=current_month,
         date__year=current_year
     )
+    monthly_expenses = Expense.objects.filter(
+        date__month=current_month,
+        date__year=current_year
+    ).aggregate(total=Sum("amount"))["total"] or 0
 
     monthly_revenue = monthly_sales.aggregate(
         total=Sum(F("quantity") * F("selling_price"))
     )["total"] or 0
 
-    monthly_profit = monthly_sales.aggregate(
+    monthly_gross_profit = monthly_sales.aggregate(
         total=Sum(
             ExpressionWrapper(
                 (F("selling_price") - F("product__cost_price")) * F("quantity"),
@@ -560,6 +607,8 @@ def director_dashboard(request):
             )
         )
     )["total"] or 0
+    
+    monthly_net_profit = monthly_gross_profit - monthly_expenses
 
     # ---------------- MULTICHOICE ANALYTICS ----------------
     all_multichoice_today = MultiChoiceSale.objects.filter(date=today)
@@ -606,9 +655,13 @@ def director_dashboard(request):
         "selected_device": device_filter,
         "total_quantity": total_quantity,
         "total_revenue": total_revenue,
-        "total_profit": total_profit,
+        "total_profit": net_profit,
+        "gross_profit": gross_profit,
+        "total_expenses": total_expenses,
         "monthly_revenue": monthly_revenue,
-        "monthly_profit": monthly_profit,
+        "monthly_profit": monthly_net_profit,
+        "monthly_gross_profit": monthly_gross_profit,
+        "monthly_expenses": monthly_expenses,
         "multichoice_total": multichoice_total,
         "multichoice_by_branch": multichoice_by_branch,
         "branch_performance": branch_performance,

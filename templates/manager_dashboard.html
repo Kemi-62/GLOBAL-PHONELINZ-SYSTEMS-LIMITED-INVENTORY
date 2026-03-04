@@ -56,6 +56,7 @@ function showSection(id, btn) {
 <div class="nav-tabs">
     <button class="nav-btn active-tab" onclick="showSection('telecom', this)">Telecom Reports</button>
     <button class="nav-btn" onclick="showSection('retail', this)">Retail Inventory</button>
+    <button class="nav-btn" onclick="showSection('expenses', this)">Expenses</button>
     <button class="nav-btn" onclick="showSection('multichoice', this)">MultiChoice</button>
     <button class="nav-btn" onclick="showSection('summary', this)">Daily Summary</button>
 </div>
@@ -262,6 +263,70 @@ function showSection(id, btn) {
                 {% endfor %}
             </tbody>
         </table>
+    </div>
+
+    {% if pending_stock_requests %}
+    <div class="card" style="border-left: 5px solid var(--warning-color);">
+        <h3>Pending Stock Requests</h3>
+        <table>
+            <thead>
+                <tr><th>Staff</th><th>Product</th><th>Qty</th><th>Action</th></tr>
+            </thead>
+            <tbody>
+                {% for req in pending_stock_requests %}
+                <tr>
+                    <td>{{ req.staff.username }}</td>
+                    <td>{{ req.product_name }}</td>
+                    <td>{{ req.quantity }}</td>
+                    <td>
+                        <a href="{% url 'approve_stock_request' req.id %}" class="btn btn-success" style="padding: 5px 10px; font-size: 0.8rem;">Approve</a>
+                    </td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+    {% endif %}
+</div>
+
+<!-- EXPENSES SECTION -->
+<div id="expenses" class="section">
+    <div class="row" style="display: flex; gap: 2rem; flex-wrap: wrap;">
+        <div class="card" style="flex: 1; min-width: 300px;">
+            <h3>Record New Expense</h3>
+            <form method="POST" action="{% url 'record_expense' %}">
+                {% csrf_token %}
+                <label>Category</label>
+                <select name="category" required>
+                    <option value="RENT">Rent</option>
+                    <option value="ELECTRICITY">Electricity</option>
+                    <option value="TRANSPORT">Transport</option>
+                    <option value="STATIONERY">Stationery</option>
+                    <option value="REPAIRS">Repairs</option>
+                    <option value="OTHER">Other</option>
+                </select>
+                <label style="display: block; margin-top: 1rem;">Amount</label>
+                <input type="number" step="0.01" name="amount" required>
+                <label style="display: block; margin-top: 1rem;">Description</label>
+                <textarea name="description" style="width: 100%; padding: 0.8rem; border-radius: 6px; border: 1px solid #ddd;"></textarea>
+                <button type="submit" class="btn btn-danger" style="width: 100%; margin-top: 1.5rem;">Record Expense</button>
+            </form>
+        </div>
+        <div class="card" style="flex: 1; min-width: 400px;">
+            <h3>Recent Expenses</h3>
+            <table>
+                <thead>
+                    <tr><th>Category</th><th>Amount</th><th>Date</th></tr>
+                </thead>
+                <tbody>
+                    {% for exp in expenses %}
+                    <tr><td>{{ exp.get_category_display }}</td><td>₦{{ exp.amount }}</td><td>{{ exp.date }}</td></tr>
+                    {% empty %}
+                    <tr><td colspan="3">No expenses recorded.</td></tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
     </div>
 </div>
 
