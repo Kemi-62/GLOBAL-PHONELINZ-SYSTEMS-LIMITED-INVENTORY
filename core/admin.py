@@ -19,6 +19,15 @@ class CustomUserAdmin(BaseUserAdmin):
     )
 
 # admin.site.register(User, CustomUserAdmin)
+from .models import User, Branch, ServiceTarget, ServiceActivity, DeviceTag, MultiChoiceSale, Product
+
+class ProductAdmin(admin.ModelAdmin):
+    def get_readonly_fields(self, request, obj=None):
+        if hasattr(request.user, 'role') and request.user.role != "DIRECTOR":
+            return ["cost_price"]
+        return []
+
+admin.site.register(Product, ProductAdmin)
 admin.site.register(Branch)
 admin.site.register(ServiceTarget)
 admin.site.register(ServiceActivity)

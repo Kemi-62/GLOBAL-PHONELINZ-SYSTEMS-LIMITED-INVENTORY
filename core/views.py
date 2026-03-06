@@ -190,7 +190,9 @@ def staff_dashboard(request):
 # -----------------------
 # Manager Dashboard
 # -----------------------
-@login_required
+from .utils.decorators import role_required
+
+@role_required("MANAGER")
 def manager_dashboard(request):
     if not request.user.is_superuser and request.user.role != 'MANAGER':
         return HttpResponseForbidden("Not allowed")
@@ -344,10 +346,8 @@ def approve_activity(request, activity_id):
         pass
     return redirect('manager_dashboard')
 
-@login_required
+@role_required("RETAIL")
 def retail_dashboard(request):
-    if request.user.role != "RETAIL":
-        return redirect("login")
 
     staff = request.user
     staff_stock = StaffStock.objects.filter(staff=staff).select_related('product')
@@ -404,10 +404,8 @@ def record_retail_sale(request):
 from datetime import date, timedelta
 from .models import User, Branch, DeviceTag, ServiceTarget, ServiceActivity, BranchSafeStock, StockMovement, Product, StaffStock, RetailSale, RetailCategory, RetailSubCategory, RetailSubSubCategory, MultiChoiceSale, MultiChoiceWeeklyReport
 
-@login_required
+@role_required("MULTICHOICE")
 def multichoice_dashboard(request):
-    if request.user.role != "MULTICHOICE":
-        return redirect("login")
 
     today = timezone.now().date()
     is_monday = today.weekday() == 0
@@ -527,6 +525,32 @@ from reportlab.pdfgen import canvas
 from reportlab.lib.pagesizes import letter
 from reportlab.lib import colors
 
+from reportlab.platypus import SimpleDocTemplate, Paragraph, Spacer, Table
+from reportlab.lib.styles import getSampleStyleSheet
+import io
+
+from .utils.decorators import role_required
+
+@role_required("MANAGER")
+def export_branch_report(request):
+    buffer = io.BytesIO()
+    doc = SimpleDocTemplate(buffer)
+    elements = []
+    styles = getSampleStyleSheet()
+    elements.append(Paragraph("Branch Daily Retail Report", styles["Title"]))
+    elements.append(Spacer(1, 12))
+    branch = request.user.branch
+    today = timezone.now().date()
+    sales = RetailSale.objects.filter(branch=branch, date=today)
+    data = [["Product", "Quantity", "Amount"]]
+    for sale in sales:
+        data.append([sale.product.model_name, sale.quantity, str(sale.total_amount())])
+    table = Table(data)
+    elements.append(table)
+    doc.build(elements)
+    buffer.seek(0)
+    return HttpResponse(buffer, content_type='application/pdf')
+
 @login_required
 def generate_branch_report_pdf(request, branch_id):
     if request.user.role not in ['DIRECTOR', 'MANAGER']:
@@ -615,10 +639,8 @@ def record_multichoice_sale(request):
         )
     return redirect("multichoice_dashboard")
 
-@login_required
+@role_required("DIRECTOR")
 def director_dashboard(request):
-    if not request.user.is_superuser and request.user.role not in ['DIRECTOR', 'SUPERADMIN']:
-        return HttpResponseForbidden("Not allowed")
 
     from django.db.models import Sum, F, DecimalField, ExpressionWrapper
     from django.utils import timezone
