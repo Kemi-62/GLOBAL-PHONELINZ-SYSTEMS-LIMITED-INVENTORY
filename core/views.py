@@ -258,10 +258,19 @@ def manager_dashboard(request):
     )["total"] or 0
 
     # ---------------- RETAIL SALES TODAY ----------------
+    product_filter = request.GET.get("product")
+    staff_filter = request.GET.get("staff")
+
     retail_sales_today = RetailSale.objects.filter(
         branch=branch,
         date=today_date
     )
+
+    if product_filter:
+        retail_sales_today = retail_sales_today.filter(product_id=product_filter)
+
+    if staff_filter:
+        retail_sales_today = retail_sales_today.filter(staff_id=staff_filter)
 
     total_retail_quantity = retail_sales_today.aggregate(
         total=Sum("quantity")

@@ -157,6 +157,38 @@ function showSection(id, btn) {
 
     <div class="row" style="display: flex; gap: 2rem; flex-wrap: wrap; margin-bottom: 2rem;">
         <div class="card" style="flex: 1; min-width: 300px;">
+            <h3>Filter Retail Sales</h3>
+            <form method="GET">
+                <input type="hidden" name="section" value="retail">
+                <label>Product</label>
+                <select name="product">
+                    <option value="">All Products</option>
+                    {% for stock in safe_stocks %}
+                    <option value="{{ stock.product.id }}" {% if request.GET.product == stock.product.id|stringformat:"s" %}selected{% endif %}>{{ stock.product.model_name }}</option>
+                    {% endfor %}
+                </select>
+                <label style="display: block; margin-top: 1rem;">Staff</label>
+                <select name="staff">
+                    <option value="">All Staff</option>
+                    {% for staff in retail_staff %}
+                    <option value="{{ staff.id }}" {% if request.GET.staff == staff.id|stringformat:"s" %}selected{% endif %}>{{ staff.username }}</option>
+                    {% endfor %}
+                </select>
+                <button type="submit" class="btn btn-primary" style="width: 100%; margin-top: 1rem;">Filter</button>
+            </form>
+        </div>
+        <div class="card" style="flex: 1; min-width: 200px; text-align: center; border-left: 5px solid #17a2b8;">
+            <div class="stat-label">Filtered Quantity</div>
+            <div class="stat-value">{{ total_retail_quantity }}</div>
+        </div>
+        <div class="card" style="flex: 1; min-width: 200px; text-align: center; border-left: 5px solid var(--success-color);">
+            <div class="stat-label">Filtered Revenue</div>
+            <p class="stat-value">₦{{ total_retail_revenue|floatformat:2 }}</p>
+        </div>
+    </div>
+
+    <div class="row" style="display: flex; gap: 2rem; flex-wrap: wrap; margin-bottom: 2rem;">
+        <div class="card" style="flex: 1; min-width: 300px;">
             <h3>Add Stock to Safe</h3>
             <form method="POST" action="{% url 'add_stock_to_safe' %}">
                 {% csrf_token %}
