@@ -1,0 +1,172 @@
+Add Filter UI in Template (Retail Tab)
+<form method="GET">
+    <select name="product">
+        <option value="">All Products</option>
+        {% for stock in safe_stocks %}
+            <option value="{{ stock.product.id }}">
+                {{ stock.product.model_name }}
+            </option>
+        {% endfor %}
+    </select>
+
+    <select name="staff">
+        <option value="">All Staff</option>
+        {% for user in branch.staff_set.all %}
+            {% if user.role == "RETAIL" %}
+                <option value="{{ user.id }}">{{ user.username }}</option>
+            {% endif %}
+        {% endfor %}
+    </select>
+
+    <button type="submit">Filter</button>
+</form>
+
+Now manager can filter sales instantly.
+
+🔵 PART 2 — PDF REPORT EXPORT
+
+We generate branch daily PDF report for Director.
+
+✅ Install ReportLab (if not installed)
+pip install reportlab
+✅ Add Export View
+
+In views.py:
+
+from django.http import HttpResponse
+from reportlab.platypus import SimpleDocTemplate, Paragraph, Spacer
+from reportlab.lib.styles import getSampleStyleSheet
+from reportlab.lib import colors
+from reportlab.platypus import Table
+import io
+
+@login_required
+def export_branch_report(request):
+    if request.user.role != "MANAGER":
+        return redirect("login")
+
+    buffer = io.BytesIO()
+    doc = SimpleDocTemplate(buffer)
+    elements = []
+
+    styles = getSampleStyleSheet()
+
+    elements.append(Paragraph("Branch Daily Retail Report", styles["Title"]))
+    elements.append(Spacer(1, 12))
+
+    branch = request.user.branch
+    today = timezone.now().date()
+
+    sales = RetailSale.objects.filter(branch=branch, date=today)
+
+    data = [["Product", "Quantity", "Amount"]]
+
+    for sale in sales:
+        data.append([
+            sale.product.model_name,
+            sale.quantity,
+            str(sale.total_amount())
+        ])
+
+    table = Table(data)
+    elements.append(table)
+
+    doc.build(elements)
+
+    buffer.seek(0)
+    return HttpResponse(buffer, content_type='application/pdf')
+
+Add URL:
+
+path("export-report/", views.export_branch_report, name="export_branch_report"),
+
+Add button in manager template:
+
+<a href="{% url 'export_branch_report' %}">
+    <button>Download Daily Report PDF</button>
+</a>
+
+Done.
+
+🔵 PART 3 — MultiChoice Performance Charts
+
+Inside Director dashboard, below summary:
+
+<canvas id="multiChart" width="400" height="150"></canvas>
+
+<script>
+const multiCtx = document.getElementById('multiChart');
+
+new Chart(multiCtx, {
+    type: 'pie',
+    data: {
+        labels: ["MultiChoice Revenue Today"],
+        datasets: [{
+            data: [{{ multichoice_total|default:0 }}]
+        }]
+    }
+});
+</script>
+
+We can expand to branch-based MultiChoice chart similarly.
+
+🔵 PART 4 — SECURITY HARDENING
+
+Critical.
+
+✅ 1. Protect All Views
+
+Replace every manual role check with decorator:
+
+Create helper in utils.py:
+
+from django.shortcuts import redirect
+
+def role_required(role):
+    def decorator(view_func):
+        def wrapper(request, *args, **kwargs):
+            if request.user.role != role:
+                return redirect("login")
+            return view_func(request, *args, **kwargs)
+        return wrapper
+    return decorator
+
+Use like:
+
+@role_required("MANAGER")
+def manager_dashboard(request):
+
+Cleaner + safer.
+
+✅ 2. Prevent Cross-Branch Data Access
+
+Every query must filter by:
+
+branch=request.user.branch
+
+Never allow object by ID without branch check.
+
+Example fix:
+
+staff = User.objects.get(
+    id=staff_id,
+    branch=request.user.branch
+)
+
+You already started doing this — good.
+
+✅ 3. Lock Cost Price Editing
+
+In Product model admin:
+
+Only Director can edit cost price.
+
+In admin.py:
+
+class ProductAdmin(admin.ModelAdmin):
+    def get_readonly_fields(self, request, obj=None):
+        if request.user.role != "DIRECTOR":
+            return ["cost_price"]
+        return []
+
+Now staff cannot manipulate profit.

@@ -522,6 +522,84 @@ def approve_stock_request(request, request_id):
         messages.success(request, "Stock request approved.")
     return redirect("manager_dashboard")
 
+from django.http import HttpResponse, HttpResponseForbidden
+from reportlab.pdfgen import canvas
+from reportlab.lib.pagesizes import letter
+from reportlab.lib import colors
+
+@login_required
+def generate_branch_report_pdf(request, branch_id):
+    if request.user.role not in ['DIRECTOR', 'MANAGER']:
+        return HttpResponseForbidden("Not authorized")
+    
+    branch = Branch.objects.get(id=branch_id)
+    today = date.today()
+    
+    response = HttpResponse(content_type='application/pdf')
+    response['Content-Disposition'] = f'attachment; filename="Report_{branch.name}_{today}.pdf"'
+    
+    p = canvas.Canvas(response, pagesize=letter)
+    width, height = letter
+    
+    # Header
+    p.setFont("Helvetica-Bold", 16)
+    p.drawString(100, height - 50, f"Daily Branch Report: {branch.name}")
+    p.setFont("Helvetica", 12)
+    p.drawString(100, height - 70, f"Date: {today}")
+    
+    # Telecom Summary
+    activities = ServiceActivity.objects.filter(branch=branch, date=today)
+    total_sim = activities.count()
+    
+    p.setFont("Helvetica-Bold", 14)
+    p.drawString(100, height - 110, "Telecom Performance")
+    p.setFont("Helvetica", 12)
+    p.drawString(120, height - 130, f"Total SIM Registrations: {total_sim}")
+    
+    # Retail Summary
+    sales = RetailSale.objects.filter(branch=branch, date=today)
+    total_qty = sales.aggregate(Sum('quantity'))['quantity__sum'] or 0
+    total_rev = sales.aggregate(total=Sum(F('quantity') * F('selling_price')))['total'] or 0
+    
+    p.setFont("Helvetica-Bold", 14)
+    p.drawString(100, height - 170, "Retail Performance")
+    p.setFont("Helvetica", 12)
+    p.drawString(120, height - 190, f"Total Items Sold: {total_qty}")
+    p.drawString(120, height - 210, f"Total Revenue: NGN {total_rev:,.2f}")
+    
+    # MultiChoice Summary
+    mc_sales = MultiChoiceSale.objects.filter(branch=branch, date=today)
+    mc_rev = mc_sales.aggregate(Sum('amount'))['amount__sum'] or 0
+    
+    p.setFont("Helvetica-Bold", 14)
+    p.drawString(100, height - 250, "MultiChoice Performance")
+    p.setFont("Helvetica", 12)
+    p.drawString(120, height - 270, f"Total Revenue: NGN {mc_rev:,.2f}")
+    
+    # Expenses
+    exps = Expense.objects.filter(branch=branch, date=today)
+    total_exp = exps.aggregate(Sum('amount'))['amount__sum'] or 0
+    
+    p.setFont("Helvetica-Bold", 14)
+    p.drawString(100, height - 310, "Expenses")
+    p.setFont("Helvetica", 12)
+    p.drawString(120, height - 330, f"Total Expenses: NGN {total_exp:,.2f}")
+    
+    # Net Profit
+    # Note: Simplified profit calculation for PDF
+    retail_profit = sales.aggregate(profit=Sum((F('selling_price') - F('product__cost_price')) * F('quantity')))['profit'] or 0
+    net_profit = retail_profit - total_exp
+    
+    p.setFont("Helvetica-Bold", 14)
+    p.drawString(100, height - 370, "Financial Summary")
+    p.setFont("Helvetica", 12)
+    p.drawString(120, height - 390, f"Gross Retail Profit: NGN {retail_profit:,.2f}")
+    p.drawString(120, height - 410, f"Net Profit (Retail - Expenses): NGN {net_profit:,.2f}")
+    
+    p.showPage()
+    p.save()
+    return response
+
 @login_required
 def record_multichoice_sale(request):
     if request.method == "POST" and request.user.role == "MULTICHOICE":

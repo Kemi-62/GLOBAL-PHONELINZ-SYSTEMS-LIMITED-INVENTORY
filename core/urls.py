@@ -20,4 +20,5 @@ urlpatterns = [
     path('record-expense/', views.record_expense, name='record_expense'),
     path('request-stock/', views.request_stock, name='request_stock'),
     path('approve-stock-request/<int:request_id>/', views.approve_stock_request, name='approve_stock_request'),
+    path('branch-report-pdf/<int:branch_id>/', views.generate_branch_report_pdf, name='generate_branch_report_pdf'),
 ]
