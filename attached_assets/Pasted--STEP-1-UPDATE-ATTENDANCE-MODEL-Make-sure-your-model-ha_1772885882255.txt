@@ -1,0 +1,109 @@
+🔷 STEP 1 — UPDATE ATTENDANCE MODEL
+
+Make sure your model has:
+
+from decimal import Decimal
+
+class Attendance(models.Model):
+
+    ...
+
+    is_late = models.BooleanField(default=False)
+    is_absent = models.BooleanField(default=False)
+
+    deduction_amount = models.DecimalField(
+        max_digits=10,
+        decimal_places=2,
+        default=Decimal('0.00')
+    )
+
+Run migrations if needed.
+
+🔷 STEP 2 — CORRECT CHECK-IN LOGIC
+
+Replace your entire lateness block with this:
+
+from datetime import time, datetime
+from django.utils import timezone
+from decimal import Decimal
+
+now = timezone.localtime()
+today = now.date()
+
+late_start = timezone.make_aware(datetime.combine(today, time(8,1)))
+late_end   = timezone.make_aware(datetime.combine(today, time(8,59)))
+absent_time = timezone.make_aware(datetime.combine(today, time(9,0)))
+
+# LATE
+if late_start <= now <= late_end:
+    attendance.is_late = True
+    attendance.deduction_amount = Decimal('250.00')
+    attendance.save()
+
+# ABSENT (No penalty)
+elif now >= absent_time:
+    attendance.is_absent = True
+    attendance.deduction_amount = Decimal('0.00')
+    attendance.save()
+
+✔ No minute calculations
+✔ Flat ₦250 only
+✔ Absent flagged but no deduction
+
+🔷 IMPORTANT BEHAVIOR
+
+If staff tries to check in after 9:00AM:
+
+They will be marked:
+
+is_absent = True
+is_late = False
+deduction = 0
+
+Director sees them as Absent.
+
+🔷 STEP 3 — AUTO ABSENT MARKING (If They Don’t Check In At All)
+
+At 9:05AM daily, anyone without attendance record is marked absent.
+
+def mark_absent_staff():
+
+    today = timezone.now().date()
+
+    staff_users = User.objects.filter(role__in=[
+        'telecom',
+        'phones',
+        'multichoice'
+    ])
+
+    for user in staff_users:
+
+        exists = Attendance.objects.filter(
+            user=user,
+            date=today,
+            session='morning'
+        ).exists()
+
+        if not exists:
+            Attendance.objects.create(
+                user=user,
+                branch=user.branch,
+                session='morning',
+                is_absent=True,
+                deduction_amount=Decimal('0.00')
+            )
+
+✔ No penalty
+✔ Just record absence
+
+🔷 STEP 4 — DIRECTOR DASHBOARD STATUS DISPLAY
+
+In template:
+
+{% if record.is_absent %}
+    <span class="badge bg-danger">Absent</span>
+{% elif record.is_late %}
+    <span class="badge bg-warning">Late</span>
+{% else %}
+    <span class="badge bg-success">On Time</span>
+{% endif %}

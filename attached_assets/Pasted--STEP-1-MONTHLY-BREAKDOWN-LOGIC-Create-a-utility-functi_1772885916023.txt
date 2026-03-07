@@ -1,0 +1,211 @@
+🔷 STEP 1 — MONTHLY BREAKDOWN LOGIC
+
+Create a utility function:
+
+from django.utils import timezone
+from django.db.models import Sum, Count
+from .models import Attendance
+
+def get_monthly_attendance_summary():
+
+    today = timezone.now()
+    month = today.month
+    year = today.year
+
+    records = Attendance.objects.filter(
+        date__month=month,
+        date__year=year,
+        session='morning'
+    )
+
+    total_late = records.filter(is_late=True).count()
+    total_absent = records.filter(is_absent=True).count()
+    total_on_time = records.filter(
+        is_late=False,
+        is_absent=False
+    ).count()
+
+    total_deductions = records.aggregate(
+        Sum("deduction_amount")
+    )["deduction_amount__sum"] or 0
+
+    return {
+        "records": records,
+        "total_late": total_late,
+        "total_absent": total_absent,
+        "total_on_time": total_on_time,
+        "total_deductions": total_deductions,
+        "month": today.strftime("%B"),
+        "year": year
+    }
+🔷 STEP 2 — UPDATED PDF EXPORT (Executive Version)
+
+We now generate a structured PDF summary.
+
+from reportlab.platypus import SimpleDocTemplate, Table, TableStyle, Paragraph, Spacer
+from reportlab.lib import colors
+from reportlab.lib.styles import getSampleStyleSheet
+from reportlab.lib.units import inch
+from io import BytesIO
+from django.http import HttpResponse
+
+def export_monthly_attendance_pdf(request):
+
+    summary = get_monthly_attendance_summary()
+
+    buffer = BytesIO()
+    doc = SimpleDocTemplate(buffer)
+    elements = []
+
+    styles = getSampleStyleSheet()
+
+    # Title
+    elements.append(Paragraph(
+        f"Monthly Attendance Report - {summary['month']} {summary['year']}",
+        styles['Heading1']
+    ))
+    elements.append(Spacer(1, 0.3 * inch))
+
+    # Executive Summary
+    executive_data = [
+        ["Total On-Time", summary["total_on_time"]],
+        ["Total Late", summary["total_late"]],
+        ["Total Absent", summary["total_absent"]],
+        ["Total Lateness Deductions", f"₦{summary['total_deductions']}"]
+    ]
+
+    exec_table = Table(executive_data)
+    exec_table.setStyle(TableStyle([
+        ('GRID',(0,0),(-1,-1),1,colors.black),
+    ]))
+
+    elements.append(exec_table)
+    elements.append(Spacer(1, 0.5 * inch))
+
+    # Staff Breakdown Table
+    data = [["Staff", "Branch", "Date", "Status", "Deduction"]]
+
+    for record in summary["records"]:
+        if record.is_absent:
+            status = "Absent"
+        elif record.is_late:
+            status = "Late"
+        else:
+            status = "On Time"
+
+        data.append([
+            record.user.username,
+            record.branch.name,
+            str(record.date),
+            status,
+            f"₦{record.deduction_amount}"
+        ])
+
+    table = Table(data)
+    table.setStyle(TableStyle([
+        ('BACKGROUND',(0,0),(-1,0),colors.grey),
+        ('GRID',(0,0),(-1,-1),1,colors.black),
+    ]))
+
+    elements.append(table)
+
+    doc.build(elements)
+
+    buffer.seek(0)
+
+    return HttpResponse(
+        buffer,
+        content_type='application/pdf',
+        headers={'Content-Disposition': 'attachment; filename="Monthly_Attendance_Report.pdf"'}
+    )
+
+Director now gets professional structured report.
+
+🔷 STEP 3 — MONTH-END AUTOMATIC EMAIL (WITH BREAKDOWN)
+
+Now email includes breakdown.
+
+from django.core.mail import EmailMessage
+from django.conf import settings
+import calendar
+
+def send_monthly_attendance_email():
+
+    today = timezone.now()
+    last_day = calendar.monthrange(today.year, today.month)[1]
+
+    if today.day != last_day:
+        return
+
+    summary = get_monthly_attendance_summary()
+
+    subject = f"Monthly Attendance Report - {summary['month']} {summary['year']}"
+
+    message = f"""
+    MONTHLY ATTENDANCE SUMMARY
+
+    Total On-Time: {summary['total_on_time']}
+    Total Late: {summary['total_late']}
+    Total Absent: {summary['total_absent']}
+
+    Total Lateness Deductions: ₦{summary['total_deductions']}
+    """
+
+    email = EmailMessage(
+        subject,
+        message,
+        settings.DEFAULT_FROM_EMAIL,
+        ["director@email.com"]
+    )
+
+    email.send()
+🔷 OPTIONAL (Highly Recommended)
+
+Attach the PDF automatically to email:
+
+Replace email block with:
+
+from django.core.mail import EmailMessage
+from io import BytesIO
+
+def send_monthly_attendance_email():
+
+    today = timezone.now()
+    last_day = calendar.monthrange(today.year, today.month)[1]
+
+    if today.day != last_day:
+        return
+
+    summary = get_monthly_attendance_summary()
+
+    buffer = BytesIO()
+    doc = SimpleDocTemplate(buffer)
+    elements = []
+    # (Reuse PDF build logic here)
+    doc.build(elements)
+    buffer.seek(0)
+
+    email = EmailMessage(
+        subject,
+        message,
+        settings.DEFAULT_FROM_EMAIL,
+        ["director@email.com"]
+    )
+
+    email.attach(
+        "Monthly_Attendance_Report.pdf",
+        buffer.getvalue(),
+        "application/pdf"
+    )
+
+    email.send()
+
+Now Director receives full report automatically on last day.
+
+🔷 STEP 4 — CRON JOB
+
+Run every day 8PM:
+
+0 20 * * * /path/to/venv/bin/python /path/to/project/manage.py shell -c "from app.utils import send_monthly_attendance_email; send_monthly_attendance_email()"
+
+It only sends on last day.

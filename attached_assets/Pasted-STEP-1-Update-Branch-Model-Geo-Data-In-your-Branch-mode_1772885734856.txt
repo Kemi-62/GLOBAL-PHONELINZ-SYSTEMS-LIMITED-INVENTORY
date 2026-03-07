@@ -1,0 +1,177 @@
+STEP 1 — Update Branch Model (Geo Data)
+
+In your Branch model:
+
+from django.db import models
+
+class Branch(models.Model):
+    name = models.CharField(max_length=100)
+    latitude = models.FloatField()
+    longitude = models.FloatField()
+    allowed_radius = models.IntegerField(default=100)  # meters
+
+    def __str__(self):
+        return self.name
+
+Run:
+
+python manage.py makemigrations
+python manage.py migrate
+
+Now each branch has geo coordinates.
+
+🔷 STEP 2 — Create Attendance Model
+
+Create new model:
+
+from django.contrib.auth import get_user_model
+from django.utils import timezone
+
+User = get_user_model()
+
+class Attendance(models.Model):
+
+    SESSION_CHOICES = (
+        ('morning', 'Morning'),
+        ('evening', 'Evening'),
+    )
+
+    user = models.ForeignKey(User, on_delete=models.CASCADE)
+    branch = models.ForeignKey('Branch', on_delete=models.CASCADE)
+
+    session = models.CharField(max_length=10, choices=SESSION_CHOICES)
+    check_in_time = models.DateTimeField(null=True, blank=True)
+    check_out_time = models.DateTimeField(null=True, blank=True)
+
+    latitude = models.FloatField()
+    longitude = models.FloatField()
+
+    selfie = models.ImageField(upload_to='attendance_selfies/')
+
+    date = models.DateField(default=timezone.now)
+
+    def __str__(self):
+        return f"{self.user.username} - {self.date}"
+
+Migrate.
+
+🔷 STEP 3 — Time Window Validation
+
+Add this inside your Check-In view:
+
+from datetime import time
+from django.utils import timezone
+
+def validate_time(session):
+    now = timezone.localtime().time()
+
+    if session == "morning":
+        return time(7,30) <= now <= time(8,0)
+
+    if session == "evening":
+        return time(17,30) <= now <= time(18,20)
+
+    return False
+
+If invalid:
+
+if not validate_time(session):
+    return JsonResponse({"error": "Outside allowed time window"})
+🔷 STEP 4 — Geo-Fencing Logic (100m Radius)
+
+We use Haversine formula.
+
+Add helper function:
+
+import math
+
+def calculate_distance(lat1, lon1, lat2, lon2):
+    R = 6371000  # meters
+
+    phi1 = math.radians(lat1)
+    phi2 = math.radians(lat2)
+
+    delta_phi = math.radians(lat2 - lat1)
+    delta_lambda = math.radians(lon2 - lon1)
+
+    a = math.sin(delta_phi/2)**2 + \
+        math.cos(phi1) * math.cos(phi2) * \
+        math.sin(delta_lambda/2)**2
+
+    c = 2 * math.atan2(math.sqrt(a), math.sqrt(1-a))
+
+    return R * c
+
+Inside view:
+
+distance = calculate_distance(
+    user_lat, user_lon,
+    branch.latitude, branch.longitude
+)
+
+if distance > branch.allowed_radius:
+    return JsonResponse({"error": "You are outside branch location"})
+🔷 STEP 5 — Frontend GPS + Selfie Capture
+
+Inside attendance template:
+
+Get GPS
+<script>
+navigator.geolocation.getCurrentPosition(function(position) {
+    document.getElementById("lat").value = position.coords.latitude;
+    document.getElementById("lon").value = position.coords.longitude;
+});
+</script>
+
+Hidden inputs:
+
+<input type="hidden" id="lat" name="latitude">
+<input type="hidden" id="lon" name="longitude">
+Selfie Capture
+
+Use camera:
+
+<input type="file" name="selfie" accept="image/*" capture="user">
+
+This forces front camera on mobile.
+
+🔷 STEP 6 — Director Dashboard View
+
+Add analytics:
+
+today = timezone.now().date()
+
+attendance_today = Attendance.objects.filter(date=today)
+
+late_staff = attendance_today.filter(
+    check_in_time__gt=timezone.make_aware(datetime.combine(today, time(8,0)))
+)
+
+Director can now see:
+
+Total present
+
+Late
+
+Absent
+
+Check out missing
+
+🔷 STEP 7 — Prevent Double Check-In
+
+Inside check-in logic:
+
+if Attendance.objects.filter(
+    user=request.user,
+    date=timezone.now().date(),
+    session=session,
+    check_in_time__isnull=False
+).exists():
+    return JsonResponse({"error": "Already checked in"})
+🔷 STEP 8 — Auto Mark Absent
+
+At 9AM:
+
+Cron job checks who did not check in.
+
+Mark them absent automatically.
