@@ -1,0 +1,143 @@
+🔷 STEP 1 — Update Attendance Model (Cleaner Version)
+from django.db import models
+from django.contrib.auth import get_user_model
+from django.utils import timezone
+
+User = get_user_model()
+
+class Attendance(models.Model):
+
+    SESSION_CHOICES = (
+        ('morning', 'Morning'),
+        ('evening', 'Evening'),
+    )
+
+    user = models.ForeignKey(User, on_delete=models.CASCADE)
+    branch = models.ForeignKey('Branch', on_delete=models.CASCADE)
+
+    session = models.CharField(max_length=10, choices=SESSION_CHOICES)
+
+    check_in_time = models.DateTimeField(null=True, blank=True)
+    check_out_time = models.DateTimeField(null=True, blank=True)
+
+    latitude = models.FloatField()
+    longitude = models.FloatField()
+
+    selfie = models.ImageField(upload_to='attendance_selfies/')
+
+    date = models.DateField(default=timezone.now)
+
+    def __str__(self):
+        return f"{self.user.username} - {self.date}"
+
+Run migrations.
+
+🔷 STEP 2 — Time Window Validation (Server Controlled)
+from datetime import time
+from django.utils import timezone
+
+def validate_time(session):
+    now = timezone.localtime().time()
+
+    if session == "morning":
+        return time(7,30) <= now <= time(8,0)
+
+    if session == "evening":
+        return time(17,30) <= now <= time(18,20)
+
+    return False
+🔷 STEP 3 — Secure Check-In View
+from django.http import JsonResponse
+from django.utils import timezone
+from .models import Attendance
+from .utils import calculate_distance  # your haversine function
+
+def check_in(request):
+
+    if request.method == "POST":
+
+        session = request.POST.get("session")
+        user_lat = float(request.POST.get("latitude"))
+        user_lon = float(request.POST.get("longitude"))
+        selfie = request.FILES.get("selfie")
+
+        user = request.user
+        branch = user.branch
+
+        # Time validation
+        if not validate_time(session):
+            return JsonResponse({"error": "Outside allowed time window"})
+
+        # Prevent double check-in
+        if Attendance.objects.filter(
+            user=user,
+            date=timezone.now().date(),
+            session=session,
+            check_in_time__isnull=False
+        ).exists():
+            return JsonResponse({"error": "Already checked in"})
+
+        # Geo validation
+        distance = calculate_distance(
+            user_lat, user_lon,
+            branch.latitude, branch.longitude
+        )
+
+        if distance > branch.allowed_radius:
+            return JsonResponse({"error": "Outside branch location"})
+
+        # SAVE WITH SERVER TIME (NO USER INPUT)
+        Attendance.objects.create(
+            user=user,
+            branch=branch,
+            session=session,
+            check_in_time=timezone.now(),  # 🔥 AUTO TIME
+            latitude=user_lat,
+            longitude=user_lon,
+            selfie=selfie
+        )
+
+        return JsonResponse({"success": "Check-in successful"})
+
+Time is locked to server time.
+
+No manipulation possible.
+
+🔷 STEP 4 — Secure Check-Out View
+def check_out(request):
+
+    if request.method == "POST":
+
+        session = request.POST.get("session")
+        user = request.user
+
+        try:
+            attendance = Attendance.objects.get(
+                user=user,
+                date=timezone.now().date(),
+                session=session
+            )
+        except Attendance.DoesNotExist:
+            return JsonResponse({"error": "No check-in record found"})
+
+        if not validate_time(session):
+            return JsonResponse({"error": "Outside allowed time window"})
+
+        attendance.check_out_time = timezone.now()  # 🔥 AUTO TIME
+        attendance.save()
+
+        return JsonResponse({"success": "Check-out successful"})
+🔷 STEP 5 — Dashboard Buttons
+
+In template:
+
+<form method="POST" enctype="multipart/form-data" action="{% url 'check_in' %}">
+    {% csrf_token %}
+    <input type="hidden" name="session" value="morning">
+    <input type="hidden" id="lat" name="latitude">
+    <input type="hidden" id="lon" name="longitude">
+    <input type="file" name="selfie" accept="image/*" capture="user" required>
+    <button type="submit">Morning Check-In</button>
+</form>
+
+Same for evening but call check_out.

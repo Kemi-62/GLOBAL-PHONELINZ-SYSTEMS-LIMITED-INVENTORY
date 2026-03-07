@@ -1,0 +1,187 @@
+Add Late Flag + Deduction Field
+
+Update Attendance model:
+
+from decimal import Decimal
+
+class Attendance(models.Model):
+
+    ...
+
+    is_late = models.BooleanField(default=False)
+    late_minutes = models.IntegerField(default=0)
+    deduction_amount = models.DecimalField(
+        max_digits=10,
+        decimal_places=2,
+        default=Decimal('0.00')
+    )
+
+Run migrations.
+
+Modify Check-In Logic to Auto-Calculate Late
+
+Inside check-in view, after creating attendance:
+
+from datetime import time, datetime
+
+now = timezone.localtime()
+official_time = datetime.combine(now.date(), time(8,0))
+official_time = timezone.make_aware(official_time)
+
+if now > official_time:
+    minutes_late = int((now - official_time).total_seconds() / 60)
+
+    attendance.is_late = True
+    attendance.late_minutes = minutes_late
+
+    # Example deduction rule:
+    deduction_rate_per_minute = 50  # ₦50 per minute late
+    attendance.deduction_amount = minutes_late * deduction_rate_per_minute
+
+    attendance.save()
+
+Now lateness is automatic.
+
+No manual marking.
+
+🔷 PART 2 — AUTO ABSENT DETECTION
+
+At 8:10AM daily, anyone without check-in is absent.
+
+We create utility function:
+
+from django.contrib.auth import get_user_model
+User = get_user_model()
+
+def mark_absent_staff():
+
+    today = timezone.now().date()
+
+    staff_users = User.objects.filter(role__in=[
+        'telecom',
+        'phones',
+        'multichoice'
+    ])
+
+    for user in staff_users:
+
+        exists = Attendance.objects.filter(
+            user=user,
+            date=today,
+            session='morning'
+        ).exists()
+
+        if not exists:
+            Attendance.objects.create(
+                user=user,
+                branch=user.branch,
+                session='morning',
+                is_late=False,
+                deduction_amount=5000  # example absence penalty
+            )
+
+Later we attach this to cron job or celery.
+
+Now absent staff automatically incur penalty.
+
+🔷 PART 3 — DIRECTOR ATTENDANCE ANALYTICS DASHBOARD
+
+Director View:
+
+from django.db.models import Sum, Count
+
+def director_attendance_dashboard(request):
+
+    today = timezone.now().date()
+
+    branch_filter = request.GET.get("branch")
+
+    attendance = Attendance.objects.filter(date=today)
+
+    if branch_filter:
+        attendance = attendance.filter(branch_id=branch_filter)
+
+    total_present = attendance.filter(check_in_time__isnull=False).count()
+    total_late = attendance.filter(is_late=True).count()
+    total_absent = attendance.filter(check_in_time__isnull=True).count()
+
+    total_deductions = attendance.aggregate(
+        Sum("deduction_amount")
+    )["deduction_amount__sum"] or 0
+
+    context = {
+        "attendance": attendance,
+        "total_present": total_present,
+        "total_late": total_late,
+        "total_absent": total_absent,
+        "total_deductions": total_deductions,
+    }
+
+    return render(request, "director/attendance_dashboard.html", context)
+🔷 Director Template Layout
+
+Show:
+
+Total Present: {{ total_present }}
+Total Late: {{ total_late }}
+Total Absent: {{ total_absent }}
+Total Salary Deductions Today: ₦{{ total_deductions }}
+
+Then table:
+
+| Staff | Branch | Check-In | Late Minutes | Deduction | Selfie |
+
+Add selfie preview:
+
+<img src="{{ record.selfie.url }}" width="60">
+🔷 PART 4 — REAL-TIME STATUS INDICATOR (What C Means)
+
+On staff dashboard, show:
+
+🟢 Present
+
+🟡 Late
+
+🔴 Absent
+
+⚪ Not Yet Checked In
+
+Add this in staff dashboard view:
+
+today = timezone.now().date()
+
+try:
+    attendance = Attendance.objects.get(
+        user=request.user,
+        date=today,
+        session='morning'
+    )
+except Attendance.DoesNotExist:
+    attendance = None
+
+In template:
+
+{% if not attendance %}
+    <span class="badge bg-secondary">Not Checked In</span>
+{% elif attendance.is_late %}
+    <span class="badge bg-warning">Late</span>
+{% elif attendance.check_in_time %}
+    <span class="badge bg-success">Present</span>
+{% else %}
+    <span class="badge bg-danger">Absent</span>
+{% endif %}
+
+Now staff sees their daily status instantly.
+
+Director sees branch overview.
+
+🔷 PART 5 — Monthly Salary Deduction Calculation
+
+For payroll:
+
+monthly_deductions = Attendance.objects.filter(
+    user=staff_user,
+    date__month=current_month
+).aggregate(Sum("deduction_amount"))["deduction_amount__sum"]
+
+Subtract during salary processing.

@@ -23,6 +23,8 @@ A Django-based ERP system for a telecom/retail business to track employee servic
 - **Email**: SMTP configured for automated reporting (ready to deploy)
 
 ## Recent Changes
+- **Authentication Fix**: Fixed login logic to properly authenticate all user roles (Manager, Director, Retail, MultiChoice, Telecom, Superadmin); added `user_logout` view; fixed redirect loops.
+- **URL Routing**: Added missing logout URL; mapped telecom_dashboard to staff_dashboard; corrected all role-based redirects.
 - **UI Production Polish**: Redesigned base.html with modern MTN-branded header, collapsible sidebar, responsive footer, and loading spinner.
 - **Security Enhancements**: Added `@role_required` decorator for all dashboard views; locked cost price editing to Directors only; enforced branch-level data isolation.
 - **Reporting Features**: Implemented PDF export for managers (daily retail reports) and directors (branch summary reports); added manager retail sales filtering by product/staff.

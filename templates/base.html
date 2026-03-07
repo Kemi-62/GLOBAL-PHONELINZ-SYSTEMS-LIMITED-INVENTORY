@@ -69,8 +69,8 @@
     {% if user.role == "DIRECTOR" %}<a href="{% url 'director_dashboard' %}" class="sidebar-link">👔 Executive</a>{% endif %}
     {% if user.role == "RETAIL" %}<a href="{% url 'retail_dashboard' %}" class="sidebar-link">🛍️ Retail</a>{% endif %}
     {% if user.role == "MULTICHOICE" %}<a href="{% url 'multichoice_dashboard' %}" class="sidebar-link">📱 MultiChoice</a>{% endif %}
-    {% if user.role == "TELECOM" %}<a href="{% url 'telecom_dashboard' %}" class="sidebar-link">📞 Telecom</a>{% endif %}
-    <a href="{% url 'logout' %}" class="sidebar-link" style="margin-top: 2rem; border-top: 1px solid #444; padding-top: 1rem; color: #f08080;">🚪 Logout</a>
+    {% if user.role == "TELECOM" %}<a href="{% url 'staff_dashboard' %}" class="sidebar-link">📞 Telecom</a>{% endif %}
+    <a href="{% url 'logout' %}" class="sidebar-link" style="margin-top: 2rem; border-top: 1px solid #444; padding-top: 1rem; color: #f08080; text-decoration: none;">🚪 Logout</a>
 </div>
 <div id="overlay" class="sidebar-overlay" onclick="toggleSidebar()"></div>
 <div class="navbar">

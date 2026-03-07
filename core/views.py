@@ -12,34 +12,35 @@ from .models import User, Branch, DeviceTag, ServiceTarget, ServiceActivity, Bra
 # Custom Login
 # -----------------------
 def custom_login(request):
-    if request.user.is_authenticated and request.method == 'GET':
-        from django.contrib.auth import logout
-        logout(request)
-        return redirect('login')
+    if request.user.is_authenticated:
+        if request.user.is_superuser:
+            return redirect('director_dashboard')
+        if hasattr(request.user, 'role'):
+            if request.user.role == "MANAGER":
+                return redirect("manager_dashboard")
+            elif request.user.role == "DIRECTOR":
+                return redirect("director_dashboard")
+            elif request.user.role == "RETAIL":
+                return redirect("retail_dashboard")
+            elif request.user.role == "MULTICHOICE":
+                return redirect("multichoice_dashboard")
+            elif request.user.role == "TELECOM":
+                return redirect("staff_dashboard")
+        return redirect('director_dashboard')
         
     if request.method == 'POST':
-        username = request.POST.get('username')
-        password = request.POST.get('password')
+        username = request.POST.get('username', '').strip()
+        password = request.POST.get('password', '').strip()
 
-        try:
-            user_record = User.objects.get(username=username)
-        except User.DoesNotExist:
-            messages.error(request, "Invalid credentials")
-            return redirect('login')
-
-        if hasattr(user_record, 'is_locked') and user_record.is_locked:
-            messages.error(request, "Account locked. Contact Admin.")
-            return redirect('login')
+        if not username or not password:
+            messages.error(request, "Username and password required")
+            return render(request, 'login.html')
 
         user_auth = authenticate(request, username=username, password=password)
 
         if user_auth is not None:
-            if hasattr(user_record, 'failed_login_count'):
-                user_record.failed_login_count = 0
-            if hasattr(user_record, 'failed_attempts'):
-                user_record.failed_attempts = 0
-            user_record.save()
             login(request, user_auth)
+            messages.success(request, f"Welcome, {username}!")
 
             if user_auth.is_superuser:
                 return redirect('director_dashboard')
@@ -55,21 +56,19 @@ def custom_login(request):
                 return redirect("manager_dashboard")
             elif role == "DIRECTOR":
                 return redirect("director_dashboard")
-            elif role == "SUPERADMIN":
-                return redirect("/admin/")
             else:
-                messages.error(request, "No role assigned. Contact Admin.")
-                return redirect('login')
+                return redirect('director_dashboard')
         else:
-            if hasattr(user_record, 'failed_login_count'):
-                user_record.failed_login_count += 1
-            if hasattr(user_record, 'failed_attempts'):
-                user_record.failed_attempts += 1
-            user_record.save()
-            messages.error(request, "Invalid credentials")
-            return redirect('login')
+            messages.error(request, "Invalid username or password")
+            return render(request, 'login.html')
 
     return render(request, 'login.html')
+
+def user_logout(request):
+    from django.contrib.auth import logout
+    logout(request)
+    messages.success(request, "Logged out successfully")
+    return redirect('login')
 
 def csrf_failure(request, reason=""):
     messages.error(request, "Your session expired or was interrupted. Please try again.")

@@ -1,0 +1,168 @@
+🔷 STEP 1 — UPDATE ATTENDANCE MODEL (Flat ₦250 Penalty)
+
+Modify your Attendance model:
+
+from decimal import Decimal
+
+class Attendance(models.Model):
+
+    ...
+
+    is_late = models.BooleanField(default=False)
+    deduction_amount = models.DecimalField(
+        max_digits=10,
+        decimal_places=2,
+        default=Decimal('0.00')
+    )
+
+Run:
+
+python manage.py makemigrations
+python manage.py migrate
+🔷 STEP 2 — MODIFY CHECK-IN LOGIC (Flat ₦250)
+
+Replace your lateness calculation with:
+
+from datetime import time, datetime
+from django.utils import timezone
+from decimal import Decimal
+
+now = timezone.localtime()
+official_time = datetime.combine(now.date(), time(8,0))
+official_time = timezone.make_aware(official_time)
+
+if now > official_time:
+    attendance.is_late = True
+    attendance.deduction_amount = Decimal('250.00')
+    attendance.save()
+
+✔ No minute calculations
+✔ Every late = ₦250
+✔ Clean and simple
+
+🔷 STEP 3 — AUTO ABSENT PENALTY (Optional)
+
+If absence should also incur penalty (example ₦1000), add:
+
+Attendance.objects.create(
+    user=user,
+    branch=user.branch,
+    session='morning',
+    deduction_amount=Decimal('1000.00')
+)
+
+If no absence penalty, leave it 0.
+
+🔷 STEP 4 — PDF ATTENDANCE EXPORT
+
+Install:
+
+pip install reportlab
+Create PDF Export View
+from reportlab.platypus import SimpleDocTemplate, Table, TableStyle, Paragraph
+from reportlab.lib import colors
+from reportlab.lib.styles import getSampleStyleSheet
+from reportlab.lib import colors
+from django.http import HttpResponse
+from django.utils import timezone
+from django.db.models import Sum
+import calendar
+from io import BytesIO
+
+def export_monthly_attendance_pdf(request):
+
+    today = timezone.now()
+    month = today.month
+    year = today.year
+
+    records = Attendance.objects.filter(
+        date__month=month,
+        date__year=year
+    )
+
+    buffer = BytesIO()
+    doc = SimpleDocTemplate(buffer)
+    elements = []
+
+    data = [["Staff", "Branch", "Date", "Late", "Deduction"]]
+
+    for record in records:
+        data.append([
+            record.user.username,
+            record.branch.name,
+            str(record.date),
+            "Yes" if record.is_late else "No",
+            f"₦{record.deduction_amount}"
+        ])
+
+    table = Table(data)
+    table.setStyle(TableStyle([
+        ('BACKGROUND',(0,0),(-1,0),colors.grey),
+        ('GRID',(0,0),(-1,-1),1,colors.black),
+    ]))
+
+    elements.append(table)
+    doc.build(elements)
+
+    buffer.seek(0)
+
+    return HttpResponse(
+        buffer,
+        content_type='application/pdf',
+        headers={'Content-Disposition': 'attachment; filename="Monthly_Attendance_Report.pdf"'}
+    )
+
+Now Director can download monthly report.
+
+🔷 STEP 5 — AUTOMATIC MONTH-END EMAIL TO DIRECTOR
+
+We schedule this using cron or Celery.
+
+Email Function
+from django.core.mail import EmailMessage
+from django.conf import settings
+
+def send_monthly_attendance_email():
+
+    today = timezone.now()
+    last_day = calendar.monthrange(today.year, today.month)[1]
+
+    if today.day != last_day:
+        return
+
+    records = Attendance.objects.filter(
+        date__month=today.month,
+        date__year=today.year
+    )
+
+    total_deductions = records.aggregate(
+        Sum("deduction_amount")
+    )["deduction_amount__sum"] or 0
+
+    subject = f"Monthly Attendance Report - {today.strftime('%B %Y')}"
+    message = f"""
+    Total Lateness Deductions: ₦{total_deductions}
+    Total Records: {records.count()}
+    """
+
+    email = EmailMessage(
+        subject,
+        message,
+        settings.DEFAULT_FROM_EMAIL,
+        ["director@email.com"]
+    )
+
+    email.send()
+🔷 STEP 6 — AUTOMATE IT (CRON JOB)
+
+If using VPS:
+
+Open crontab:
+
+crontab -e
+
+Add:
+
+0 20 28-31 * * /path/to/venv/bin/python /path/to/project/manage.py shell -c "from app.utils import send_monthly_attendance_email; send_monthly_attendance_email()"
+
+Runs 8PM daily but only sends on last day.
