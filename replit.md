@@ -16,11 +16,16 @@ A Django-based ERP system for a telecom/retail business to track employee servic
 
 ## Technical Stack
 - **Backend**: Django 5.0, Python 3.x
-- **Database**: SQLite (Development)
-- **Frontend**: Django Templates, CSS (MTN Branding), Chart.js
+- **Database**: SQLite (Development), indexed queries for performance
+- **Frontend**: Django Templates, CSS (MTN Branding), Chart.js, Responsive Design
+- **Reporting**: ReportLab for PDF generation
+- **Security**: Role-based decorators, CSRF protection, branch-level data isolation
+- **Email**: SMTP configured for automated reporting (ready to deploy)
 
 ## Recent Changes
-- Implemented MultiChoice dynamic package selection.
-- Added MultiChoice weekly reporting and commission calculation.
-- Restricted inventory sidebar to relevant roles (Telecom, Retail, Manager).
-- Added `cost_price` to MultiChoice sales.
+- **UI Production Polish**: Redesigned base.html with modern MTN-branded header, collapsible sidebar, responsive footer, and loading spinner.
+- **Security Enhancements**: Added `@role_required` decorator for all dashboard views; locked cost price editing to Directors only; enforced branch-level data isolation.
+- **Reporting Features**: Implemented PDF export for managers (daily retail reports) and directors (branch summary reports); added manager retail sales filtering by product/staff.
+- **Database Optimization**: Added indexes to RetailSale (date, branch, staff) for performance; configured email backend for future automated reporting.
+- **Inventory Management**: Full IMEI tracking, payment method recording on sales, stock request workflow, expense tracking with net profit calculation.
+- **MultiChoice**: Dynamic package selection (DSTV/GOTV), weekly reporting with auto-calculated commissions, cost tracking.

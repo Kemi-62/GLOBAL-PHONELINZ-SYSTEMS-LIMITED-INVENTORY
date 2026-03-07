@@ -277,6 +277,13 @@ class RetailSale(models.Model):
     date = models.DateField(auto_now_add=True)
     time = models.TimeField(auto_now_add=True)
 
+    class Meta:
+        indexes = [
+            models.Index(fields=["date"]),
+            models.Index(fields=["branch"]),
+            models.Index(fields=["staff"]),
+        ]
+
     def total_amount(self):
         return self.quantity * self.selling_price
 

@@ -1,0 +1,238 @@
+Create:
+
+templates/base.html
+✅ base.html
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Branch Management System</title>
+
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+
+    <style>
+        body {
+            margin: 0;
+            font-family: Arial, sans-serif;
+            background-color: #f4f6f9;
+        }
+
+        .sidebar {
+            width: 220px;
+            height: 100vh;
+            position: fixed;
+            background: #1e272e;
+            color: white;
+            padding-top: 20px;
+        }
+
+        .sidebar h2 {
+            text-align: center;
+            color: #1abc9c;
+        }
+
+        .sidebar a {
+            display: block;
+            padding: 12px 20px;
+            color: white;
+            text-decoration: none;
+        }
+
+        .sidebar a:hover {
+            background: #2c3e50;
+        }
+
+        .main {
+            margin-left: 220px;
+            padding: 20px;
+        }
+
+        .card {
+            background: white;
+            padding: 15px;
+            margin-bottom: 20px;
+            border-radius: 6px;
+            box-shadow: 0 2px 5px rgba(0,0,0,0.1);
+        }
+
+        table {
+            width: 100%;
+            border-collapse: collapse;
+        }
+
+        table th {
+            background: #2c3e50;
+            color: white;
+            padding: 10px;
+        }
+
+        table td {
+            padding: 8px;
+            border-bottom: 1px solid #ddd;
+        }
+
+        button {
+            background: #1abc9c;
+            border: none;
+            padding: 8px 14px;
+            color: white;
+            border-radius: 4px;
+            cursor: pointer;
+        }
+
+        button:hover {
+            background: #16a085;
+        }
+
+        .summary-box {
+            display: inline-block;
+            background: #1abc9c;
+            color: white;
+            padding: 15px;
+            border-radius: 5px;
+            margin-right: 10px;
+        }
+    </style>
+</head>
+
+<body>
+
+<div class="sidebar">
+    <h2>BranchSys</h2>
+
+    {% if user.role == "MANAGER" %}
+        <a href="{% url 'manager_dashboard' %}">Dashboard</a>
+        <a href="{% url 'export_branch_report' %}">Export Report</a>
+    {% endif %}
+
+    {% if user.role == "DIRECTOR" %}
+        <a href="{% url 'director_dashboard' %}">Executive Dashboard</a>
+    {% endif %}
+
+    {% if user.role == "RETAIL" %}
+        <a href="{% url 'retail_dashboard' %}">Retail Dashboard</a>
+    {% endif %}
+
+    {% if user.role == "MULTICHOICE" %}
+        <a href="{% url 'multichoice_dashboard' %}">MultiChoice Dashboard</a>
+    {% endif %}
+
+    <a href="{% url 'logout' %}">Logout</a>
+</div>
+
+<div class="main">
+    {% block content %}
+    {% endblock %}
+</div>
+
+</body>
+</html>
+🔵 STEP 2 — UPDATE ALL DASHBOARDS TO EXTEND BASE
+
+Example:
+
+In manager_dashboard.html:
+
+Remove all <html> and <style>.
+
+Replace with:
+
+{% extends "base.html" %}
+
+{% block content %}
+
+<h2>Manager Dashboard</h2>
+
+<div class="summary-box">
+    Retail Revenue Today: ₦{{ total_retail_revenue }}
+</div>
+
+<div class="summary-box">
+    MultiChoice Revenue Today: ₦{{ multichoice_revenue }}
+</div>
+
+<div class="card">
+    <!-- Retail tables here -->
+</div>
+
+{% endblock %}
+
+Do same for:
+
+director_dashboard.html
+
+retail_dashboard.html
+
+multichoice_dashboard.html
+
+Now everything shares one design system.
+
+🔵 STEP 3 — CLEAN TAB UI FOR MANAGER
+
+Instead of ugly buttons, replace with:
+
+<div class="card">
+    <button onclick="showSection('telecom')">Telecom</button>
+    <button onclick="showSection('retail')">Retail</button>
+    <button onclick="showSection('multichoice')">MultiChoice</button>
+</div>
+
+Wrap each section in:
+
+<div id="retail" class="card section">
+
+And add in base:
+
+<script>
+function showSection(id) {
+    document.querySelectorAll('.section').forEach(s => s.style.display = "none");
+    document.getElementById(id).style.display = "block";
+}
+</script>
+
+Cleaner UI.
+
+🔵 STEP 4 — PRODUCTION SAFETY CHECKLIST
+
+Before deployment:
+
+✅ 1. Set DEBUG False
+
+In settings.py:
+
+DEBUG = False
+ALLOWED_HOSTS = ["yourdomain.com"]
+✅ 2. Protect Against Direct URL Access
+
+Ensure ALL views use:
+
+@login_required
+
+AND role decorator.
+
+✅ 3. Add CSRF Protection
+
+All forms already use:
+
+{% csrf_token %}
+
+Good.
+
+✅ 4. Prevent Negative Stock Globally
+
+Before saving any stock deduction:
+
+if staff_stock.quantity < 0:
+    raise ValidationError("Stock cannot go negative")
+✅ 5. Add Indexes for Speed
+
+In RetailSale model:
+
+class Meta:
+    indexes = [
+        models.Index(fields=["date"]),
+        models.Index(fields=["branch"]),
+    ]
+
+Run migrations.
