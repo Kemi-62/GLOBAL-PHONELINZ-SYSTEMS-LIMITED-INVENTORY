@@ -1,0 +1,25 @@
+{% extends "base.html" %}
+
+{% block content %}
+<div style="max-width:420px;margin:auto;padding:20px">
+<h2>Morning Attendance Check-In</h2>
+<form method="POST" enctype="multipart/form-data" action="{% url 'check_in' %}">
+{% csrf_token %}
+<input type="hidden" id="lat" name="latitude">
+<input type="hidden" id="lon" name="longitude">
+<label>Take Selfie</label>
+<input type="file" name="selfie" accept="image/*" capture="user" required>
+<button type="submit" style="width:100%;padding:14px;background:#28a745;color:white;border:none;margin-top:20px;border-radius:4px;cursor:pointer;font-weight:600;">Check In</button>
+</form>
+<p style="margin-top:20px;text-align:center;color:#666;font-size:0.9rem;">
+<a href="{% url 'attendance_history' %}" style="color:#004F9F;text-decoration:none;">View Attendance History</a>
+</p>
+</div>
+
+<script>
+navigator.geolocation.getCurrentPosition(function(position){
+    document.getElementById("lat").value = position.coords.latitude;
+    document.getElementById("lon").value = position.coords.longitude;
+});
+</script>
+{% endblock %}

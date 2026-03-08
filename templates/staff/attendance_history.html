@@ -1,0 +1,51 @@
+{% extends "base.html" %}
+
+{% block content %}
+<div style="max-width:800px;margin:auto;padding:20px">
+<h2>Your Attendance History</h2>
+
+<table style="width:100%;border-collapse:collapse;margin-top:20px;">
+<tr style="background:#004F9F;color:white;">
+<th style="padding:12px;text-align:left;border:1px solid #ddd;">Date</th>
+<th style="padding:12px;text-align:left;border:1px solid #ddd;">Check In</th>
+<th style="padding:12px;text-align:left;border:1px solid #ddd;">Check Out</th>
+<th style="padding:12px;text-align:left;border:1px solid #ddd;">Status</th>
+<th style="padding:12px;text-align:left;border:1px solid #ddd;">Deduction</th>
+</tr>
+
+{% for r in records %}
+<tr style="border-bottom:1px solid #eee;">
+<td style="padding:12px;border:1px solid #ddd;">{{ r.date }}</td>
+<td style="padding:12px;border:1px solid #ddd;">
+{% if r.check_in_time %}
+{{ r.check_in_time|time:"H:i" }}
+{% else %}
+-
+{% endif %}
+</td>
+<td style="padding:12px;border:1px solid #ddd;">
+{% if r.check_out_time %}
+{{ r.check_out_time|time:"H:i" }}
+{% else %}
+-
+{% endif %}
+</td>
+<td style="padding:12px;border:1px solid #ddd;">
+{% if r.is_absent %}
+<span style="background:#dc3545;color:white;padding:4px 8px;border-radius:3px;">Absent</span>
+{% elif r.is_late %}
+<span style="background:#ffc107;color:#333;padding:4px 8px;border-radius:3px;">Late</span>
+{% else %}
+<span style="background:#28a745;color:white;padding:4px 8px;border-radius:3px;">On Time</span>
+{% endif %}
+</td>
+<td style="padding:12px;border:1px solid #ddd;">₦{{ r.deduction_amount }}</td>
+</tr>
+{% empty %}
+<tr>
+<td colspan="5" style="padding:12px;text-align:center;color:#666;">No attendance records yet</td>
+</tr>
+{% endfor %}
+</table>
+</div>
+{% endblock %}

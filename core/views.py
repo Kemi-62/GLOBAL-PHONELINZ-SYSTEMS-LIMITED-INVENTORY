@@ -1,12 +1,43 @@
 from django.shortcuts import render, redirect
 from django.contrib.auth import authenticate, login
 from django.contrib import messages
-from django.http import HttpResponseForbidden
+from django.http import HttpResponseForbidden, JsonResponse
 from django.contrib.auth.decorators import login_required
-from datetime import date
+from datetime import date, time
+import math
 from django.db.models import Sum, F
 from django.utils import timezone
-from .models import User, Branch, DeviceTag, ServiceTarget, ServiceActivity, BranchSafeStock, StockMovement, Product, StaffStock, RetailSale, RetailCategory, RetailSubCategory, RetailSubSubCategory, MultiChoiceSale, MultiChoiceWeeklyReport, Expense, StockRequest
+from decimal import Decimal
+from .models import User, Branch, DeviceTag, ServiceTarget, ServiceActivity, BranchSafeStock, StockMovement, Product, StaffStock, RetailSale, RetailCategory, RetailSubCategory, RetailSubSubCategory, MultiChoiceSale, MultiChoiceWeeklyReport, Expense, StockRequest, Attendance
+from .utils.decorators import role_required
+
+def calculate_distance(lat1, lon1, lat2, lon2):
+    R = 6371000
+    phi1 = math.radians(lat1)
+    phi2 = math.radians(lat2)
+    delta_phi = math.radians(lat2 - lat1)
+    delta_lambda = math.radians(lon2 - lon1)
+    a = math.sin(delta_phi/2)**2 + math.cos(phi1)*math.cos(phi2)*math.sin(delta_lambda/2)**2
+    c = 2 * math.atan2(math.sqrt(a), math.sqrt(1-a))
+    return R * c
+
+def attendance_status():
+    now = timezone.localtime()
+    current_time = now.time()
+    weekday = now.weekday()
+    if weekday < 5:
+        if time(7,30) <= current_time <= time(8,0):
+            return "ontime"
+        elif time(8,1) <= current_time <= time(8,59):
+            return "late"
+        elif current_time >= time(9,0):
+            return "absent"
+    if weekday == 5:
+        if time(9,0) <= current_time <= time(9,15):
+            return "ontime"
+        elif current_time > time(9,15):
+            return "late"
+    return "early"
 
 # -----------------------
 # Custom Login
@@ -914,3 +945,48 @@ def release_stock(request):
         messages.success(request, f"Released {quantity} of {product.model_name} to {staff.username}.")
 
     return redirect("manager_dashboard")
+
+@login_required
+def check_in(request):
+    if request.method == "POST":
+        user = request.user
+        branch = user.branch
+
+        if not branch or not branch.latitude or not branch.longitude:
+            return JsonResponse({"error": "Branch location not configured"})
+
+        latitude = float(request.POST.get("latitude"))
+        longitude = float(request.POST.get("longitude"))
+        selfie = request.FILES.get("selfie")
+
+        today = timezone.now().date()
+
+        if Attendance.objects.filter(user=user, date=today, session="morning").exists():
+            return JsonResponse({"error": "Already checked in today"})
+
+        distance = calculate_distance(latitude, longitude, branch.latitude, branch.longitude)
+
+        if distance > branch.allowed_radius:
+            return JsonResponse({"error": "You must be within branch premises"})
+
+        status = attendance_status()
+        attendance = Attendance.objects.create(
+            user=user, branch=branch, session="morning", check_in_time=timezone.now(),
+            latitude=latitude, longitude=longitude, distance_from_branch=distance, selfie=selfie
+        )
+
+        if status == "late":
+            attendance.is_late = True
+            attendance.deduction_amount = Decimal("250.00")
+        elif status == "absent":
+            attendance.is_absent = True
+
+        attendance.save()
+        return JsonResponse({"success": "Check in successful"})
+
+    return render(request, "staff/attendance.html")
+
+@login_required
+def attendance_history(request):
+    records = Attendance.objects.filter(user=request.user).order_by("-date")
+    return render(request, "staff/attendance_history.html", {"records": records})

@@ -2,12 +2,18 @@ from django.db import models
 from django.contrib.auth.models import AbstractUser
 from django.db.models import Sum
 from datetime import date
+from django.utils import timezone
+from decimal import Decimal
 
 # -----------------------
 # Branch
 # -----------------------
 class Branch(models.Model):
     name = models.CharField(max_length=100)
+    latitude = models.FloatField(null=True, blank=True)
+    longitude = models.FloatField(null=True, blank=True)
+    allowed_radius = models.IntegerField(default=100)
+    location_locked = models.BooleanField(default=False)
 
     def __str__(self):
         return str(self.name)
@@ -303,5 +309,25 @@ class StockRequest(models.Model):
     status = models.CharField(max_length=10, choices=STATUS_CHOICES, default='PENDING')
     date_requested = models.DateField(auto_now_add=True)
 
+class Attendance(models.Model):
+    SESSION_CHOICES = (
+        ("morning", "Morning"),
+        ("evening", "Evening"),
+    )
+
+    user = models.ForeignKey(User, on_delete=models.CASCADE)
+    branch = models.ForeignKey(Branch, on_delete=models.CASCADE)
+    session = models.CharField(max_length=10, choices=SESSION_CHOICES)
+    check_in_time = models.DateTimeField(null=True, blank=True)
+    check_out_time = models.DateTimeField(null=True, blank=True)
+    latitude = models.FloatField()
+    longitude = models.FloatField()
+    distance_from_branch = models.FloatField(default=0)
+    selfie = models.ImageField(upload_to="attendance_selfies/")
+    date = models.DateField(default=timezone.now)
+    is_late = models.BooleanField(default=False)
+    is_absent = models.BooleanField(default=False)
+    deduction_amount = models.DecimalField(max_digits=10, decimal_places=2, default=Decimal("0.00"))
+
     def __str__(self):
-        return f"{self.staff.username} requests {self.quantity} of {self.product_name}"
+        return f"{self.user.username} - {self.date}"
