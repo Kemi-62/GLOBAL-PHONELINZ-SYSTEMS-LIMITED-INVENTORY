@@ -26,4 +26,6 @@ urlpatterns = [
     path('export-report/', views.export_branch_report, name='export_branch_report'),
     path('attendance/', views.check_in, name='check_in'),
     path('attendance/history/', views.attendance_history, name='attendance_history'),
+    path('director/attendance/', views.director_attendance_dashboard, name='director_attendance_dashboard'),
+    path('attendance/export-pdf/', views.export_monthly_attendance_pdf, name='export_monthly_attendance_pdf'),
 ]

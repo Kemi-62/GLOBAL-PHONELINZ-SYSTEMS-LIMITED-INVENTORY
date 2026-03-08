@@ -990,3 +990,53 @@ def check_in(request):
 def attendance_history(request):
     records = Attendance.objects.filter(user=request.user).order_by("-date")
     return render(request, "staff/attendance_history.html", {"records": records})
+
+@role_required("DIRECTOR")
+def director_attendance_dashboard(request):
+    today = timezone.now().date()
+    records = Attendance.objects.filter(date=today)
+    context = {
+        "records": records,
+        "total_late": records.filter(is_late=True).count(),
+        "total_absent": records.filter(is_absent=True).count(),
+        "total_deductions": records.aggregate(Sum("deduction_amount"))["deduction_amount__sum"] or 0,
+    }
+    return render(request, "director/attendance.html", context)
+
+@role_required("DIRECTOR")
+def export_monthly_attendance_pdf(request):
+    from reportlab.platypus import SimpleDocTemplate, Table, TableStyle, Paragraph, Spacer
+    from reportlab.lib import colors
+    from reportlab.lib.styles import getSampleStyleSheet
+    from reportlab.lib.units import inch
+    from io import BytesIO
+    
+    records = Attendance.objects.all().order_by("-date")
+    buffer = BytesIO()
+    doc = SimpleDocTemplate(buffer)
+    elements = []
+    styles = getSampleStyleSheet()
+    
+    elements.append(Paragraph("Monthly Attendance Report", styles['Heading1']))
+    elements.append(Spacer(1, 0.3 * inch))
+    
+    data = [["Staff", "Date", "Late", "Absent", "Deduction"]]
+    for r in records:
+        data.append([
+            r.user.username,
+            str(r.date),
+            "Yes" if r.is_late else "No",
+            "Yes" if r.is_absent else "No",
+            f"₦{r.deduction_amount}"
+        ])
+    
+    table = Table(data)
+    table.setStyle(TableStyle([
+        ('BACKGROUND', (0, 0), (-1, 0), colors.grey),
+        ('GRID', (0, 0), (-1, -1), 1, colors.black),
+    ]))
+    elements.append(table)
+    doc.build(elements)
+    
+    buffer.seek(0)
+    return HttpResponse(buffer, content_type="application/pdf", headers={'Content-Disposition': 'attachment; filename="Monthly_Attendance_Report.pdf"'})
