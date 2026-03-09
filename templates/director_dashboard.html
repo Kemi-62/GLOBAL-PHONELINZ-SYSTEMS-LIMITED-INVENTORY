@@ -12,8 +12,12 @@
 </style>
 
 <div class="card" style="margin-bottom: 2rem;">
-    <h2 style="margin: 0; color: var(--mtn-blue);">Director Retail Analytics</h2>
-    <a href="{% url 'director_attendance_dashboard' %}" class="btn btn-success" style="margin-top:15px;">📊 View Attendance</a>
+    <h2 style="margin: 0; color: var(--mtn-blue);">Director Dashboard</h2>
+    <div style="margin-top:15px;display:flex;gap:10px;flex-wrap:wrap;">
+        <a href="{% url 'director_attendance_dashboard' %}" class="btn btn-success">📊 View Attendance</a>
+        <a href="{% url 'manage_branch_locations' %}" class="btn btn-primary">📍 Configure Branches</a>
+        <a href="{% url 'export_monthly_attendance_pdf' %}" class="btn btn-primary">📥 Download Attendance PDF</a>
+    </div>
     <div style="display: flex; gap: 10px; margin-top: 1rem;">
         <button onclick="window.print()" class="btn btn-primary">Export to PDF (Print)</button>
         <div style="flex-grow: 1;"></div>

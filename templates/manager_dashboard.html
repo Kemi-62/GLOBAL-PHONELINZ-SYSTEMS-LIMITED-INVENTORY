@@ -2,6 +2,12 @@
 {% load static %}
 
 {% block content %}
+<div class="card">
+    <h2 style="margin-top:0;">Attendance</h2>
+    <a href="{% url 'check_in' %}" class="btn btn-success" style="margin-right:10px;">📍 Check In (Attendance)</a>
+    <a href="{% url 'attendance_history' %}" class="btn btn-primary">📋 Attendance History</a>
+</div>
+
 <style>
     .section { display: none; transition: opacity 0.3s ease; }
     .active { display: block; }

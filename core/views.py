@@ -1004,6 +1004,30 @@ def director_attendance_dashboard(request):
     return render(request, "director/attendance.html", context)
 
 @role_required("DIRECTOR")
+def manage_branch_locations(request):
+    if request.method == "POST":
+        branch_id = request.POST.get("branch_id")
+        latitude = request.POST.get("latitude")
+        longitude = request.POST.get("longitude")
+        allowed_radius = request.POST.get("allowed_radius", 100)
+        
+        try:
+            branch = Branch.objects.get(id=branch_id)
+            branch.latitude = float(latitude)
+            branch.longitude = float(longitude)
+            branch.allowed_radius = int(allowed_radius)
+            branch.location_locked = True
+            branch.save()
+            messages.success(request, f"Location saved for {branch.name}")
+        except Exception as e:
+            messages.error(request, f"Error saving location: {str(e)}")
+        
+        return redirect("manage_branch_locations")
+    
+    branches = Branch.objects.all()
+    return render(request, "director/manage_locations.html", {"branches": branches})
+
+@role_required("DIRECTOR")
 def export_monthly_attendance_pdf(request):
     from reportlab.platypus import SimpleDocTemplate, Table, TableStyle, Paragraph, Spacer
     from reportlab.lib import colors

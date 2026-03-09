@@ -22,6 +22,13 @@ A Django-based ERP system for a telecom/retail business to track employee servic
 - **Security**: Role-based decorators, CSRF protection, branch-level data isolation
 - **Email**: SMTP configured for automated reporting (ready to deploy)
 
+## Deployed Features
+- **Attendance Tracking**: GPS check-in/check-out, geofencing, selfie capture, late detection (₦250), absence flagging
+- **Branch Location Management**: Director can configure GPS coordinates and radius for each branch
+- **Attendance Dashboards**: Staff history, director analytics with PDF export
+- **Multi-Role Support**: Attendance features visible on all staff dashboards (TELECOM, RETAIL, MULTICHOICE, MANAGER)
+- **Role-Based Access Control**: Directors only access to attendance analytics and branch configuration
+
 ## Recent Changes
 - **Attendance Tracking System**: Implemented GPS-based check-in/check-out with geofencing (100m radius), selfie capture, automatic late detection (₦250 deduction), and absence flagging. Features include time-window validation (7:30-8:00 AM weekdays, 9:00-9:15 AM Saturdays), distance calculation via Haversine formula, attendance history dashboard, director analytics dashboard, and PDF monthly report export. Automated absent staff alerts at 8:30 AM daily.
 - **Media Handling**: Added Pillow and ReportLab packages; configured MEDIA_URL and MEDIA_ROOT for image uploads (attendance selfies).
