@@ -12,7 +12,7 @@ class Branch(models.Model):
     name = models.CharField(max_length=100)
     latitude = models.FloatField(null=True, blank=True)
     longitude = models.FloatField(null=True, blank=True)
-    allowed_radius = models.IntegerField(default=100)
+    allowed_radius = models.IntegerField(default=300)
     location_locked = models.BooleanField(default=False)
 
     def __str__(self):

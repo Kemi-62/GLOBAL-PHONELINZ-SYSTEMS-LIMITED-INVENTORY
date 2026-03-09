@@ -3,13 +3,14 @@
 {% block content %}
 <div style="max-width:420px;margin:auto;padding:20px">
 <h2>Morning Attendance Check-In</h2>
-<form method="POST" enctype="multipart/form-data" action="{% url 'check_in' %}">
+<div id="error-msg" style="display:none;background:#f8d7da;color:#721c24;padding:12px;border-radius:4px;margin-bottom:15px;"></div>
+<form method="POST" enctype="multipart/form-data" action="{% url 'check_in' %}" id="attendance-form">
 {% csrf_token %}
 <input type="hidden" id="lat" name="latitude">
 <input type="hidden" id="lon" name="longitude">
 <label>Take Selfie</label>
 <input type="file" name="selfie" accept="image/*" capture="user" required>
-<button type="submit" style="width:100%;padding:14px;background:#28a745;color:white;border:none;margin-top:20px;border-radius:4px;cursor:pointer;font-weight:600;">Check In</button>
+<button type="submit" id="check-in-btn" style="width:100%;padding:14px;background:#28a745;color:white;border:none;margin-top:20px;border-radius:4px;cursor:pointer;font-weight:600;">Check In</button>
 </form>
 <p style="margin-top:20px;text-align:center;color:#666;font-size:0.9rem;">
 <a href="{% url 'attendance_history' %}" style="color:#004F9F;text-decoration:none;">View Attendance History</a>
@@ -20,6 +21,37 @@
 navigator.geolocation.getCurrentPosition(function(position){
     document.getElementById("lat").value = position.coords.latitude;
     document.getElementById("lon").value = position.coords.longitude;
+});
+
+document.getElementById('attendance-form').addEventListener('submit', function(e) {
+    e.preventDefault();
+    
+    const formData = new FormData(this);
+    const btn = document.getElementById('check-in-btn');
+    btn.disabled = true;
+    btn.textContent = 'Submitting...';
+    
+    fetch('{% url "check_in" %}', {
+        method: 'POST',
+        body: formData
+    })
+    .then(r => r.json())
+    .then(data => {
+        if(data.success) {
+            alert(data.success);
+            window.location.href = '{% url "attendance_history" %}';
+        } else if(data.error) {
+            document.getElementById('error-msg').style.display = 'block';
+            document.getElementById('error-msg').textContent = data.error;
+            btn.disabled = false;
+            btn.textContent = 'Check In';
+        }
+    })
+    .catch(err => {
+        alert('Error: ' + err);
+        btn.disabled = false;
+        btn.textContent = 'Check In';
+    });
 });
 </script>
 {% endblock %}

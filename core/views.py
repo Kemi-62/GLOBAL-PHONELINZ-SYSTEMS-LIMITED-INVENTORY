@@ -967,7 +967,11 @@ def check_in(request):
         distance = calculate_distance(latitude, longitude, branch.latitude, branch.longitude)
 
         if distance > branch.allowed_radius:
-            return JsonResponse({"error": "You must be within branch premises"})
+            return JsonResponse({
+                "error": f"You are {distance:.0f}m away. Branch radius is {branch.allowed_radius}m. Please move closer or contact your director to adjust the radius.",
+                "distance": round(distance, 2),
+                "allowed_radius": branch.allowed_radius
+            })
 
         status = attendance_status()
         attendance = Attendance.objects.create(
