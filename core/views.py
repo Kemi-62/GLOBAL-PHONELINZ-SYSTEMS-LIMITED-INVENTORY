@@ -45,19 +45,19 @@ def attendance_status():
 def custom_login(request):
     if request.user.is_authenticated:
         if request.user.is_superuser:
-            return redirect('director_dashboard')
-        if hasattr(request.user, 'role'):
-            if request.user.role == "MANAGER":
-                return redirect("manager_dashboard")
-            elif request.user.role == "DIRECTOR":
+            return redirect('admin:index')
+        if hasattr(request.user, 'role') and request.user.role:
+            if request.user.role == "DIRECTOR":
                 return redirect("director_dashboard")
+            elif request.user.role == "MANAGER":
+                return redirect("manager_dashboard")
             elif request.user.role == "RETAIL":
                 return redirect("retail_dashboard")
             elif request.user.role == "MULTICHOICE":
                 return redirect("multichoice_dashboard")
             elif request.user.role == "TELECOM":
                 return redirect("staff_dashboard")
-        return redirect('director_dashboard')
+        return redirect("director_dashboard")
         
     if request.method == 'POST':
         username = request.POST.get('username', '').strip()

@@ -79,9 +79,8 @@
         <h1>Service ERP System</h1>
     </div>
     <div class="user-info">
-        {% if request.user.branch %}<strong>{{ request.user.branch.name }}</strong> |{% endif %}
-        Welcome, <strong>{{ user.username }}</strong>
-        <a href="{% url 'logout' %}">Logout</a>
+        {% if user.branch %}<strong style="color:var(--mtn-yellow);">{{ user.branch.name }}</strong>{% else %}<strong style="color:var(--mtn-yellow);">Head Office</strong>{% endif %} | Welcome, <strong>{{ user.username }}</strong>
+        <a href="{% url 'logout' %}" style="margin-left:10px;">Logout</a>
     </div>
 </div>
 <div class="container">

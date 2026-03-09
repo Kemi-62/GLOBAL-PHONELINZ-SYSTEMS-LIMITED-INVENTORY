@@ -22,14 +22,15 @@ def role_required(role):
 def send_absent_alert():
     from django.utils import timezone
     from datetime import time
-    from .models import Attendance
+    from django.apps import apps
     
     now = timezone.localtime().time()
     if now < time(8, 30):
         return
     
     today = timezone.now().date()
-    staff = User.objects.filter(role__in=["TELECOM", "RETAIL", "MULTICHOICE"])
+    staff = User.objects.exclude(role__in=["DIRECTOR", "SUPERADMIN"]).filter(role__isnull=False)
+    Attendance = apps.get_model('core', 'Attendance')
     
     absent_staff = []
     for user in staff:
