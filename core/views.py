@@ -812,6 +812,48 @@ def director_dashboard(request):
 
     return render(request, "director_dashboard.html", context)
 
+@role_required("DIRECTOR")
+def director_safe_stock(request):
+    stocks = DirectorSafeStock.objects.all().order_by('-date_added')
+    products = Product.objects.all()
+    total_quantity = sum([s.quantity for s in stocks])
+    
+    context = {
+        'stocks': stocks,
+        'products': products,
+        'total_quantity': total_quantity,
+    }
+    return render(request, 'director/director_safe.html', context)
+
+@role_required("DIRECTOR")
+def add_director_stock(request):
+    if request.method == "POST":
+        product_id = request.POST.get('product_id')
+        quantity = request.POST.get('quantity')
+        notes = request.POST.get('notes', '')
+        
+        try:
+            product = Product.objects.get(id=product_id)
+            DirectorSafeStock.objects.create(
+                product=product,
+                quantity=int(quantity),
+                notes=notes
+            )
+            messages.success(request, f"Added {quantity} {product.model_name} to director safe")
+        except Exception as e:
+            messages.error(request, f"Error: {str(e)}")
+    
+    return redirect('director_safe_stock')
+
+@role_required("DIRECTOR")
+def delete_director_stock(request, stock_id):
+    stock = DirectorSafeStock.objects.get(id=stock_id)
+    product_name = stock.product.model_name if stock.product else "Stock"
+    quantity = stock.quantity
+    stock.delete()
+    messages.success(request, f"Deleted {quantity} {product_name} from director safe")
+    return redirect('director_safe_stock')
+
 @login_required
 def add_stock_to_safe(request):
     if request.method == "POST" and request.user.role == "MANAGER":

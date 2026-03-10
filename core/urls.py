@@ -28,5 +28,8 @@ urlpatterns = [
     path('attendance/history/', views.attendance_history, name='attendance_history'),
     path('director/attendance/', views.director_attendance_dashboard, name='director_attendance_dashboard'),
     path('director/manage-locations/', views.manage_branch_locations, name='manage_branch_locations'),
+    path('director/safe/', views.director_safe_stock, name='director_safe_stock'),
+    path('director/safe/add/', views.add_director_stock, name='add_director_stock'),
+    path('director/safe/delete/<int:stock_id>/', views.delete_director_stock, name='delete_director_stock'),
     path('attendance/export-pdf/', views.export_monthly_attendance_pdf, name='export_monthly_attendance_pdf'),
 ]

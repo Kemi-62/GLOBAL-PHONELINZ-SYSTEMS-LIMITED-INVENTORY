@@ -29,7 +29,14 @@ A Django-based ERP system for a telecom/retail business to track employee servic
 - **Multi-Role Support**: Attendance features visible on all staff dashboards (TELECOM, RETAIL, MULTICHOICE, MANAGER)
 - **Role-Based Access Control**: Directors only access to attendance analytics and branch configuration
 
-## Recent Changes
+## Recent Changes (Latest Round)
+- **Login UI Enhanced**: Added password visibility toggle with eye icon (👁️), improved styling with MTN branding, better form validation and error display
+- **Dashboard Text Visibility**: Fixed manager dashboard to use dark text colors (#333) for better readability on white backgrounds
+- **Telecom Staff Services**: Added Router Sale and Wholesale SIM as physical product sales (not device-tag-dependent) alongside Mifi Sales
+- **Director Safe Stock**: New feature allowing directors to manage stock not yet distributed to branches. Full CRUD operations with product selection, quantity tracking, and deletion
+- **Service Options Expanded**: Updated ServiceActivity model to support ROUTER and WHOLESALE_SIM service types
+
+## Earlier Changes
 - **Attendance Tracking System**: Implemented GPS-based check-in/check-out with geofencing (100m radius), selfie capture, automatic late detection (₦250 deduction), and absence flagging. Features include time-window validation (7:30-8:00 AM weekdays, 9:00-9:15 AM Saturdays), distance calculation via Haversine formula, attendance history dashboard, director analytics dashboard, and PDF monthly report export. Automated absent staff alerts at 8:30 AM daily.
 - **Media Handling**: Added Pillow and ReportLab packages; configured MEDIA_URL and MEDIA_ROOT for image uploads (attendance selfies).
 - **Branch Geo-Data**: Updated Branch model with latitude, longitude, allowed_radius (default 100m), and location_locked fields.

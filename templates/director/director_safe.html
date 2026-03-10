@@ -1,0 +1,79 @@
+{% extends "base.html" %}
+
+{% block content %}
+<div style="max-width:1200px;margin:auto;padding:20px;">
+<h2>Director Safe Stock Management</h2>
+<p style="color:#666;">Manage stock not yet distributed to any branch. This is your director-level inventory.</p>
+
+<div class="row" style="display:flex;gap:2rem;flex-wrap:wrap;margin-bottom:2rem;">
+    <div style="flex:1;min-width:350px;">
+        <div class="card">
+            <h3 style="margin-top:0;">Add Stock to Director Safe</h3>
+            <form method="POST" action="{% url 'add_director_stock' %}">
+                {% csrf_token %}
+                <label>Product</label>
+                <select name="product_id" required>
+                    <option value="">Select Product</option>
+                    {% for product in products %}
+                        <option value="{{ product.id }}">{{ product.model_name }} (₦{{ product.cost_price }})</option>
+                    {% endfor %}
+                </select>
+                <label style="margin-top:15px;">Quantity</label>
+                <input type="number" name="quantity" required min="1">
+                <label style="margin-top:15px;">Notes</label>
+                <textarea name="notes" placeholder="Add any notes..."></textarea>
+                <button type="submit" class="btn btn-success" style="width:100%;margin-top:15px;">➕ Add to Safe</button>
+            </form>
+        </div>
+    </div>
+
+    <div style="flex:1;min-width:350px;">
+        <div class="card" style="border-left:5px solid var(--mtn-yellow);">
+            <h3 style="margin-top:0;color:var(--mtn-blue);">📦 Total Stock in Safe</h3>
+            <div style="font-size:2.5rem;font-weight:bold;color:var(--mtn-blue);">{{ total_quantity }}</div>
+            <p style="color:#666;margin-top:0.5rem;">units across all products</p>
+        </div>
+    </div>
+</div>
+
+<div class="card">
+    <h3>Current Director Safe Stock</h3>
+    {% if stocks %}
+    <table style="width:100%;border-collapse:collapse;margin-top:15px;">
+        <tr style="background:#004F9F;color:white;">
+            <th style="padding:12px;text-align:left;">Product</th>
+            <th style="padding:12px;text-align:left;">Cost Price</th>
+            <th style="padding:12px;text-align:left;">Quantity</th>
+            <th style="padding:12px;text-align:left;">Total Value</th>
+            <th style="padding:12px;text-align:left;">Date Added</th>
+            <th style="padding:12px;text-align:left;">Action</th>
+        </tr>
+        {% for stock in stocks %}
+        <tr style="border-bottom:1px solid #eee;">
+            <td style="padding:12px;color:#333;">{{ stock.product.model_name }}</td>
+            <td style="padding:12px;color:#333;">₦{{ stock.product.cost_price }}</td>
+            <td style="padding:12px;color:#333;font-weight:600;">{{ stock.quantity }}</td>
+            <td style="padding:12px;color:#333;">₦{{ stock.quantity|mul:stock.product.cost_price }}</td>
+            <td style="padding:12px;color:#333;">{{ stock.date_added|date:"M d, Y" }}</td>
+            <td style="padding:12px;">
+                <form method="POST" action="{% url 'delete_director_stock' stock.id %}" style="display:inline;">
+                    {% csrf_token %}
+                    <button type="submit" class="btn btn-danger" style="padding:4px 8px;font-size:0.8rem;" onclick="return confirm('Delete this stock?');">Delete</button>
+                </form>
+            </td>
+        </tr>
+        {% endfor %}
+    </table>
+    {% else %}
+    <p style="color:#666;text-align:center;padding:20px;">No stock in director safe yet</p>
+    {% endif %}
+</div>
+</div>
+
+<script>
+Math.imul = function(a, b) { return a * b; };
+if (!String.prototype.mul) {
+    String.prototype.mul = function(b) { return parseInt(this) * parseInt(b); };
+}
+</script>
+{% endblock %}

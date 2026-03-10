@@ -97,6 +97,21 @@ class ServiceTarget(models.Model):
 # -----------------------
 # Service Activity (Daily Work Entry)
 # -----------------------
+class DirectorSafeStock(models.Model):
+    product = models.ForeignKey('Product', on_delete=models.CASCADE, null=True, blank=True)
+    quantity = models.PositiveIntegerField(default=0)
+    date_added = models.DateTimeField(auto_now_add=True)
+    notes = models.TextField(blank=True)
+
+    def __str__(self):
+        if self.product:
+            return f"Director Safe - {self.product.model_name}: {self.quantity}"
+        return f"Director Safe - {self.quantity} units"
+
+    class Meta:
+        verbose_name_plural = "Director Safe Stock"
+
+
 class ServiceActivity(models.Model):
     SERVICE_CHOICES = (
         ('SIM_REG', 'SIM Registration'),
@@ -104,6 +119,8 @@ class ServiceActivity(models.Model):
         ('SIM_RET', 'SIM Retrieval'),
         ('NIN_LINK', 'NIN Linking'),
         ('MIFI', 'MiFi Sale'),
+        ('ROUTER', 'Router Sale'),
+        ('WHOLESALE_SIM', 'Wholesale SIM'),
     )
 
     branch = models.ForeignKey(Branch, on_delete=models.CASCADE)

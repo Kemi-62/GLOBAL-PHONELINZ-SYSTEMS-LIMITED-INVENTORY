@@ -76,7 +76,7 @@
 <div class="navbar">
     <div style="display: flex; align-items: center;">
         <span class="menu-toggle" onclick="toggleSidebar()">☰</span>
-        <h1>Service ERP System</h1>
+        <h1>GPSL Automation System</h1>
     </div>
     <div class="user-info">
         {% if user.branch %}<strong style="color:var(--mtn-yellow);">{{ user.branch.name }}</strong>{% else %}<strong style="color:var(--mtn-yellow);">Head Office</strong>{% endif %} | Welcome, <strong>{{ user.username }}</strong>
@@ -94,7 +94,7 @@
     {% block content %}{% endblock %}
 </div>
 <footer class="footer">
-    <p>© {% now "Y" %} Service Performance Tracking ERP | All Rights Reserved</p>
+    <p>© {% now "Y" %} GPSL Automation Solutions | All Rights Reserved</p>
 </footer>
 <div id="loader" class="loader" style="display:none;"><div class="spinner"></div></div>
 <script>

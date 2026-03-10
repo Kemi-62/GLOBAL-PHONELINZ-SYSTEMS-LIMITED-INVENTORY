@@ -1,20 +1,121 @@
 <!DOCTYPE html>
 <html>
 <head>
-    <title>Login</title>
+    <title>ERP Login</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            background: linear-gradient(135deg, #004F9F 0%, #FFCB05 100%);
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            min-height: 100vh;
+            margin: 0;
+        }
+        .login-container {
+            background: white;
+            padding: 40px;
+            border-radius: 10px;
+            box-shadow: 0 8px 32px rgba(0,0,0,0.1);
+            width: 100%;
+            max-width: 380px;
+        }
+        h2 {
+            color: #004F9F;
+            text-align: center;
+            margin-top: 0;
+        }
+        .form-group {
+            margin-bottom: 20px;
+            position: relative;
+        }
+        label {
+            display: block;
+            margin-bottom: 8px;
+            color: #333;
+            font-weight: 600;
+        }
+        input[type="text"],
+        input[type="password"] {
+            width: 100%;
+            padding: 12px;
+            border: 1px solid #ddd;
+            border-radius: 6px;
+            font-size: 14px;
+            box-sizing: border-box;
+        }
+        input:focus {
+            outline: none;
+            border-color: #004F9F;
+            box-shadow: 0 0 0 3px rgba(0,79,159,0.1);
+        }
+        .password-toggle {
+            position: absolute;
+            right: 12px;
+            top: 38px;
+            cursor: pointer;
+            color: #666;
+            font-size: 18px;
+            user-select: none;
+        }
+        button {
+            width: 100%;
+            padding: 12px;
+            background: #004F9F;
+            color: white;
+            border: none;
+            border-radius: 6px;
+            font-weight: 600;
+            cursor: pointer;
+            font-size: 15px;
+            transition: background 0.3s;
+        }
+        button:hover {
+            background: #003d7a;
+        }
+        .messages {
+            margin-bottom: 20px;
+            padding: 12px;
+            background: #f8d7da;
+            color: #721c24;
+            border: 1px solid #f5c6cb;
+            border-radius: 6px;
+        }
+    </style>
 </head>
 <body>
-    <h2>ERP Login</h2>
-    <form method="POST">
-        {% csrf_token %}
-        <input type="text" name="username" placeholder="Username"><br><br>
-        <input type="password" name="password" placeholder="Password"><br><br>
-        <button type="submit">Login</button>
+    <div class="login-container">
+        <h2>ERP Login</h2>
         {% if messages %}
-    {% for message in messages %}
-        <p style="color:red;">{{ message }}</p>
-    {% endfor %}
-{% endif %}
-    </form>
+            <div class="messages">
+                {% for message in messages %}
+                    <p style="margin:0;">{{ message }}</p>
+                {% endfor %}
+            </div>
+        {% endif %}
+        <form method="POST">
+            {% csrf_token %}
+            <div class="form-group">
+                <label>Username</label>
+                <input type="text" name="username" placeholder="Enter username" required>
+            </div>
+            <div class="form-group">
+                <label>Password</label>
+                <input type="password" name="password" id="password" placeholder="Enter password" required>
+                <span class="password-toggle" onclick="togglePassword()">👁️</span>
+            </div>
+            <button type="submit">Login</button>
+        </form>
+    </div>
+    <script>
+        function togglePassword() {
+            const passwordField = document.getElementById('password');
+            if (passwordField.type === 'password') {
+                passwordField.type = 'text';
+            } else {
+                passwordField.type = 'password';
+            }
+        }
+    </script>
 </body>
 </html>
