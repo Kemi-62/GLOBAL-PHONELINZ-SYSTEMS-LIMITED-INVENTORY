@@ -103,6 +103,12 @@ class DirectorSafeStock(models.Model):
     date_added = models.DateTimeField(auto_now_add=True)
     notes = models.TextField(blank=True)
 
+    @property
+    def total_value(self):
+        if self.product:
+            return self.quantity * self.product.cost_price
+        return 0
+
     def __str__(self):
         if self.product:
             return f"Director Safe - {self.product.model_name}: {self.quantity}"

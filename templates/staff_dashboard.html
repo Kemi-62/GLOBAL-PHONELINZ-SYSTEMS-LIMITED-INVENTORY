@@ -72,6 +72,36 @@
     </div>
 </div>
 
+<h3 style="margin-top: 2rem; border-bottom: 2px solid #eee; padding-bottom: 0.5rem;">📱 Physical Products Activity</h3>
+<div class="card" style="margin-bottom: 2rem;">
+    <h4>Record Physical Product Sale</h4>
+    <form method="POST" action="{% url 'record_physical_product' %}">
+        {% csrf_token %}
+        <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 1rem;">
+            <div>
+                <label>Product Type:</label>
+                <select name="product_type" required>
+                    <option value="">Select</option>
+                    <option value="MIFI">MiFi Sale</option>
+                    <option value="ROUTER">Router Sale</option>
+                    <option value="WHOLESALE_SIM">Wholesale SIM</option>
+                </select>
+            </div>
+            <div>
+                <label>Quantity:</label>
+                <input type="number" name="quantity" required min="1">
+            </div>
+            <div>
+                <label>Unit Price (₦):</label>
+                <input type="number" name="price" step="0.01" required min="0">
+            </div>
+            <div style="display: flex; align-items: flex-end;">
+                <button type="submit" class="btn btn-success" style="width: 100%;">Add Physical Product</button>
+            </div>
+        </div>
+    </form>
+</div>
+
 <h3 style="margin-top: 2rem; border-bottom: 2px solid #eee; padding-bottom: 0.5rem;">SIM Registration Performance</h3>
 
 <div class="row" style="display: grid; grid-template-columns: repeat(auto-fill, minmax(300px, 1fr)); gap: 1.5rem; margin-top: 1.5rem;">

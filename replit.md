@@ -30,11 +30,12 @@ A Django-based ERP system for a telecom/retail business to track employee servic
 - **Role-Based Access Control**: Directors only access to attendance analytics and branch configuration
 
 ## Recent Changes (Latest Round)
-- **Login UI Enhanced**: Added password visibility toggle with eye icon (👁️), improved styling with MTN branding, better form validation and error display
-- **Dashboard Text Visibility**: Fixed manager dashboard to use dark text colors (#333) for better readability on white backgrounds
-- **Telecom Staff Services**: Added Router Sale and Wholesale SIM as physical product sales (not device-tag-dependent) alongside Mifi Sales
-- **Director Safe Stock**: New feature allowing directors to manage stock not yet distributed to branches. Full CRUD operations with product selection, quantity tracking, and deletion
-- **Service Options Expanded**: Updated ServiceActivity model to support ROUTER and WHOLESALE_SIM service types
+- **Bug Fixes**: Fixed Product model field references (imei_serial instead of non-existent imei_last_5) in manager add-stock and retail staff product creation views
+- **Director Safe Stock**: Fully functional director inventory management with total value calculations and proper imports
+- **Telecom Staff Dashboard**: Added "Physical Products Activity" form for MiFi, Router, and Wholesale SIM sales with separate quantity/price tracking
+- **Login UI Enhanced**: Password visibility toggle (👁️), MTN branding, improved styling
+- **Dashboard Text Visibility**: Fixed manager dashboard text color to dark (#333) for readability
+- **Service Options**: Model now supports ROUTER and WHOLESALE_SIM types alongside existing services
 
 ## Earlier Changes
 - **Attendance Tracking System**: Implemented GPS-based check-in/check-out with geofencing (100m radius), selfie capture, automatic late detection (₦250 deduction), and absence flagging. Features include time-window validation (7:30-8:00 AM weekdays, 9:00-9:15 AM Saturdays), distance calculation via Haversine formula, attendance history dashboard, director analytics dashboard, and PDF monthly report export. Automated absent staff alerts at 8:30 AM daily.

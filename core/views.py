@@ -8,7 +8,7 @@ import math
 from django.db.models import Sum, F
 from django.utils import timezone
 from decimal import Decimal
-from .models import User, Branch, DeviceTag, ServiceTarget, ServiceActivity, BranchSafeStock, StockMovement, Product, StaffStock, RetailSale, RetailCategory, RetailSubCategory, RetailSubSubCategory, MultiChoiceSale, MultiChoiceWeeklyReport, Expense, StockRequest, Attendance
+from .models import User, Branch, DeviceTag, ServiceTarget, ServiceActivity, BranchSafeStock, StockMovement, Product, StaffStock, RetailSale, RetailCategory, RetailSubCategory, RetailSubSubCategory, MultiChoiceSale, MultiChoiceWeeklyReport, Expense, StockRequest, Attendance, DirectorSafeStock
 from .utils.decorators import role_required
 
 def calculate_distance(lat1, lon1, lat2, lon2):
@@ -878,7 +878,7 @@ def add_stock_to_safe(request):
                 product_name=request.POST.get("product_name"),
                 model_name=request.POST.get("model_name"),
                 description=request.POST.get("description"),
-                imei_last_5=request.POST.get("imei"),
+                imei_serial=request.POST.get("imei"),
                 cost_price=request.POST.get("cost_price", 0),
                 selling_price=request.POST.get("selling_price")
             )
@@ -920,7 +920,7 @@ def staff_create_product(request):
             product_name=request.POST.get("product_name"),
             model_name=request.POST.get("model_name"),
             description=request.POST.get("description"),
-            imei_last_5=request.POST.get("imei"),
+            imei_serial=request.POST.get("imei"),
             cost_price=request.POST.get("cost_price", 0),
             selling_price=request.POST.get("selling_price")
         )
@@ -1072,6 +1072,24 @@ def manage_branch_locations(request):
     
     branches = Branch.objects.all()
     return render(request, "director/manage_locations.html", {"branches": branches})
+
+@login_required
+def record_physical_product(request):
+    if request.method == "POST" and request.user.role == "TELECOM":
+        product_type = request.POST.get("product_type")
+        quantity = int(request.POST.get("quantity"))
+        price = float(request.POST.get("price"))
+        
+        ServiceActivity.objects.create(
+            branch=request.user.branch,
+            staff=request.user,
+            service_type=product_type,
+            quantity=quantity,
+            date=timezone.now().date()
+        )
+        messages.success(request, f"Recorded {quantity} {product_type} at ₦{price} each")
+    
+    return redirect("staff_dashboard")
 
 @role_required("DIRECTOR")
 def export_monthly_attendance_pdf(request):
