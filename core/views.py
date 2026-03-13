@@ -785,7 +785,7 @@ def director_dashboard(request):
 
     # ---------------- LOW STOCK ALERT ----------------
     low_stock = BranchSafeStock.objects.filter(
-        quantity__lt=5
+        quantity__lt=1
     )
 
     context = {
