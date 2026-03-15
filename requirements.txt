@@ -1,0 +1,9 @@
+asgiref==3.7.2
+charset-normalizer==3.4.5
+Django==5.0.2
+pillow==12.1.1
+python-decouple==3.8
+reportlab==4.4.10
+sqlparse==0.4.4
+typing_extensions==4.9.0
+whitenoise==6.12.0

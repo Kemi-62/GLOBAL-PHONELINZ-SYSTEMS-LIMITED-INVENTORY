@@ -1,4 +1,4 @@
-# Service Performance Tracking ERP
+# Service Performance Tracking ERP (GPSL Automation)
 
 ## Project Overview
 A Django-based ERP system for a telecom/retail business to track employee service activities and retail inventory across multiple branches.
@@ -62,7 +62,16 @@ A Django-based ERP system for a telecom/retail business to track employee servic
 - **Better Mobile UX**: Auto-collapsing sidebar, optimized typography, proper touch targets
 - **Modern Typography**: System fonts with better readability, proper color contrast
 
-## Recent Changes (Latest Round)
+## Production Deployment Ready (Latest Round)
+- **Environment Variables**: Settings.py uses python-decouple for SECRET_KEY, DEBUG, and database configuration
+- **Database Flexibility**: Supports both SQLite (development) and PostgreSQL (production)
+- **Static Files**: WhiteNoise middleware configured for serving static files in production
+- **requirements.txt**: Generated with all dependencies (Django, Pillow, ReportLab, WhiteNoise, python-decouple)
+- **WSGI Ready**: wsgi.py properly configured for Render/Gunicorn deployment
+- **.env.example**: Template file for production environment variables
+- **Render Deployment Guide**: Complete RENDER_DEPLOY.md with step-by-step instructions
+
+## Recent Changes
 - **Bug Fixes**: Fixed Product model field references (imei_serial instead of non-existent imei_last_5) in manager add-stock and retail staff product creation views
 - **Director Safe Stock**: Fully functional director inventory management with total value calculations and proper imports
 - **Telecom Staff Dashboard**: Added "Physical Products Activity" form for MiFi, Router, and Wholesale SIM sales with separate quantity/price tracking
