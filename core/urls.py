@@ -35,4 +35,5 @@ urlpatterns = [
     path('product-catalog/', views.product_catalog, name='product_catalog'),
     path('record-physical-product/', views.record_physical_product, name='record_physical_product'),
     path('attendance/export-pdf/', views.export_monthly_attendance_pdf, name='export_monthly_attendance_pdf'),
+    path('record-balance/', views.record_balance, name='record_balance'),
 ]

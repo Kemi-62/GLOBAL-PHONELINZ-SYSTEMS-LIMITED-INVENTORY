@@ -29,7 +29,14 @@ A Django-based ERP system for a telecom/retail business to track employee servic
 - **Multi-Role Support**: Attendance features visible on all staff dashboards (TELECOM, RETAIL, MULTICHOICE, MANAGER)
 - **Role-Based Access Control**: Directors only access to attendance analytics and branch configuration
 
-## Simplified Navigation & Enhanced Header (Latest Round)
+## MultiChoice Balance Tracking (Latest Round)
+- **Monday Balance Check**: New form on MultiChoice Dashboard for staff to input current account balance every Monday morning
+- **Commission Tracking**: Staff can record balance to confirm if commission payment was received and track remaining account balance
+- **Balance History**: Displays a table of all balance entries for the week with timestamps, amounts, and optional notes
+- **Model**: New `MultiChoiceBalance` model tracks balance_amount, date, time, and notes linked to weekly report
+- **View**: `record_balance` view handles balance submission and validates active weekly report
+
+## Simplified Navigation & Enhanced Header
 - **Visible Header**: "GPSL AUTOMATION" now properly visible (1.3rem desktop, 1rem mobile), bright yellow, fits on one line
 - **Navbar Z-Index Fix**: Increased z-index from 100 → 1001 so header appears above sidebar (no longer hidden)
 - **Collapsible Sidebar**: Sidebar now hidden by default on ALL devices (desktop + mobile) - hamburger menu (☰) toggles visibility

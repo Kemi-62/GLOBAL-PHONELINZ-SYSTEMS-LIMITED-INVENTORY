@@ -8,7 +8,7 @@ import math
 from django.db.models import Sum, F
 from django.utils import timezone
 from decimal import Decimal
-from .models import User, Branch, DeviceTag, ServiceTarget, ServiceActivity, BranchSafeStock, StockMovement, Product, StaffStock, RetailSale, RetailCategory, RetailSubCategory, RetailSubSubCategory, MultiChoiceSale, MultiChoiceWeeklyReport, Expense, StockRequest, Attendance, DirectorSafeStock
+from .models import User, Branch, DeviceTag, ServiceTarget, ServiceActivity, BranchSafeStock, StockMovement, Product, StaffStock, RetailSale, RetailCategory, RetailSubCategory, RetailSubSubCategory, MultiChoiceSale, MultiChoiceWeeklyReport, MultiChoiceBalance, Expense, StockRequest, Attendance, DirectorSafeStock
 from .utils.decorators import role_required
 
 # -----------------------
@@ -489,6 +489,10 @@ def multichoice_dashboard(request):
     if weekly_report and weekly_report.is_closed:
         weekly_total_sales = weekly_report.total_subscriptions
 
+    balance_history = None
+    if weekly_report:
+        balance_history = weekly_report.balance_history.all()
+    
     return render(request, "multichoice_dashboard.html", {
         "today_sales": today_sales,
         "total_today": total_today,
@@ -497,6 +501,7 @@ def multichoice_dashboard(request):
         "is_monday": is_monday,
         "is_saturday": is_saturday,
         "weekly_total_sales": weekly_total_sales,
+        "balance_history": balance_history,
     })
 
 @login_required
@@ -543,6 +548,30 @@ def close_weekly_report(request):
             messages.success(request, f"Week closed. Commission: ₦{report.commission}")
             
     return redirect("multichoice_dashboard")
+
+@role_required("MULTICHOICE")
+def record_balance(request):
+    if request.method == 'POST':
+        balance = request.POST.get('current_balance')
+        notes = request.POST.get('notes', '')
+        
+        weekly_report = MultiChoiceWeeklyReport.objects.filter(
+            staff=request.user, 
+            branch=request.user.branch,
+            is_closed=False
+        ).first()
+        
+        if weekly_report and balance:
+            MultiChoiceBalance.objects.create(
+                weekly_report=weekly_report,
+                balance_amount=balance,
+                notes=notes
+            )
+            messages.success(request, f"Balance ₦{balance} recorded successfully!")
+        else:
+            messages.error(request, "No active weekly report or invalid balance")
+    
+    return redirect('multichoice_dashboard')
 
 @login_required
 def record_expense(request):

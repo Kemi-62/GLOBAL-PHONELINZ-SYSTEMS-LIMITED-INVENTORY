@@ -289,6 +289,19 @@ class MultiChoiceWeeklyReport(models.Model):
             return self.commission
         return 0
 
+class MultiChoiceBalance(models.Model):
+    weekly_report = models.ForeignKey(MultiChoiceWeeklyReport, on_delete=models.CASCADE, related_name='balance_history')
+    balance_amount = models.DecimalField(max_digits=12, decimal_places=2)
+    date = models.DateField(auto_now_add=True)
+    time = models.TimeField(auto_now_add=True)
+    notes = models.CharField(max_length=200, blank=True, null=True)
+
+    class Meta:
+        ordering = ['-date', '-time']
+
+    def __str__(self):
+        return f"{self.weekly_report.staff.username} - ₦{self.balance_amount} on {self.date}"
+
 class RetailSale(models.Model):
     PAYMENT_METHODS = (
         ('CASH', 'Cash'),
