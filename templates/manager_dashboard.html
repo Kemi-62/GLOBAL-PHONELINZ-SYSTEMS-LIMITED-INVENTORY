@@ -52,14 +52,9 @@ function showSection(id, btn) {
 }
 </script>
 
-<div class="card" style="display: flex; justify-content: space-between; align-items: center;">
-    <div>
-        <h2 style="margin: 0;">Manager Dashboard</h2>
-        <p style="color: #666; margin: 5px 0 0 0;">Branch: <strong>{{ request.user.branch.name }}</strong></p>
-    </div>
-    <a href="{% url 'export_branch_report' %}" class="btn btn-primary" target="_blank">
-        Download Daily PDF
-    </a>
+<div class="card">
+    <h2 style="margin: 0;">📊 Manager Dashboard</h2>
+    <p style="color: var(--gray-600); margin: 0.5rem 0 0 0;">Branch: <strong>{{ request.user.branch.name }}</strong></p>
 </div>
     
     <form method="GET" style="margin-top: 1rem; display: flex; gap: 10px;">

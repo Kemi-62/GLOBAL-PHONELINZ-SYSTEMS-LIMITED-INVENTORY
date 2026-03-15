@@ -431,11 +431,63 @@
         <h3>Menu</h3>
         <button class="close-btn" onclick="toggleSidebar()">×</button>
     </div>
+    
     {% if user.role == "MANAGER" %}<a href="{% url 'manager_dashboard' %}" class="sidebar-link">📊 Dashboard</a>{% endif %}
     {% if user.role == "DIRECTOR" %}<a href="{% url 'director_dashboard' %}" class="sidebar-link">👔 Executive</a>{% endif %}
     {% if user.role == "RETAIL" %}<a href="{% url 'retail_dashboard' %}" class="sidebar-link">🛍️ Retail</a>{% endif %}
     {% if user.role == "MULTICHOICE" %}<a href="{% url 'multichoice_dashboard' %}" class="sidebar-link">📱 MultiChoice</a>{% endif %}
     {% if user.role == "TELECOM" %}<a href="{% url 'staff_dashboard' %}" class="sidebar-link">📞 Telecom</a>{% endif %}
+    
+    <!-- DIRECTOR QUICK ACTIONS -->
+    {% if user.role == "DIRECTOR" %}
+    <div style="margin-top: 2rem; padding-top: 1rem; border-top: 1px solid rgba(255,255,255,0.1);">
+        <h4 style="color: rgba(255,255,255,0.5); font-size: 0.8rem; text-transform: uppercase; letter-spacing: 1px; margin-bottom: 1rem;">Quick Actions</h4>
+        <a href="{% url 'director_attendance_dashboard' %}" class="sidebar-link">📊 View Attendance</a>
+        <a href="{% url 'manage_branch_locations' %}" class="sidebar-link">📍 Configure Branches</a>
+        <a href="{% url 'director_safe_stock' %}" class="sidebar-link">📦 Director Safe</a>
+        <a href="{% url 'export_monthly_attendance_pdf' %}" class="sidebar-link">📥 Download Report</a>
+    </div>
+    {% endif %}
+    
+    <!-- MANAGER QUICK ACTIONS -->
+    {% if user.role == "MANAGER" %}
+    <div style="margin-top: 2rem; padding-top: 1rem; border-top: 1px solid rgba(255,255,255,0.1);">
+        <h4 style="color: rgba(255,255,255,0.5); font-size: 0.8rem; text-transform: uppercase; letter-spacing: 1px; margin-bottom: 1rem;">Quick Actions</h4>
+        <a href="{% url 'add_stock_to_safe' %}" class="sidebar-link">📦 Add Stock</a>
+        <a href="{% url 'release_stock' %}" class="sidebar-link">📤 Release Stock</a>
+        <a href="{% url 'check_in' %}" class="sidebar-link">📍 Check In</a>
+        <a href="{% url 'attendance_history' %}" class="sidebar-link">📋 Attendance</a>
+    </div>
+    {% endif %}
+    
+    <!-- TELECOM QUICK ACTIONS -->
+    {% if user.role == "TELECOM" %}
+    <div style="margin-top: 2rem; padding-top: 1rem; border-top: 1px solid rgba(255,255,255,0.1);">
+        <h4 style="color: rgba(255,255,255,0.5); font-size: 0.8rem; text-transform: uppercase; letter-spacing: 1px; margin-bottom: 1rem;">Quick Actions</h4>
+        <a href="{% url 'check_in' %}" class="sidebar-link">📍 Check In</a>
+        <a href="{% url 'attendance_history' %}" class="sidebar-link">📋 Attendance</a>
+    </div>
+    {% endif %}
+    
+    <!-- RETAIL QUICK ACTIONS -->
+    {% if user.role == "RETAIL" %}
+    <div style="margin-top: 2rem; padding-top: 1rem; border-top: 1px solid rgba(255,255,255,0.1);">
+        <h4 style="color: rgba(255,255,255,0.5); font-size: 0.8rem; text-transform: uppercase; letter-spacing: 1px; margin-bottom: 1rem;">Quick Actions</h4>
+        <a href="{% url 'product_catalog' %}" class="sidebar-link">📂 Product Catalog</a>
+        <a href="{% url 'check_in' %}" class="sidebar-link">📍 Check In</a>
+        <a href="{% url 'attendance_history' %}" class="sidebar-link">📋 Attendance</a>
+    </div>
+    {% endif %}
+    
+    <!-- MULTICHOICE QUICK ACTIONS -->
+    {% if user.role == "MULTICHOICE" %}
+    <div style="margin-top: 2rem; padding-top: 1rem; border-top: 1px solid rgba(255,255,255,0.1);">
+        <h4 style="color: rgba(255,255,255,0.5); font-size: 0.8rem; text-transform: uppercase; letter-spacing: 1px; margin-bottom: 1rem;">Quick Actions</h4>
+        <a href="{% url 'check_in' %}" class="sidebar-link">📍 Check In</a>
+        <a href="{% url 'attendance_history' %}" class="sidebar-link">📋 Attendance</a>
+    </div>
+    {% endif %}
+    
     <div style="margin-top: 2rem; padding-top: 1rem; border-top: 1px solid rgba(255,255,255,0.1);"></div>
     <a href="{% url 'logout' %}" class="sidebar-link" style="color: #f08080;">🚪 Logout</a>
 </div>
