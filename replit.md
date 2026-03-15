@@ -30,8 +30,9 @@ A Django-based ERP system for a telecom/retail business to track employee servic
 - **Role-Based Access Control**: Directors only access to attendance analytics and branch configuration
 
 ## Simplified Navigation & Enhanced Header (Latest Round)
-- **Prominent Headline**: "GPSL Automation Solution" now large (2.5rem), bold (font-weight 800), and highly visible in yellow across all dashboards
-- **Streamlined Header**: Removed office/branch and username; kept only role and logout (smaller, inline, 0.75rem font-size)
+- **Compact Headline**: "GPSL AUTOMATION" (1.3rem desktop, 1rem mobile), bold yellow, fits on one line on all screen sizes
+- **Streamlined Header**: Removed office/branch and username; kept only role and logout (0.8rem desktop, 0.7rem mobile)
+- **Admin Protection**: Non-superadmin users redirected from /admin/ to their respective dashboards (Director → director_dashboard, Manager → manager_dashboard, etc.)
 - **Sidebar Quick Actions**: All key dashboard actions moved to sidebar for better organization
 - **Director Actions**: View Attendance, Configure Branches, Director Safe, Download Report
 - **Manager Actions**: Add Stock, Release Stock, Check In, Attendance

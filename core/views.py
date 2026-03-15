@@ -11,6 +11,33 @@ from decimal import Decimal
 from .models import User, Branch, DeviceTag, ServiceTarget, ServiceActivity, BranchSafeStock, StockMovement, Product, StaffStock, RetailSale, RetailCategory, RetailSubCategory, RetailSubSubCategory, MultiChoiceSale, MultiChoiceWeeklyReport, Expense, StockRequest, Attendance, DirectorSafeStock
 from .utils.decorators import role_required
 
+# -----------------------
+# Admin Redirect (Non-Superadmin Protection)
+# -----------------------
+def admin_redirect(request):
+    """Redirect non-superadmin users from /admin/ to their dashboard"""
+    if not request.user.is_authenticated:
+        return redirect('login')
+    
+    if request.user.is_superuser:
+        from django.contrib.admin.sites import site as admin_site
+        return admin_site.index(request)
+    
+    # Redirect to appropriate dashboard based on role
+    if hasattr(request.user, 'role') and request.user.role:
+        if request.user.role == "DIRECTOR":
+            return redirect("director_dashboard")
+        elif request.user.role == "MANAGER":
+            return redirect("manager_dashboard")
+        elif request.user.role == "RETAIL":
+            return redirect("retail_dashboard")
+        elif request.user.role == "MULTICHOICE":
+            return redirect("multichoice_dashboard")
+        elif request.user.role == "TELECOM":
+            return redirect("staff_dashboard")
+    
+    return redirect("director_dashboard")
+
 def calculate_distance(lat1, lon1, lat2, lon2):
     R = 6371000
     phi1 = math.radians(lat1)
