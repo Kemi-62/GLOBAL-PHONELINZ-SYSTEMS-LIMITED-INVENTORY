@@ -1,10 +1,13 @@
 {% extends "base.html" %}
 {% block content %}
 <div class="card">
-    <h2 style="margin: 0;">Retail Staff Dashboard</h2>
-    <p>Manage your sales and inventory.</p>
-    <a href="{% url 'check_in' %}" class="btn btn-success" style="margin-right:10px;margin-top:15px;">📍 Check In (Attendance)</a>
-    <a href="{% url 'attendance_history' %}" class="btn btn-primary" style="margin-top:15px;">📋 Attendance History</a>
+    <h2>🛍️ Retail Staff Dashboard</h2>
+    <p style="color: var(--gray-600);">Manage sales and inventory</p>
+    <div style="display: flex; gap: 1rem; flex-wrap: wrap; margin-top: 1.5rem;">
+        <a href="{% url 'check_in' %}" class="btn btn-success">📍 Check In</a>
+        <a href="{% url 'attendance_history' %}" class="btn btn-primary">📋 Attendance</a>
+        <a href="{% url 'product_catalog' %}" class="btn btn-primary" style="background: linear-gradient(135deg, #8B5CF6 0%, #6D28D9 100%);">📂 View Catalog</a>
+    </div>
 </div>
 
 <div class="card" style="margin-bottom: 2rem; border-left: 5px solid var(--mtn-yellow);">

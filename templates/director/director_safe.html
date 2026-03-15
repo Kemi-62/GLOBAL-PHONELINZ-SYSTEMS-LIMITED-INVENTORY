@@ -1,79 +1,213 @@
 {% extends "base.html" %}
 
 {% block content %}
-<div style="max-width:1200px;margin:auto;padding:20px;">
-<h2>Director Safe Stock Management</h2>
-<p style="color:#666;">Manage stock not yet distributed to any branch. This is your director-level inventory.</p>
-
-<div class="row" style="display:flex;gap:2rem;flex-wrap:wrap;margin-bottom:2rem;">
-    <div style="flex:1;min-width:350px;">
-        <div class="card">
-            <h3 style="margin-top:0;">Add Stock to Director Safe</h3>
-            <form method="POST" action="{% url 'add_director_stock' %}">
-                {% csrf_token %}
-                <label>Product</label>
-                <select name="product_id" required>
-                    <option value="">Select Product</option>
-                    {% for product in products %}
-                        <option value="{{ product.id }}">{{ product.model_name }} (₦{{ product.cost_price }})</option>
-                    {% endfor %}
-                </select>
-                <label style="margin-top:15px;">Quantity</label>
-                <input type="number" name="quantity" required min="1">
-                <label style="margin-top:15px;">Notes</label>
-                <textarea name="notes" placeholder="Add any notes..."></textarea>
-                <button type="submit" class="btn btn-success" style="width:100%;margin-top:15px;">➕ Add to Safe</button>
-            </form>
-        </div>
-    </div>
-
-    <div style="flex:1;min-width:350px;">
-        <div class="card" style="border-left:5px solid var(--mtn-yellow);">
-            <h3 style="margin-top:0;color:var(--mtn-blue);">📦 Total Stock in Safe</h3>
-            <div style="font-size:2.5rem;font-weight:bold;color:var(--mtn-blue);">{{ total_quantity }}</div>
-            <p style="color:#666;margin-top:0.5rem;">units across all products</p>
-        </div>
-    </div>
-</div>
+<style>
+    .tabs { display: flex; gap: 1rem; margin-bottom: 2rem; border-bottom: 2px solid var(--gray-200); }
+    .tab-btn { padding: 1rem 1.5rem; background: none; border: none; cursor: pointer; font-weight: 600; color: var(--gray-600); border-bottom: 3px solid transparent; transition: all 0.2s; }
+    .tab-btn.active { color: var(--mtn-blue); border-bottom-color: var(--mtn-blue); }
+    .tab-content { display: none; }
+    .tab-content.active { display: block; }
+    .form-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(250px, 1fr)); gap: 1.5rem; }
+</style>
 
 <div class="card">
-    <h3>Current Director Safe Stock</h3>
-    {% if stocks %}
-    <table style="width:100%;border-collapse:collapse;margin-top:15px;">
-        <tr style="background:#004F9F;color:white;">
-            <th style="padding:12px;text-align:left;">Product</th>
-            <th style="padding:12px;text-align:left;">Cost Price</th>
-            <th style="padding:12px;text-align:left;">Quantity</th>
-            <th style="padding:12px;text-align:left;">Total Value</th>
-            <th style="padding:12px;text-align:left;">Date Added</th>
-            <th style="padding:12px;text-align:left;">Action</th>
-        </tr>
-        {% for stock in stocks %}
-        <tr style="border-bottom:1px solid #eee;">
-            <td style="padding:12px;color:#333;">{{ stock.product.model_name }}</td>
-            <td style="padding:12px;color:#333;">₦{{ stock.product.cost_price }}</td>
-            <td style="padding:12px;color:#333;font-weight:600;">{{ stock.quantity }}</td>
-            <td style="padding:12px;color:#333;">₦{{ stock.total_value }}</td>
-            <td style="padding:12px;color:#333;">{{ stock.date_added|date:"M d, Y" }}</td>
-            <td style="padding:12px;">
-                <form method="POST" action="{% url 'delete_director_stock' stock.id %}" style="display:inline;">
-                    {% csrf_token %}
-                    <button type="submit" class="btn btn-danger" style="padding:4px 8px;font-size:0.8rem;" onclick="return confirm('Delete this stock?');">Delete</button>
-                </form>
-            </td>
-        </tr>
-        {% endfor %}
-    </table>
-    {% else %}
-    <p style="color:#666;text-align:center;padding:20px;">No stock in director safe yet</p>
-    {% endif %}
+    <h2>📦 Director Safe Stock Management</h2>
+    <p style="color: var(--gray-600); margin-top: 0.5rem;">Manage inventory not yet distributed to branches</p>
 </div>
+
+<div class="tabs">
+    <button class="tab-btn active" onclick="switchTab('existing')">📊 Existing Stock</button>
+    <button class="tab-btn" onclick="switchTab('add-existing')">➕ Add Existing Product</button>
+    <button class="tab-btn" onclick="switchTab('create-new')">🆕 Create New Product</button>
+</div>
+
+<!-- EXISTING STOCK TAB -->
+<div id="existing" class="tab-content active">
+    <div class="grid grid-3">
+        <div class="stat-card">
+            <div style="font-size: 1.5rem;">📦</div>
+            <div class="label">Total Units</div>
+            <div class="value">{{ total_quantity }}</div>
+        </div>
+        <div class="stat-card">
+            <div style="font-size: 1.5rem;">💰</div>
+            <div class="label">Total Value</div>
+            <div class="value">₦{{ total_value }}</div>
+        </div>
+    </div>
+
+    <div class="card" style="overflow-x: auto;">
+        <h3>Current Stock</h3>
+        {% if stocks %}
+            <table>
+                <thead>
+                    <tr>
+                        <th>Product</th>
+                        <th>Category</th>
+                        <th>Cost Price</th>
+                        <th>Qty</th>
+                        <th>Total Value</th>
+                        <th>Date Added</th>
+                        <th>Action</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for stock in stocks %}
+                    <tr>
+                        <td><strong>{{ stock.product.model_name }}</strong></td>
+                        <td>{{ stock.product.subcategory.category.name|default:"-" }}</td>
+                        <td>₦{{ stock.product.cost_price }}</td>
+                        <td><strong>{{ stock.quantity }}</strong></td>
+                        <td>₦{{ stock.total_value }}</td>
+                        <td>{{ stock.date_added|date:"M d, Y" }}</td>
+                        <td>
+                            <form method="POST" action="{% url 'delete_director_stock' stock.id %}" style="display:inline;">
+                                {% csrf_token %}
+                                <button type="submit" class="btn" style="padding: 0.5rem 1rem; background: var(--danger-color); color: white; font-size: 0.85rem;" onclick="return confirm('Delete?');">Delete</button>
+                            </form>
+                        </td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        {% else %}
+            <p style="text-align: center; color: var(--gray-600); padding: 2rem;">No stock added yet</p>
+        {% endif %}
+    </div>
+</div>
+
+<!-- ADD EXISTING PRODUCT TAB -->
+<div id="add-existing" class="tab-content">
+    <div class="card">
+        <h3>Add Existing Product to Safe</h3>
+        <form method="POST" action="{% url 'add_director_stock' %}" style="margin-top: 1.5rem;">
+            {% csrf_token %}
+            <div class="form-grid">
+                <div>
+                    <label>Product *</label>
+                    <select name="product_id" required>
+                        <option value="">Select Product</option>
+                        {% for product in products %}
+                            <option value="{{ product.id }}">{{ product.model_name }} (₦{{ product.cost_price }})</option>
+                        {% endfor %}
+                    </select>
+                </div>
+                <div>
+                    <label>Quantity *</label>
+                    <input type="number" name="quantity" required min="1">
+                </div>
+            </div>
+            <div style="margin-top: 1.5rem;">
+                <label>Notes</label>
+                <textarea name="notes" placeholder="Optional notes..." rows="3"></textarea>
+            </div>
+            <button type="submit" class="btn btn-success" style="width: 100%; margin-top: 1.5rem;">Add to Safe</button>
+        </form>
+    </div>
+</div>
+
+<!-- CREATE NEW PRODUCT TAB -->
+<div id="create-new" class="tab-content">
+    <div class="card">
+        <h3>Create New Product & Add to Safe</h3>
+        <form method="POST" action="{% url 'create_director_product' %}" style="margin-top: 1.5rem;">
+            {% csrf_token %}
+            
+            <h4 style="margin-top: 2rem; margin-bottom: 1rem; color: var(--mtn-blue);">📂 Category Hierarchy</h4>
+            <div class="form-grid">
+                <div>
+                    <label>Main Category *</label>
+                    <select name="category_id" id="categorySelect" required onchange="updateSubcategories()">
+                        <option value="">Select or Create Category</option>
+                        {% for cat in categories %}
+                            <option value="{{ cat.id }}">{{ cat.name }}</option>
+                        {% endfor %}
+                        <option value="new">+ Create New Category</option>
+                    </select>
+                </div>
+                <div>
+                    <label id="newCatLabel" style="display: none;">New Category Name</label>
+                    <input type="text" id="newCatInput" name="new_category_name" style="display: none;">
+                </div>
+            </div>
+
+            <div class="form-grid">
+                <div>
+                    <label>Sub Category *</label>
+                    <input type="text" name="subcategory_name" placeholder="e.g., Smartphones" required>
+                </div>
+                <div>
+                    <label>Sub Sub Category</label>
+                    <input type="text" name="subsubcategory_name" placeholder="e.g., iPhone 15 (Optional)">
+                </div>
+            </div>
+
+            <h4 style="margin-top: 2rem; margin-bottom: 1rem; color: var(--mtn-blue);">📦 Product Details</h4>
+            <div class="form-grid">
+                <div>
+                    <label>Product Name *</label>
+                    <input type="text" name="product_name" placeholder="e.g., Apple iPhone" required>
+                </div>
+                <div>
+                    <label>Model Name *</label>
+                    <input type="text" name="model_name" placeholder="e.g., iPhone 15 Pro Max" required>
+                </div>
+            </div>
+
+            <div class="form-grid">
+                <div>
+                    <label>IMEI / Serial Number</label>
+                    <input type="text" name="imei_serial" placeholder="Full IMEI or Serial">
+                </div>
+                <div>
+                    <label>Description</label>
+                    <input type="text" name="description" placeholder="Product description">
+                </div>
+            </div>
+
+            <h4 style="margin-top: 2rem; margin-bottom: 1rem; color: var(--mtn-blue);">💰 Pricing & Quantity</h4>
+            <div class="form-grid">
+                <div>
+                    <label>Cost Price (₦) *</label>
+                    <input type="number" name="cost_price" step="0.01" required min="0">
+                </div>
+                <div>
+                    <label>Selling Price (₦) *</label>
+                    <input type="number" name="selling_price" step="0.01" required min="0">
+                </div>
+                <div>
+                    <label>Initial Quantity *</label>
+                    <input type="number" name="quantity" required min="1">
+                </div>
+            </div>
+
+            <button type="submit" class="btn btn-success" style="width: 100%; margin-top: 2rem;">Create Product & Add to Safe</button>
+        </form>
+    </div>
 </div>
 
 <script>
-Math.imul = function(a, b) { return a * b; };
-if (!String.prototype.mul) {
-    String.prototype.mul = function(b) { return parseInt(this) * parseInt(b); };
+function switchTab(tabName) {
+    document.querySelectorAll('.tab-content').forEach(el => el.classList.remove('active'));
+    document.querySelectorAll('.tab-btn').forEach(el => el.classList.remove('active'));
+    document.getElementById(tabName).classList.add('active');
+    event.target.classList.add('active');
+}
+
+function updateSubcategories() {
+    const select = document.getElementById('categorySelect');
+    const newCatLabel = document.getElementById('newCatLabel');
+    const newCatInput = document.getElementById('newCatInput');
+    
+    if (select.value === 'new') {
+        newCatLabel.style.display = 'block';
+        newCatInput.style.display = 'block';
+        newCatInput.required = true;
+    } else {
+        newCatLabel.style.display = 'none';
+        newCatInput.style.display = 'none';
+        newCatInput.required = false;
+    }
 }
 </script>
 {% endblock %}

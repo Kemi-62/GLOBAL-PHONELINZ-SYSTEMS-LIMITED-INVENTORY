@@ -31,6 +31,8 @@ urlpatterns = [
     path('director/safe/', views.director_safe_stock, name='director_safe_stock'),
     path('director/safe/add/', views.add_director_stock, name='add_director_stock'),
     path('director/safe/delete/<int:stock_id>/', views.delete_director_stock, name='delete_director_stock'),
+    path('director/safe/create-product/', views.create_director_product, name='create_director_product'),
+    path('product-catalog/', views.product_catalog, name='product_catalog'),
     path('record-physical-product/', views.record_physical_product, name='record_physical_product'),
     path('attendance/export-pdf/', views.export_monthly_attendance_pdf, name='export_monthly_attendance_pdf'),
 ]

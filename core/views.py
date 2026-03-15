@@ -816,12 +816,17 @@ def director_dashboard(request):
 def director_safe_stock(request):
     stocks = DirectorSafeStock.objects.all().order_by('-date_added')
     products = Product.objects.all()
+    categories = RetailCategory.objects.all()
+    
     total_quantity = sum([s.quantity for s in stocks])
+    total_value = sum([s.total_value for s in stocks])
     
     context = {
         'stocks': stocks,
         'products': products,
+        'categories': categories,
         'total_quantity': total_quantity,
+        'total_value': total_value,
     }
     return render(request, 'director/director_safe.html', context)
 
@@ -853,6 +858,66 @@ def delete_director_stock(request, stock_id):
     stock.delete()
     messages.success(request, f"Deleted {quantity} {product_name} from director safe")
     return redirect('director_safe_stock')
+
+@role_required("DIRECTOR")
+def create_director_product(request):
+    if request.method == "POST":
+        category_id = request.POST.get('category_id')
+        new_cat_name = request.POST.get('new_category_name')
+        subcat_name = request.POST.get('subcategory_name')
+        subsubcat_name = request.POST.get('subsubcategory_name')
+        
+        # Get or create category
+        if category_id == 'new':
+            category, _ = RetailCategory.objects.get_or_create(name=new_cat_name)
+        else:
+            category = RetailCategory.objects.get(id=category_id)
+        
+        # Get or create subcategory
+        subcategory, _ = RetailSubCategory.objects.get_or_create(category=category, name=subcat_name)
+        
+        # Get or create subsubcategory
+        subsubcategory = None
+        if subsubcat_name:
+            subsubcategory, _ = RetailSubSubCategory.objects.get_or_create(subcategory=subcategory, name=subsubcat_name)
+        
+        # Create product
+        product = Product.objects.create(
+            subcategory=subcategory,
+            subsubcategory=subsubcategory,
+            product_name=request.POST.get('product_name'),
+            model_name=request.POST.get('model_name'),
+            description=request.POST.get('description'),
+            imei_serial=request.POST.get('imei_serial'),
+            cost_price=request.POST.get('cost_price'),
+            selling_price=request.POST.get('selling_price')
+        )
+        
+        # Add to director safe
+        quantity = int(request.POST.get('quantity'))
+        DirectorSafeStock.objects.create(
+            product=product,
+            quantity=quantity,
+            notes=f"Created by Director"
+        )
+        
+        messages.success(request, f"Product created and added {quantity} units to safe")
+    
+    return redirect('director_safe_stock')
+
+@login_required
+def product_catalog(request):
+    if request.user.role != "RETAIL":
+        return HttpResponseForbidden("Access denied")
+    
+    products = Product.objects.all()
+    categories = RetailCategory.objects.all()
+    
+    context = {
+        'products': products,
+        'categories': categories,
+    }
+    return render(request, 'retail_catalog.html', context)
 
 @login_required
 def add_stock_to_safe(request):

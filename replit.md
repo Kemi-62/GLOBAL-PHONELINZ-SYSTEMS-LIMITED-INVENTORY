@@ -29,6 +29,15 @@ A Django-based ERP system for a telecom/retail business to track employee servic
 - **Multi-Role Support**: Attendance features visible on all staff dashboards (TELECOM, RETAIL, MULTICHOICE, MANAGER)
 - **Role-Based Access Control**: Directors only access to attendance analytics and branch configuration
 
+## Modern UI & New Features (Latest Round)
+- **Complete Design Overhaul**: Modern gradient-based UI with MTN branding, clean cards, better spacing
+- **Fully Responsive**: Mobile-first design with proper sidebar collapse and responsive grid layouts
+- **Director Safe Enhanced**: Full product creation form with category/subcategory hierarchy from scratch
+- **Product Catalog**: New retail staff feature to browse all products with prices by category, search & filter
+- **Improved Director Safe**: Three-tab interface (Existing Stock, Add Product, Create New)
+- **Better Mobile UX**: Auto-collapsing sidebar, optimized typography, proper touch targets
+- **Modern Typography**: System fonts with better readability, proper color contrast
+
 ## Recent Changes (Latest Round)
 - **Bug Fixes**: Fixed Product model field references (imei_serial instead of non-existent imei_last_5) in manager add-stock and retail staff product creation views
 - **Director Safe Stock**: Fully functional director inventory management with total value calculations and proper imports

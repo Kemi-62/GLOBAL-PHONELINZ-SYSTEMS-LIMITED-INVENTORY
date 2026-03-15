@@ -1,0 +1,155 @@
+{% extends "base.html" %}
+
+{% block content %}
+<style>
+    .category-filter { display: flex; gap: 0.5rem; flex-wrap: wrap; margin-bottom: 2rem; }
+    .filter-btn { padding: 0.5rem 1.2rem; border: 2px solid var(--gray-200); background: white; border-radius: 8px; cursor: pointer; transition: all 0.2s; font-weight: 600; }
+    .filter-btn.active { border-color: var(--mtn-blue); background: var(--mtn-blue); color: white; }
+    .filter-btn:hover { border-color: var(--mtn-blue); }
+    
+    .product-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(280px, 1fr)); gap: 2rem; }
+    .product-card { background: white; border: 1px solid var(--gray-200); border-radius: 12px; padding: 1.5rem; transition: all 0.3s; }
+    .product-card:hover { box-shadow: 0 10px 30px rgba(0,0,0,0.12); transform: translateY(-4px); }
+    
+    .product-header { margin-bottom: 1rem; }
+    .product-category { font-size: 0.8rem; color: var(--mtn-blue); font-weight: 700; text-transform: uppercase; letter-spacing: 0.5px; }
+    .product-name { font-size: 1.1rem; font-weight: 700; color: var(--gray-700); margin-top: 0.5rem; }
+    .product-model { font-size: 0.9rem; color: var(--gray-600); margin-top: 0.25rem; }
+    
+    .product-imei { 
+        background: var(--gray-50); 
+        padding: 0.75rem; 
+        border-radius: 6px; 
+        margin: 1rem 0; 
+        font-size: 0.85rem; 
+        color: var(--gray-600);
+        word-break: break-all;
+    }
+    
+    .product-prices { 
+        display: flex; 
+        justify-content: space-between; 
+        align-items: center;
+        padding: 1rem;
+        background: var(--gray-50);
+        border-radius: 8px;
+        margin: 1rem 0;
+    }
+    
+    .price { display: flex; flex-direction: column; }
+    .price-label { font-size: 0.8rem; color: var(--gray-600); }
+    .price-value { font-size: 1.3rem; font-weight: 700; color: var(--mtn-blue); }
+    
+    .profit-margin {
+        color: var(--success-color);
+        font-weight: 600;
+        font-size: 0.9rem;
+    }
+    
+    .search-box { margin-bottom: 2rem; }
+    .search-box input { max-width: 100%; }
+</style>
+
+<div class="card">
+    <h2>🛍️ Product Catalog</h2>
+    <p style="color: var(--gray-600);">Browse and view all available products with pricing</p>
+</div>
+
+<div class="search-box">
+    <input type="text" id="searchInput" placeholder="Search products by name, model, or IMEI..." onkeyup="filterProducts()">
+</div>
+
+<div>
+    <h3 style="margin-bottom: 1rem;">Filter by Category</h3>
+    <div class="category-filter">
+        <button class="filter-btn active" onclick="filterByCategory('all', this)">All Products</button>
+        {% for category in categories %}
+            <button class="filter-btn" onclick="filterByCategory('{{ category.id }}', this)">{{ category.name }}</button>
+        {% endfor %}
+    </div>
+</div>
+
+{% if products %}
+    <div class="product-grid" id="productGrid">
+        {% for product in products %}
+        <div class="product-card" data-category="{{ product.subcategory.category.id }}" data-name="{{ product.model_name|lower }}" data-model="{{ product.product_name|lower }}" data-imei="{{ product.imei_serial|lower }}">
+            <div class="product-header">
+                <div class="product-category">{{ product.subcategory.category.name }}</div>
+                <div class="product-name">{{ product.model_name }}</div>
+                <div class="product-model">{{ product.product_name }}</div>
+            </div>
+            
+            {% if product.imei_serial %}
+                <div class="product-imei">
+                    <strong>IMEI:</strong> {{ product.imei_serial }}
+                </div>
+            {% endif %}
+            
+            <div class="product-prices">
+                <div>
+                    <div class="price">
+                        <div class="price-label">Cost</div>
+                        <div class="price-value">₦{{ product.cost_price }}</div>
+                    </div>
+                </div>
+                <div>
+                    <div class="price">
+                        <div class="price-label">Selling</div>
+                        <div class="price-value">₦{{ product.selling_price }}</div>
+                    </div>
+                </div>
+            </div>
+            
+            {% if product.selling_price > product.cost_price %}
+                <div style="text-align: center;">
+                    <div class="profit-margin">
+                        ✓ Profit: ₦{{ product.selling_price|add:"-"|add:product.cost_price }}
+                    </div>
+                </div>
+            {% endif %}
+            
+            {% if product.description %}
+                <p style="font-size: 0.9rem; color: var(--gray-600); margin-top: 1rem;">{{ product.description }}</p>
+            {% endif %}
+        </div>
+        {% endfor %}
+    </div>
+{% else %}
+    <div class="card" style="text-align: center; padding: 3rem;">
+        <p style="color: var(--gray-600); font-size: 1rem;">No products available yet</p>
+    </div>
+{% endif %}
+
+<script>
+function filterByCategory(categoryId, button) {
+    document.querySelectorAll('.filter-btn').forEach(btn => btn.classList.remove('active'));
+    button.classList.add('active');
+    
+    const cards = document.querySelectorAll('.product-card');
+    cards.forEach(card => {
+        if (categoryId === 'all' || card.dataset.category === categoryId) {
+            card.style.display = '';
+        } else {
+            card.style.display = 'none';
+        }
+    });
+}
+
+function filterProducts() {
+    const search = document.getElementById('searchInput').value.toLowerCase();
+    const cards = document.querySelectorAll('.product-card');
+    
+    cards.forEach(card => {
+        const name = card.dataset.name || '';
+        const model = card.dataset.model || '';
+        const imei = card.dataset.imei || '';
+        
+        if (name.includes(search) || model.includes(search) || imei.includes(search)) {
+            card.style.display = '';
+        } else {
+            card.style.display = 'none';
+        }
+    });
+}
+</script>
+{% endblock %}
