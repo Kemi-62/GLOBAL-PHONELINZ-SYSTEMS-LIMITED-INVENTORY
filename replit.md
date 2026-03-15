@@ -33,7 +33,8 @@ A Django-based ERP system for a telecom/retail business to track employee servic
 - **Visible Header**: "GPSL AUTOMATION" now properly visible (1.3rem desktop, 1rem mobile), bright yellow, fits on one line
 - **Navbar Z-Index Fix**: Increased z-index from 100 → 1001 so header appears above sidebar (no longer hidden)
 - **Collapsible Sidebar**: Sidebar now hidden by default on ALL devices (desktop + mobile) - hamburger menu (☰) toggles visibility
-- **Cleaner Layout**: Content no longer pushed by sidebar; full width when sidebar closed
+- **Full-Width Footer**: Fixed footer that spans entire width on all views (removed hardcoded 260px margin)
+- **Cleaner Layout**: Content no longer pushed by sidebar; full width when sidebar closed, footer covers bottom
 - **Streamlined Header**: Removed office/branch and username; kept only role and logout (0.8rem desktop, 0.7rem mobile)
 - **Restored Admin Panel**: Admin at original `/admin/` URL with proper authentication (superadmin only)
 - **Sidebar Quick Actions**: All key dashboard actions moved to sidebar for better organization
