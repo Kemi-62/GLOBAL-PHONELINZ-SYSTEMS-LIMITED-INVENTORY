@@ -1,0 +1,10 @@
+{% extends "base.html" %}
+
+{% block content %}
+<div style="text-align: center; padding: 4rem 2rem;">
+    <div style="font-size: 4rem; margin-bottom: 1rem;">⚠️</div>
+    <h1 style="color: var(--danger-color); font-size: 2.5rem; margin-bottom: 0.5rem;">Server Error</h1>
+    <p style="color: var(--gray-600); font-size: 1.1rem; margin-bottom: 2rem;">Something went wrong on our end. Our team has been notified.</p>
+    <a href="{% url 'login' %}" class="btn btn-primary">← Back to Home</a>
+</div>
+{% endblock %}
