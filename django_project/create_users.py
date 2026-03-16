@@ -6,19 +6,20 @@ django.setup()
 
 from django.contrib.auth.models import User
 
-# Create superuser (same as your Replit one)
+# Create superuser
 if not User.objects.filter(username='admin').exists():
-    User.objects.create_superuser('SuperAdmin', 'admin@company.com', 'Password@123')
-    print("✅ Admin user created!")
+    User.objects.create_superuser('admin', 'admin@company.com', 'admin123')
+    print("✅ Admin created!")
+else:
+    print("Admin already exists")
 
 # Create staff users
-staff_list = [
+staff_users = [
     {'username': 'staff1', 'email': 'staff1@company.com', 'password': 'staff123'},
     {'username': 'staff2', 'email': 'staff2@company.com', 'password': 'staff123'},
-    {'username': 'staff3', 'email': 'staff3@company.com', 'password': 'staff123'},
 ]
 
-for staff in staff_list:
+for staff in staff_users:
     if not User.objects.filter(username=staff['username']).exists():
         User.objects.create_user(**staff)
         print(f"✅ {staff['username']} created!")
