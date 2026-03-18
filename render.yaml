@@ -1,0 +1,14 @@
+# Render deployment configuration
+
+version: 2
+
+services:
+  web:
+    type: python
+    name: Web Service
+    env: python
+    buildCommand: |
+      pip install -r requirements.txt
+      python manage.py migrate
+      python manage.py collectstatic --noinput
+    startCommand: gunicorn myproject.wsgi:application
