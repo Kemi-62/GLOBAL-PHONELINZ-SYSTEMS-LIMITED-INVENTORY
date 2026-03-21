@@ -1,1 +1,2747 @@
-[{"model": "core.branch", "pk": 1, "fields": {"name": "Mbierebe Branch", "latitude": 4.9942, "longitude": 7.8904, "allowed_radius": 300, "location_locked": true}}, {"model": "core.branch", "pk": 2, "fields": {"name": "Aka Etinan Branch", "latitude": null, "longitude": null, "allowed_radius": 100, "location_locked": false}}, {"model": "core.branch", "pk": 3, "fields": {"name": "NUNG UDOE BRANCH", "latitude": 4.9154, "longitude": 7.9638, "allowed_radius": 100, "location_locked": true}}, {"model": "core.branch", "pk": 4, "fields": {"name": "Plaza Branch", "latitude": null, "longitude": null, "allowed_radius": 100, "location_locked": false}}, {"model": "core.branch", "pk": 5, "fields": {"name": "Okobo Branch", "latitude": null, "longitude": null, "allowed_radius": 100, "location_locked": false}}, {"model": "core.user", "pk": 2, "fields": {"password": "pbkdf2_sha256$720000$eIsfzRwXHdGlVZHdx9H7Te$XTDYvLAJ4fVyCFw1Z5h3Hv6sMC9cAh7Rxw5xIAQTg/w=", "last_login": "2026-03-15T16:39:15.108Z", "is_superuser": true, "username": "SuperAdmin", "first_name": "", "last_name": "", "email": "ekeminimonday62@gmail.com", "is_staff": true, "is_active": true, "date_joined": "2026-02-17T19:19:04.590Z", "role": "", "branch": null, "failed_login_count": 0, "is_locked": false, "groups": [], "user_permissions": []}}, {"model": "core.user", "pk": 4, "fields": {"password": "pbkdf2_sha256$720000$UAfq6bcNzd2LSX7BQ0P9FM$vpIsj/qzR4khP3EEI4Te0X03YSqL7aRXmKQU/IxeWUE=", "last_login": "2026-03-17T13:48:10.556Z", "is_superuser": false, "username": "Patricia", "first_name": "Patricia", "last_name": "Isikong", "email": "patriciaisikong015@gmail.com", "is_staff": true, "is_active": true, "date_joined": "2026-02-18T14:05:45Z", "role": "MANAGER", "branch": 1, "failed_login_count": 0, "is_locked": false, "groups": [], "user_permissions": [1, 2, 3, 4, 9, 10, 11, 12, 5, 8, 13, 15, 16, 97, 98, 99, 100, 24, 53, 54, 55, 56, 29, 30, 31, 32, 89, 90, 91, 92, 41, 42, 43, 44, 45, 46, 47, 48, 49, 50, 51, 52, 73, 74, 75, 76, 57, 58, 59, 60, 77, 78, 79, 80, 33, 34, 35, 36, 37, 38, 39, 40, 61, 62, 63, 64, 65, 66, 67, 68, 93, 94, 95, 96, 28, 17, 18, 19, 20]}}, {"model": "core.user", "pk": 5, "fields": {"password": "pbkdf2_sha256$720000$CHUCrwoQe2kyy0Ae3TQXY6$v0VKh3YplFdPNsllCpACcioyH7sHhUjvHHu4dlR2XnU=", "last_login": "2026-03-17T13:50:39.860Z", "is_superuser": false, "username": "Idongesit", "first_name": "Idongesit", "last_name": "", "email": "", "is_staff": true, "is_active": true, "date_joined": "2026-02-19T17:27:21Z", "role": "TELECOM", "branch": 1, "failed_login_count": 0, "is_locked": false, "groups": [], "user_permissions": [1, 4, 12, 8, 13, 16, 24, 29, 32, 41, 44, 33, 36, 40, 28, 17, 20]}}, {"model": "core.user", "pk": 6, "fields": {"password": "pbkdf2_sha256$720000$KyecR5LpGa1krzR2kWQdCh$cucPtpI5WfhrzUx6mX3lJGeOhWd8iDWbaX8JLIVofEI=", "last_login": "2026-03-17T13:49:41.710Z", "is_superuser": false, "username": "Ekemini", "first_name": "Ekemini", "last_name": "Monday", "email": "ekeminimonday62@gmail.com", "is_staff": true, "is_active": true, "date_joined": "2026-02-23T15:50:31Z", "role": "MULTICHOICE", "branch": 3, "failed_login_count": 0, "is_locked": false, "groups": [], "user_permissions": [1, 2, 4, 9, 10, 11, 12, 5, 7, 8, 13, 16, 24, 69, 70, 71, 72, 105, 106, 107, 108, 81, 82, 83, 84, 85, 86, 87, 88, 41, 42, 43, 44, 45, 48, 33, 36, 61, 64, 17, 18, 19, 20]}}, {"model": "core.user", "pk": 7, "fields": {"password": "pbkdf2_sha256$720000$xhgoeMtaMJ0Fp4e6yxZqBG$IGw8CBA5QtbfLGUc7ExRpeEKCg8kxSEDsh/DcB1y94c=", "last_login": "2026-03-21T15:57:33.174Z", "is_superuser": false, "username": "Tonia", "first_name": "Anthonia", "last_name": "Itiat", "email": "anthoniaitait@gmail.com", "is_staff": true, "is_active": true, "date_joined": "2026-02-23T15:55:16Z", "role": "RETAIL", "branch": 3, "failed_login_count": 0, "is_locked": false, "groups": [], "user_permissions": [1, 4, 9, 12, 8, 13, 16, 41, 44, 45, 47, 48, 49, 50, 51, 52, 73, 74, 76, 57, 58, 59, 60, 77, 78, 80, 61, 62, 64, 65, 66, 68, 93, 96, 17, 20]}}, {"model": "core.user", "pk": 8, "fields": {"password": "pbkdf2_sha256$720000$8NrctBH8t5nQ3ze0lwk4jE$yHwOpjAX97dVf5oVtS87QngaohZioadt311BlrITUNk=", "last_login": "2026-03-17T13:47:35.894Z", "is_superuser": true, "username": "Director", "first_name": "Nsikak", "last_name": "Akpan", "email": "globalphonelinzsystems@gmail.com", "is_staff": false, "is_active": true, "date_joined": "2026-02-23T16:04:14Z", "role": "DIRECTOR", "branch": null, "failed_login_count": 0, "is_locked": false, "groups": [], "user_permissions": [1, 2, 3, 4, 9, 10, 11, 12, 5, 6, 7, 8, 13, 14, 15, 16, 97, 98, 99, 100, 21, 22, 23, 24, 53, 54, 55, 56, 29, 30, 31, 32, 101, 102, 103, 104, 89, 90, 91, 92, 69, 70, 71, 72, 105, 106, 107, 108, 81, 82, 83, 84, 85, 86, 87, 88, 41, 42, 43, 44, 45, 46, 47, 48, 49, 50, 51, 52, 73, 74, 75, 76, 57, 58, 59, 60, 77, 78, 79, 80, 33, 34, 35, 36, 37, 38, 39, 40, 61, 62, 63, 64, 65, 66, 67, 68, 93, 94, 95, 96, 25, 26, 27, 28, 17, 18, 19, 20]}}, {"model": "core.user", "pk": 9, "fields": {"password": "pbkdf2_sha256$720000$c1FKU47LwoMIuuTe2iityt$UsU1JVhvlYUD6P9I/LP6wNAazomSmHKLDNDl+7oAuyE=", "last_login": "2026-03-15T17:03:19.138Z", "is_superuser": false, "username": "Joseph", "first_name": "Joseph", "last_name": "Effiong", "email": "", "is_staff": true, "is_active": true, "date_joined": "2026-03-15T16:40:11Z", "role": "MANAGER", "branch": 2, "failed_login_count": 0, "is_locked": false, "groups": [], "user_permissions": [1, 2, 3, 4, 9, 10, 11, 12, 5, 6, 8, 13, 15, 16, 97, 98, 100, 24, 53, 54, 56, 29, 30, 31, 32, 89, 90, 92, 41, 42, 44, 45, 46, 47, 48, 49, 50, 52, 73, 74, 75, 76, 57, 58, 60, 77, 78, 79, 80, 33, 34, 35, 36, 37, 38, 39, 40, 61, 62, 63, 64, 65, 66, 67, 68, 93, 94, 95, 96, 28, 17, 20]}}, {"model": "core.user", "pk": 10, "fields": {"password": "pbkdf2_sha256$720000$PRIXH6QOXIt6gygATdkBp7$pbPwzuiASde9LGw8iWInQtMwgjvAy1ZpGMbQ7LGky1w=", "last_login": "2026-03-21T15:57:41.932Z", "is_superuser": false, "username": "Christiana", "first_name": "Christiana", "last_name": "Eyoh", "email": "eyohchristiana@gmail.com", "is_staff": true, "is_active": true, "date_joined": "2026-03-15T16:51:12Z", "role": "MANAGER", "branch": 3, "failed_login_count": 0, "is_locked": false, "groups": [], "user_permissions": [1, 2, 3, 4, 9, 10, 11, 5, 6, 8, 13, 14, 16, 97, 98, 100, 24, 53, 54, 55, 56, 29, 30, 31, 32, 89, 90, 91, 92, 41, 42, 44, 45, 46, 48, 49, 50, 51, 52, 74, 75, 76, 59, 60, 77, 79, 80, 36, 37, 38, 40, 61, 62, 63, 64, 65, 66, 67, 68, 93, 95, 96, 25, 26, 27, 28, 17, 18, 20]}}, {"model": "core.devicetag", "pk": 1, "fields": {"branch": 1, "tag_name": "MTN0300382"}}, {"model": "core.devicetag", "pk": 2, "fields": {"branch": 1, "tag_name": "MTN03003728"}}, {"model": "core.servicetarget", "pk": 1, "fields": {"branch": 1, "service_type": "SIM Registration", "device_tag": null, "target_number": 50, "date": "2026-02-16", "created_by": null}}, {"model": "core.servicetarget", "pk": 2, "fields": {"branch": 1, "service_type": "SIM_REG", "device_tag": 1, "target_number": 50, "date": "2026-02-21", "created_by": 2}}, {"model": "core.servicetarget", "pk": 3, "fields": {"branch": 1, "service_type": "SIM_REG", "device_tag": 2, "target_number": 50, "date": "2026-02-21", "created_by": 2}}, {"model": "core.directorsafestock", "pk": 1, "fields": {"product": 1, "quantity": 20, "date_added": "2026-03-10T19:34:15.147Z", "notes": ""}}, {"model": "core.serviceactivity", "pk": 1, "fields": {"branch": 1, "staff": 5, "service_type": "SIM_REG", "device_tag": null, "quantity": 4, "date": "2026-02-21", "approved": false, "requires_approval": false}}, {"model": "core.serviceactivity", "pk": 2, "fields": {"branch": 1, "staff": 5, "service_type": "SIM_REG", "device_tag": null, "quantity": 2, "date": "2026-02-21", "approved": false, "requires_approval": false}}, {"model": "core.serviceactivity", "pk": 3, "fields": {"branch": 1, "staff": 5, "service_type": "SIM_REG", "device_tag": 2, "quantity": 5, "date": "2026-02-21", "approved": false, "requires_approval": false}}, {"model": "core.serviceactivity", "pk": 4, "fields": {"branch": 1, "staff": 5, "service_type": "SIM_REG", "device_tag": 1, "quantity": 2, "date": "2026-02-21", "approved": false, "requires_approval": false}}, {"model": "core.serviceactivity", "pk": 5, "fields": {"branch": 1, "staff": 5, "service_type": "SIM_REG", "device_tag": 1, "quantity": 1, "date": "2026-03-10", "approved": true, "requires_approval": false}}, {"model": "core.serviceactivity", "pk": 6, "fields": {"branch": 1, "staff": 5, "service_type": "MIFI", "device_tag": null, "quantity": 1, "date": "2026-03-10", "approved": true, "requires_approval": false}}, {"model": "core.serviceactivity", "pk": 7, "fields": {"branch": 1, "staff": 5, "service_type": "MIFI", "device_tag": null, "quantity": 15000, "date": "2026-03-10", "approved": true, "requires_approval": false}}, {"model": "core.serviceactivity", "pk": 8, "fields": {"branch": 1, "staff": 5, "service_type": "MIFI", "device_tag": null, "quantity": 1, "date": "2026-03-10", "approved": false, "requires_approval": false}}, {"model": "core.serviceactivity", "pk": 9, "fields": {"branch": 1, "staff": 5, "service_type": "WHOLESALE_SIM", "device_tag": null, "quantity": 50, "date": "2026-03-10", "approved": false, "requires_approval": false}}, {"model": "core.retailcategory", "pk": 1, "fields": {"name": "Phones "}}, {"model": "core.retailcategory", "pk": 2, "fields": {"name": "Chargers"}}, {"model": "core.retailcategory", "pk": 3, "fields": {"name": "PowerBanks"}}, {"model": "core.retailcategory", "pk": 4, "fields": {"name": "Batteries "}}, {"model": "core.retailcategory", "pk": 5, "fields": {"name": "Casing"}}, {"model": "core.retailsubcategory", "pk": 1, "fields": {"category": 1, "name": "Button Phones"}}, {"model": "core.retailsubcategory", "pk": 2, "fields": {"category": 4, "name": "Itel"}}, {"model": "core.retailsubsubcategory", "pk": 1, "fields": {"subcategory": 1, "name": "Itel"}}, {"model": "core.product", "pk": 1, "fields": {"subsubcategory": 1, "subcategory": 1, "product_name": "Itel Phone", "model_name": "It2165", "description": null, "imei_serial": "57468", "cost_price": "0.00", "selling_price": "11000.00"}}, {"model": "core.product", "pk": 2, "fields": {"subsubcategory": 1, "subcategory": 1, "product_name": "Itel Phone", "model_name": "It2165", "description": null, "imei_serial": "5746888886696798", "cost_price": "0.00", "selling_price": "11000.00"}}, {"model": "core.branchsafestock", "pk": 1, "fields": {"branch": 1, "product": 1, "quantity": 10}}, {"model": "core.staffstock", "pk": 1, "fields": {"staff": 7, "product": 2, "quantity": 4}}, {"model": "core.stockmovement", "pk": 1, "fields": {"branch": 1, "product": 1, "quantity": 10, "movement_type": "IN", "performed_by": 4, "date": "2026-03-10", "time": "19:28:18.077"}}, {"model": "core.multichoicesale", "pk": 1, "fields": {"staff": 6, "branch": 3, "customer_name": " Christopher Ime", "service_type": "DSTV", "package_type": "Jolli", "transaction_type": "RENEWAL", "cost_price": "0.00", "amount": "6000.00", "date": "2026-02-28", "time": "14:18:11.704"}}, {"model": "core.multichoicesale", "pk": 2, "fields": {"staff": 6, "branch": 3, "customer_name": " Christopher Ime", "service_type": "GOTV", "package_type": "Jolli", "transaction_type": "RENEWAL", "cost_price": "5800.00", "amount": "6000.00", "date": "2026-03-10", "time": "18:57:52.151"}}, {"model": "core.retailsale", "pk": 1, "fields": {"staff": 7, "branch": 3, "product": 2, "quantity": 1, "selling_price": "11000.00", "payment_method": "CASH", "date": "2026-03-10", "time": "19:30:56.644"}}, {"model": "core.stockrequest", "pk": 1, "fields": {"staff": 7, "branch": 3, "product_name": "Itel Battery ", "quantity": 10, "status": "APPROVED", "date_requested": "2026-03-10"}}, {"model": "core.stockrequest", "pk": 2, "fields": {"staff": 7, "branch": 3, "product_name": "Itel Battery BL-5C ", "quantity": 10, "status": "PENDING", "date_requested": "2026-03-10"}}, {"model": "core.attendance", "pk": 1, "fields": {"user": 6, "branch": 3, "session": "morning", "check_in_time": "2026-03-09T11:46:32.788Z", "check_out_time": null, "latitude": 4.915645, "longitude": 7.96399, "distance_from_branch": 34.427347328526594, "selfie": "attendance_selfies/17730567824988490197920804263846.jpg", "date": "2026-03-09", "is_late": false, "is_absent": true, "deduction_amount": "0.00"}}, {"model": "core.attendance", "pk": 2, "fields": {"user": 7, "branch": 3, "session": "morning", "check_in_time": "2026-03-09T11:47:42.777Z", "check_out_time": null, "latitude": 4.915645, "longitude": 7.96399, "distance_from_branch": 34.427347328526594, "selfie": "attendance_selfies/17730568530799026293631379885882.jpg", "date": "2026-03-09", "is_late": false, "is_absent": true, "deduction_amount": "0.00"}}, {"model": "core.attendance", "pk": 3, "fields": {"user": 5, "branch": 1, "session": "morning", "check_in_time": "2026-03-15T16:32:27.791Z", "check_out_time": null, "latitude": 4.9942865, "longitude": 7.8903441, "distance_from_branch": 11.439238834513297, "selfie": "attendance_selfies/17735923383316732223110168747165.jpg", "date": "2026-03-15", "is_late": false, "is_absent": false, "deduction_amount": "0.00"}}, {"model": "core.attendance", "pk": 4, "fields": {"user": 4, "branch": 1, "session": "morning", "check_in_time": "2026-03-15T16:32:52.218Z", "check_out_time": null, "latitude": 4.9942462, "longitude": 7.8904092, "distance_from_branch": 5.237314739920261, "selfie": "attendance_selfies/17735923637212809328647493564449.jpg", "date": "2026-03-15", "is_late": false, "is_absent": false, "deduction_amount": "0.00"}}
+[
+{
+  "model": "admin.logentry",
+  "pk": 6,
+  "fields": {
+    "action_time": "2026-02-17T19:30:33.620Z",
+    "user": 2,
+    "content_type": 7,
+    "object_id": "3",
+    "object_repr": "Manager",
+    "action_flag": 1,
+    "change_message": "[{\"added\": {}}]"
+  }
+},
+{
+  "model": "admin.logentry",
+  "pk": 7,
+  "fields": {
+    "action_time": "2026-02-17T19:35:42.071Z",
+    "user": 2,
+    "content_type": 7,
+    "object_id": "3",
+    "object_repr": "Manager",
+    "action_flag": 2,
+    "change_message": "[{\"changed\": {\"fields\": [\"First name\", \"Last name\", \"Email address\", \"Staff status\", \"User permissions\"]}}]"
+  }
+},
+{
+  "model": "admin.logentry",
+  "pk": 8,
+  "fields": {
+    "action_time": "2026-02-18T14:00:08.315Z",
+    "user": 2,
+    "content_type": 7,
+    "object_id": "3",
+    "object_repr": "Manager",
+    "action_flag": 3,
+    "change_message": ""
+  }
+},
+{
+  "model": "admin.logentry",
+  "pk": 9,
+  "fields": {
+    "action_time": "2026-02-18T14:05:45.756Z",
+    "user": 2,
+    "content_type": 7,
+    "object_id": "4",
+    "object_repr": "Patricia",
+    "action_flag": 1,
+    "change_message": "[{\"added\": {}}]"
+  }
+},
+{
+  "model": "admin.logentry",
+  "pk": 10,
+  "fields": {
+    "action_time": "2026-02-18T14:08:20.187Z",
+    "user": 2,
+    "content_type": 7,
+    "object_id": "4",
+    "object_repr": "Patricia",
+    "action_flag": 2,
+    "change_message": "[{\"changed\": {\"fields\": [\"First name\", \"Last name\", \"Email address\", \"Staff status\", \"User permissions\", \"Last login\"]}}]"
+  }
+},
+{
+  "model": "admin.logentry",
+  "pk": 11,
+  "fields": {
+    "action_time": "2026-02-19T17:27:21.426Z",
+    "user": 2,
+    "content_type": 7,
+    "object_id": "5",
+    "object_repr": "Idongesit",
+    "action_flag": 1,
+    "change_message": "[{\"added\": {}}]"
+  }
+},
+{
+  "model": "admin.logentry",
+  "pk": 12,
+  "fields": {
+    "action_time": "2026-02-19T17:29:04.459Z",
+    "user": 2,
+    "content_type": 7,
+    "object_id": "5",
+    "object_repr": "Idongesit",
+    "action_flag": 2,
+    "change_message": "[{\"changed\": {\"fields\": [\"First name\", \"Staff status\", \"User permissions\", \"Last login\"]}}]"
+  }
+},
+{
+  "model": "admin.logentry",
+  "pk": 13,
+  "fields": {
+    "action_time": "2026-02-21T13:47:29.439Z",
+    "user": 2,
+    "content_type": 8,
+    "object_id": "1",
+    "object_repr": "MTN0300382",
+    "action_flag": 1,
+    "change_message": "[{\"added\": {}}]"
+  }
+},
+{
+  "model": "admin.logentry",
+  "pk": 14,
+  "fields": {
+    "action_time": "2026-02-21T13:47:52.518Z",
+    "user": 2,
+    "content_type": 10,
+    "object_id": "2",
+    "object_repr": "Mbierebe Branch - SIM_REG - 2026-02-21",
+    "action_flag": 1,
+    "change_message": "[{\"added\": {}}]"
+  }
+},
+{
+  "model": "admin.logentry",
+  "pk": 15,
+  "fields": {
+    "action_time": "2026-02-21T13:48:17.524Z",
+    "user": 2,
+    "content_type": 8,
+    "object_id": "2",
+    "object_repr": "MTN03003728",
+    "action_flag": 1,
+    "change_message": "[{\"added\": {}}]"
+  }
+},
+{
+  "model": "admin.logentry",
+  "pk": 16,
+  "fields": {
+    "action_time": "2026-02-21T13:48:29.195Z",
+    "user": 2,
+    "content_type": 10,
+    "object_id": "3",
+    "object_repr": "Mbierebe Branch - SIM_REG - 2026-02-21",
+    "action_flag": 1,
+    "change_message": "[{\"added\": {}}]"
+  }
+},
+{
+  "model": "admin.logentry",
+  "pk": 17,
+  "fields": {
+    "action_time": "2026-02-23T15:43:51.591Z",
+    "user": 2,
+    "content_type": 7,
+    "object_id": "5",
+    "object_repr": "Idongesit",
+    "action_flag": 2,
+    "change_message": "[{\"changed\": {\"fields\": [\"Role\"]}}]"
+  }
+},
+{
+  "model": "admin.logentry",
+  "pk": 18,
+  "fields": {
+    "action_time": "2026-02-23T15:44:01.382Z",
+    "user": 2,
+    "content_type": 7,
+    "object_id": "4",
+    "object_repr": "Patricia",
+    "action_flag": 2,
+    "change_message": "[{\"changed\": {\"fields\": [\"Role\"]}}]"
+  }
+},
+{
+  "model": "admin.logentry",
+  "pk": 19,
+  "fields": {
+    "action_time": "2026-02-23T15:50:31.276Z",
+    "user": 2,
+    "content_type": 7,
+    "object_id": "6",
+    "object_repr": "Ekemini",
+    "action_flag": 1,
+    "change_message": "[{\"added\": {}}]"
+  }
+},
+{
+  "model": "admin.logentry",
+  "pk": 20,
+  "fields": {
+    "action_time": "2026-02-23T15:53:04.724Z",
+    "user": 2,
+    "content_type": 7,
+    "object_id": "6",
+    "object_repr": "Ekemini",
+    "action_flag": 2,
+    "change_message": "[{\"changed\": {\"fields\": [\"First name\", \"Last name\", \"Email address\", \"Staff status\", \"User permissions\", \"Last login\"]}}]"
+  }
+},
+{
+  "model": "admin.logentry",
+  "pk": 21,
+  "fields": {
+    "action_time": "2026-02-23T15:54:26.041Z",
+    "user": 2,
+    "content_type": 7,
+    "object_id": "4",
+    "object_repr": "Patricia",
+    "action_flag": 2,
+    "change_message": "[{\"changed\": {\"fields\": [\"User permissions\"]}}]"
+  }
+},
+{
+  "model": "admin.logentry",
+  "pk": 22,
+  "fields": {
+    "action_time": "2026-02-23T15:55:16.645Z",
+    "user": 2,
+    "content_type": 7,
+    "object_id": "7",
+    "object_repr": "Tonia",
+    "action_flag": 1,
+    "change_message": "[{\"added\": {}}]"
+  }
+},
+{
+  "model": "admin.logentry",
+  "pk": 23,
+  "fields": {
+    "action_time": "2026-02-23T16:02:13.567Z",
+    "user": 2,
+    "content_type": 7,
+    "object_id": "7",
+    "object_repr": "Tonia",
+    "action_flag": 2,
+    "change_message": "[{\"changed\": {\"fields\": [\"First name\", \"Last name\", \"Email address\", \"Staff status\", \"User permissions\", \"Last login\"]}}]"
+  }
+},
+{
+  "model": "admin.logentry",
+  "pk": 24,
+  "fields": {
+    "action_time": "2026-02-23T16:03:20.204Z",
+    "user": 2,
+    "content_type": 7,
+    "object_id": "8",
+    "object_repr": "Director",
+    "action_flag": 1,
+    "change_message": "[{\"added\": {}}]"
+  }
+},
+{
+  "model": "admin.logentry",
+  "pk": 25,
+  "fields": {
+    "action_time": "2026-02-23T16:04:16.942Z",
+    "user": 2,
+    "content_type": 7,
+    "object_id": "8",
+    "object_repr": "Director",
+    "action_flag": 2,
+    "change_message": "[{\"changed\": {\"fields\": [\"First name\", \"Last name\", \"Email address\", \"Superuser status\", \"User permissions\", \"Last login\", \"Date joined\"]}}]"
+  }
+},
+{
+  "model": "admin.logentry",
+  "pk": 26,
+  "fields": {
+    "action_time": "2026-02-23T16:11:36.751Z",
+    "user": 2,
+    "content_type": 7,
+    "object_id": "8",
+    "object_repr": "Director",
+    "action_flag": 2,
+    "change_message": "[]"
+  }
+},
+{
+  "model": "admin.logentry",
+  "pk": 27,
+  "fields": {
+    "action_time": "2026-02-23T16:12:12.744Z",
+    "user": 2,
+    "content_type": 7,
+    "object_id": "4",
+    "object_repr": "Patricia",
+    "action_flag": 2,
+    "change_message": "[{\"changed\": {\"fields\": [\"User permissions\"]}}]"
+  }
+},
+{
+  "model": "admin.logentry",
+  "pk": 28,
+  "fields": {
+    "action_time": "2026-03-10T19:39:55.893Z",
+    "user": 2,
+    "content_type": 7,
+    "object_id": "8",
+    "object_repr": "Director",
+    "action_flag": 2,
+    "change_message": "[{\"changed\": {\"fields\": [\"User permissions\"]}}]"
+  }
+},
+{
+  "model": "admin.logentry",
+  "pk": 29,
+  "fields": {
+    "action_time": "2026-03-15T16:40:11.599Z",
+    "user": 2,
+    "content_type": 7,
+    "object_id": "9",
+    "object_repr": "Joseph",
+    "action_flag": 1,
+    "change_message": "[{\"added\": {}}]"
+  }
+},
+{
+  "model": "admin.logentry",
+  "pk": 30,
+  "fields": {
+    "action_time": "2026-03-15T16:44:30.792Z",
+    "user": 2,
+    "content_type": 7,
+    "object_id": "9",
+    "object_repr": "Joseph",
+    "action_flag": 2,
+    "change_message": "[{\"changed\": {\"fields\": [\"First name\", \"Last name\", \"Staff status\", \"User permissions\", \"Last login\", \"Role\", \"Branch\"]}}]"
+  }
+},
+{
+  "model": "admin.logentry",
+  "pk": 31,
+  "fields": {
+    "action_time": "2026-03-15T16:45:46.608Z",
+    "user": 2,
+    "content_type": 7,
+    "object_id": "6",
+    "object_repr": "Ekemini",
+    "action_flag": 2,
+    "change_message": "[{\"changed\": {\"fields\": [\"User permissions\"]}}]"
+  }
+},
+{
+  "model": "admin.logentry",
+  "pk": 32,
+  "fields": {
+    "action_time": "2026-03-15T16:46:59.131Z",
+    "user": 2,
+    "content_type": 7,
+    "object_id": "4",
+    "object_repr": "Patricia",
+    "action_flag": 2,
+    "change_message": "[{\"changed\": {\"fields\": [\"User permissions\"]}}]"
+  }
+},
+{
+  "model": "admin.logentry",
+  "pk": 33,
+  "fields": {
+    "action_time": "2026-03-15T16:47:20.147Z",
+    "user": 2,
+    "content_type": 7,
+    "object_id": "8",
+    "object_repr": "Director",
+    "action_flag": 2,
+    "change_message": "[{\"changed\": {\"fields\": [\"User permissions\"]}}]"
+  }
+},
+{
+  "model": "admin.logentry",
+  "pk": 34,
+  "fields": {
+    "action_time": "2026-03-15T16:48:51.761Z",
+    "user": 2,
+    "content_type": 7,
+    "object_id": "7",
+    "object_repr": "Tonia",
+    "action_flag": 2,
+    "change_message": "[{\"changed\": {\"fields\": [\"User permissions\"]}}]"
+  }
+},
+{
+  "model": "admin.logentry",
+  "pk": 35,
+  "fields": {
+    "action_time": "2026-03-15T16:51:12.185Z",
+    "user": 2,
+    "content_type": 7,
+    "object_id": "10",
+    "object_repr": "Christiana",
+    "action_flag": 1,
+    "change_message": "[{\"added\": {}}]"
+  }
+},
+{
+  "model": "admin.logentry",
+  "pk": 36,
+  "fields": {
+    "action_time": "2026-03-15T16:56:58.681Z",
+    "user": 2,
+    "content_type": 7,
+    "object_id": "10",
+    "object_repr": "Christiana",
+    "action_flag": 2,
+    "change_message": "[{\"changed\": {\"fields\": [\"First name\", \"Last name\", \"Email address\", \"Staff status\", \"User permissions\", \"Last login\", \"Role\", \"Branch\"]}}]"
+  }
+},
+{
+  "model": "auth.permission",
+  "pk": 1,
+  "fields": {
+    "name": "Can add log entry",
+    "content_type": 1,
+    "codename": "add_logentry"
+  }
+},
+{
+  "model": "auth.permission",
+  "pk": 2,
+  "fields": {
+    "name": "Can change log entry",
+    "content_type": 1,
+    "codename": "change_logentry"
+  }
+},
+{
+  "model": "auth.permission",
+  "pk": 3,
+  "fields": {
+    "name": "Can delete log entry",
+    "content_type": 1,
+    "codename": "delete_logentry"
+  }
+},
+{
+  "model": "auth.permission",
+  "pk": 4,
+  "fields": {
+    "name": "Can view log entry",
+    "content_type": 1,
+    "codename": "view_logentry"
+  }
+},
+{
+  "model": "auth.permission",
+  "pk": 5,
+  "fields": {
+    "name": "Can add permission",
+    "content_type": 2,
+    "codename": "add_permission"
+  }
+},
+{
+  "model": "auth.permission",
+  "pk": 6,
+  "fields": {
+    "name": "Can change permission",
+    "content_type": 2,
+    "codename": "change_permission"
+  }
+},
+{
+  "model": "auth.permission",
+  "pk": 7,
+  "fields": {
+    "name": "Can delete permission",
+    "content_type": 2,
+    "codename": "delete_permission"
+  }
+},
+{
+  "model": "auth.permission",
+  "pk": 8,
+  "fields": {
+    "name": "Can view permission",
+    "content_type": 2,
+    "codename": "view_permission"
+  }
+},
+{
+  "model": "auth.permission",
+  "pk": 9,
+  "fields": {
+    "name": "Can add group",
+    "content_type": 3,
+    "codename": "add_group"
+  }
+},
+{
+  "model": "auth.permission",
+  "pk": 10,
+  "fields": {
+    "name": "Can change group",
+    "content_type": 3,
+    "codename": "change_group"
+  }
+},
+{
+  "model": "auth.permission",
+  "pk": 11,
+  "fields": {
+    "name": "Can delete group",
+    "content_type": 3,
+    "codename": "delete_group"
+  }
+},
+{
+  "model": "auth.permission",
+  "pk": 12,
+  "fields": {
+    "name": "Can view group",
+    "content_type": 3,
+    "codename": "view_group"
+  }
+},
+{
+  "model": "auth.permission",
+  "pk": 13,
+  "fields": {
+    "name": "Can add content type",
+    "content_type": 4,
+    "codename": "add_contenttype"
+  }
+},
+{
+  "model": "auth.permission",
+  "pk": 14,
+  "fields": {
+    "name": "Can change content type",
+    "content_type": 4,
+    "codename": "change_contenttype"
+  }
+},
+{
+  "model": "auth.permission",
+  "pk": 15,
+  "fields": {
+    "name": "Can delete content type",
+    "content_type": 4,
+    "codename": "delete_contenttype"
+  }
+},
+{
+  "model": "auth.permission",
+  "pk": 16,
+  "fields": {
+    "name": "Can view content type",
+    "content_type": 4,
+    "codename": "view_contenttype"
+  }
+},
+{
+  "model": "auth.permission",
+  "pk": 17,
+  "fields": {
+    "name": "Can add session",
+    "content_type": 5,
+    "codename": "add_session"
+  }
+},
+{
+  "model": "auth.permission",
+  "pk": 18,
+  "fields": {
+    "name": "Can change session",
+    "content_type": 5,
+    "codename": "change_session"
+  }
+},
+{
+  "model": "auth.permission",
+  "pk": 19,
+  "fields": {
+    "name": "Can delete session",
+    "content_type": 5,
+    "codename": "delete_session"
+  }
+},
+{
+  "model": "auth.permission",
+  "pk": 20,
+  "fields": {
+    "name": "Can view session",
+    "content_type": 5,
+    "codename": "view_session"
+  }
+},
+{
+  "model": "auth.permission",
+  "pk": 21,
+  "fields": {
+    "name": "Can add branch",
+    "content_type": 6,
+    "codename": "add_branch"
+  }
+},
+{
+  "model": "auth.permission",
+  "pk": 22,
+  "fields": {
+    "name": "Can change branch",
+    "content_type": 6,
+    "codename": "change_branch"
+  }
+},
+{
+  "model": "auth.permission",
+  "pk": 23,
+  "fields": {
+    "name": "Can delete branch",
+    "content_type": 6,
+    "codename": "delete_branch"
+  }
+},
+{
+  "model": "auth.permission",
+  "pk": 24,
+  "fields": {
+    "name": "Can view branch",
+    "content_type": 6,
+    "codename": "view_branch"
+  }
+},
+{
+  "model": "auth.permission",
+  "pk": 25,
+  "fields": {
+    "name": "Can add user",
+    "content_type": 7,
+    "codename": "add_user"
+  }
+},
+{
+  "model": "auth.permission",
+  "pk": 26,
+  "fields": {
+    "name": "Can change user",
+    "content_type": 7,
+    "codename": "change_user"
+  }
+},
+{
+  "model": "auth.permission",
+  "pk": 27,
+  "fields": {
+    "name": "Can delete user",
+    "content_type": 7,
+    "codename": "delete_user"
+  }
+},
+{
+  "model": "auth.permission",
+  "pk": 28,
+  "fields": {
+    "name": "Can view user",
+    "content_type": 7,
+    "codename": "view_user"
+  }
+},
+{
+  "model": "auth.permission",
+  "pk": 29,
+  "fields": {
+    "name": "Can add device tag",
+    "content_type": 8,
+    "codename": "add_devicetag"
+  }
+},
+{
+  "model": "auth.permission",
+  "pk": 30,
+  "fields": {
+    "name": "Can change device tag",
+    "content_type": 8,
+    "codename": "change_devicetag"
+  }
+},
+{
+  "model": "auth.permission",
+  "pk": 31,
+  "fields": {
+    "name": "Can delete device tag",
+    "content_type": 8,
+    "codename": "delete_devicetag"
+  }
+},
+{
+  "model": "auth.permission",
+  "pk": 32,
+  "fields": {
+    "name": "Can view device tag",
+    "content_type": 8,
+    "codename": "view_devicetag"
+  }
+},
+{
+  "model": "auth.permission",
+  "pk": 33,
+  "fields": {
+    "name": "Can add service activity",
+    "content_type": 9,
+    "codename": "add_serviceactivity"
+  }
+},
+{
+  "model": "auth.permission",
+  "pk": 34,
+  "fields": {
+    "name": "Can change service activity",
+    "content_type": 9,
+    "codename": "change_serviceactivity"
+  }
+},
+{
+  "model": "auth.permission",
+  "pk": 35,
+  "fields": {
+    "name": "Can delete service activity",
+    "content_type": 9,
+    "codename": "delete_serviceactivity"
+  }
+},
+{
+  "model": "auth.permission",
+  "pk": 36,
+  "fields": {
+    "name": "Can view service activity",
+    "content_type": 9,
+    "codename": "view_serviceactivity"
+  }
+},
+{
+  "model": "auth.permission",
+  "pk": 37,
+  "fields": {
+    "name": "Can add service target",
+    "content_type": 10,
+    "codename": "add_servicetarget"
+  }
+},
+{
+  "model": "auth.permission",
+  "pk": 38,
+  "fields": {
+    "name": "Can change service target",
+    "content_type": 10,
+    "codename": "change_servicetarget"
+  }
+},
+{
+  "model": "auth.permission",
+  "pk": 39,
+  "fields": {
+    "name": "Can delete service target",
+    "content_type": 10,
+    "codename": "delete_servicetarget"
+  }
+},
+{
+  "model": "auth.permission",
+  "pk": 40,
+  "fields": {
+    "name": "Can view service target",
+    "content_type": 10,
+    "codename": "view_servicetarget"
+  }
+},
+{
+  "model": "auth.permission",
+  "pk": 41,
+  "fields": {
+    "name": "Can add performance",
+    "content_type": 11,
+    "codename": "add_performance"
+  }
+},
+{
+  "model": "auth.permission",
+  "pk": 42,
+  "fields": {
+    "name": "Can change performance",
+    "content_type": 11,
+    "codename": "change_performance"
+  }
+},
+{
+  "model": "auth.permission",
+  "pk": 43,
+  "fields": {
+    "name": "Can delete performance",
+    "content_type": 11,
+    "codename": "delete_performance"
+  }
+},
+{
+  "model": "auth.permission",
+  "pk": 44,
+  "fields": {
+    "name": "Can view performance",
+    "content_type": 11,
+    "codename": "view_performance"
+  }
+},
+{
+  "model": "auth.permission",
+  "pk": 45,
+  "fields": {
+    "name": "Can add product",
+    "content_type": 12,
+    "codename": "add_product"
+  }
+},
+{
+  "model": "auth.permission",
+  "pk": 46,
+  "fields": {
+    "name": "Can change product",
+    "content_type": 12,
+    "codename": "change_product"
+  }
+},
+{
+  "model": "auth.permission",
+  "pk": 47,
+  "fields": {
+    "name": "Can delete product",
+    "content_type": 12,
+    "codename": "delete_product"
+  }
+},
+{
+  "model": "auth.permission",
+  "pk": 48,
+  "fields": {
+    "name": "Can view product",
+    "content_type": 12,
+    "codename": "view_product"
+  }
+},
+{
+  "model": "auth.permission",
+  "pk": 49,
+  "fields": {
+    "name": "Can add retail category",
+    "content_type": 13,
+    "codename": "add_retailcategory"
+  }
+},
+{
+  "model": "auth.permission",
+  "pk": 50,
+  "fields": {
+    "name": "Can change retail category",
+    "content_type": 13,
+    "codename": "change_retailcategory"
+  }
+},
+{
+  "model": "auth.permission",
+  "pk": 51,
+  "fields": {
+    "name": "Can delete retail category",
+    "content_type": 13,
+    "codename": "delete_retailcategory"
+  }
+},
+{
+  "model": "auth.permission",
+  "pk": 52,
+  "fields": {
+    "name": "Can view retail category",
+    "content_type": 13,
+    "codename": "view_retailcategory"
+  }
+},
+{
+  "model": "auth.permission",
+  "pk": 53,
+  "fields": {
+    "name": "Can add branch safe stock",
+    "content_type": 14,
+    "codename": "add_branchsafestock"
+  }
+},
+{
+  "model": "auth.permission",
+  "pk": 54,
+  "fields": {
+    "name": "Can change branch safe stock",
+    "content_type": 14,
+    "codename": "change_branchsafestock"
+  }
+},
+{
+  "model": "auth.permission",
+  "pk": 55,
+  "fields": {
+    "name": "Can delete branch safe stock",
+    "content_type": 14,
+    "codename": "delete_branchsafestock"
+  }
+},
+{
+  "model": "auth.permission",
+  "pk": 56,
+  "fields": {
+    "name": "Can view branch safe stock",
+    "content_type": 14,
+    "codename": "view_branchsafestock"
+  }
+},
+{
+  "model": "auth.permission",
+  "pk": 57,
+  "fields": {
+    "name": "Can add retail sub category",
+    "content_type": 15,
+    "codename": "add_retailsubcategory"
+  }
+},
+{
+  "model": "auth.permission",
+  "pk": 58,
+  "fields": {
+    "name": "Can change retail sub category",
+    "content_type": 15,
+    "codename": "change_retailsubcategory"
+  }
+},
+{
+  "model": "auth.permission",
+  "pk": 59,
+  "fields": {
+    "name": "Can delete retail sub category",
+    "content_type": 15,
+    "codename": "delete_retailsubcategory"
+  }
+},
+{
+  "model": "auth.permission",
+  "pk": 60,
+  "fields": {
+    "name": "Can view retail sub category",
+    "content_type": 15,
+    "codename": "view_retailsubcategory"
+  }
+},
+{
+  "model": "auth.permission",
+  "pk": 61,
+  "fields": {
+    "name": "Can add staff stock",
+    "content_type": 16,
+    "codename": "add_staffstock"
+  }
+},
+{
+  "model": "auth.permission",
+  "pk": 62,
+  "fields": {
+    "name": "Can change staff stock",
+    "content_type": 16,
+    "codename": "change_staffstock"
+  }
+},
+{
+  "model": "auth.permission",
+  "pk": 63,
+  "fields": {
+    "name": "Can delete staff stock",
+    "content_type": 16,
+    "codename": "delete_staffstock"
+  }
+},
+{
+  "model": "auth.permission",
+  "pk": 64,
+  "fields": {
+    "name": "Can view staff stock",
+    "content_type": 16,
+    "codename": "view_staffstock"
+  }
+},
+{
+  "model": "auth.permission",
+  "pk": 65,
+  "fields": {
+    "name": "Can add stock movement",
+    "content_type": 17,
+    "codename": "add_stockmovement"
+  }
+},
+{
+  "model": "auth.permission",
+  "pk": 66,
+  "fields": {
+    "name": "Can change stock movement",
+    "content_type": 17,
+    "codename": "change_stockmovement"
+  }
+},
+{
+  "model": "auth.permission",
+  "pk": 67,
+  "fields": {
+    "name": "Can delete stock movement",
+    "content_type": 17,
+    "codename": "delete_stockmovement"
+  }
+},
+{
+  "model": "auth.permission",
+  "pk": 68,
+  "fields": {
+    "name": "Can view stock movement",
+    "content_type": 17,
+    "codename": "view_stockmovement"
+  }
+},
+{
+  "model": "auth.permission",
+  "pk": 69,
+  "fields": {
+    "name": "Can add multi choice activity",
+    "content_type": 18,
+    "codename": "add_multichoiceactivity"
+  }
+},
+{
+  "model": "auth.permission",
+  "pk": 70,
+  "fields": {
+    "name": "Can change multi choice activity",
+    "content_type": 18,
+    "codename": "change_multichoiceactivity"
+  }
+},
+{
+  "model": "auth.permission",
+  "pk": 71,
+  "fields": {
+    "name": "Can delete multi choice activity",
+    "content_type": 18,
+    "codename": "delete_multichoiceactivity"
+  }
+},
+{
+  "model": "auth.permission",
+  "pk": 72,
+  "fields": {
+    "name": "Can view multi choice activity",
+    "content_type": 18,
+    "codename": "view_multichoiceactivity"
+  }
+},
+{
+  "model": "auth.permission",
+  "pk": 73,
+  "fields": {
+    "name": "Can add retail sale",
+    "content_type": 19,
+    "codename": "add_retailsale"
+  }
+},
+{
+  "model": "auth.permission",
+  "pk": 74,
+  "fields": {
+    "name": "Can change retail sale",
+    "content_type": 19,
+    "codename": "change_retailsale"
+  }
+},
+{
+  "model": "auth.permission",
+  "pk": 75,
+  "fields": {
+    "name": "Can delete retail sale",
+    "content_type": 19,
+    "codename": "delete_retailsale"
+  }
+},
+{
+  "model": "auth.permission",
+  "pk": 76,
+  "fields": {
+    "name": "Can view retail sale",
+    "content_type": 19,
+    "codename": "view_retailsale"
+  }
+},
+{
+  "model": "auth.permission",
+  "pk": 77,
+  "fields": {
+    "name": "Can add retail sub sub category",
+    "content_type": 20,
+    "codename": "add_retailsubsubcategory"
+  }
+},
+{
+  "model": "auth.permission",
+  "pk": 78,
+  "fields": {
+    "name": "Can change retail sub sub category",
+    "content_type": 20,
+    "codename": "change_retailsubsubcategory"
+  }
+},
+{
+  "model": "auth.permission",
+  "pk": 79,
+  "fields": {
+    "name": "Can delete retail sub sub category",
+    "content_type": 20,
+    "codename": "delete_retailsubsubcategory"
+  }
+},
+{
+  "model": "auth.permission",
+  "pk": 80,
+  "fields": {
+    "name": "Can view retail sub sub category",
+    "content_type": 20,
+    "codename": "view_retailsubsubcategory"
+  }
+},
+{
+  "model": "auth.permission",
+  "pk": 81,
+  "fields": {
+    "name": "Can add multi choice sale",
+    "content_type": 21,
+    "codename": "add_multichoicesale"
+  }
+},
+{
+  "model": "auth.permission",
+  "pk": 82,
+  "fields": {
+    "name": "Can change multi choice sale",
+    "content_type": 21,
+    "codename": "change_multichoicesale"
+  }
+},
+{
+  "model": "auth.permission",
+  "pk": 83,
+  "fields": {
+    "name": "Can delete multi choice sale",
+    "content_type": 21,
+    "codename": "delete_multichoicesale"
+  }
+},
+{
+  "model": "auth.permission",
+  "pk": 84,
+  "fields": {
+    "name": "Can view multi choice sale",
+    "content_type": 21,
+    "codename": "view_multichoicesale"
+  }
+},
+{
+  "model": "auth.permission",
+  "pk": 85,
+  "fields": {
+    "name": "Can add multi choice weekly report",
+    "content_type": 22,
+    "codename": "add_multichoiceweeklyreport"
+  }
+},
+{
+  "model": "auth.permission",
+  "pk": 86,
+  "fields": {
+    "name": "Can change multi choice weekly report",
+    "content_type": 22,
+    "codename": "change_multichoiceweeklyreport"
+  }
+},
+{
+  "model": "auth.permission",
+  "pk": 87,
+  "fields": {
+    "name": "Can delete multi choice weekly report",
+    "content_type": 22,
+    "codename": "delete_multichoiceweeklyreport"
+  }
+},
+{
+  "model": "auth.permission",
+  "pk": 88,
+  "fields": {
+    "name": "Can view multi choice weekly report",
+    "content_type": 22,
+    "codename": "view_multichoiceweeklyreport"
+  }
+},
+{
+  "model": "auth.permission",
+  "pk": 89,
+  "fields": {
+    "name": "Can add expense",
+    "content_type": 23,
+    "codename": "add_expense"
+  }
+},
+{
+  "model": "auth.permission",
+  "pk": 90,
+  "fields": {
+    "name": "Can change expense",
+    "content_type": 23,
+    "codename": "change_expense"
+  }
+},
+{
+  "model": "auth.permission",
+  "pk": 91,
+  "fields": {
+    "name": "Can delete expense",
+    "content_type": 23,
+    "codename": "delete_expense"
+  }
+},
+{
+  "model": "auth.permission",
+  "pk": 92,
+  "fields": {
+    "name": "Can view expense",
+    "content_type": 23,
+    "codename": "view_expense"
+  }
+},
+{
+  "model": "auth.permission",
+  "pk": 93,
+  "fields": {
+    "name": "Can add stock request",
+    "content_type": 24,
+    "codename": "add_stockrequest"
+  }
+},
+{
+  "model": "auth.permission",
+  "pk": 94,
+  "fields": {
+    "name": "Can change stock request",
+    "content_type": 24,
+    "codename": "change_stockrequest"
+  }
+},
+{
+  "model": "auth.permission",
+  "pk": 95,
+  "fields": {
+    "name": "Can delete stock request",
+    "content_type": 24,
+    "codename": "delete_stockrequest"
+  }
+},
+{
+  "model": "auth.permission",
+  "pk": 96,
+  "fields": {
+    "name": "Can view stock request",
+    "content_type": 24,
+    "codename": "view_stockrequest"
+  }
+},
+{
+  "model": "auth.permission",
+  "pk": 97,
+  "fields": {
+    "name": "Can add attendance",
+    "content_type": 25,
+    "codename": "add_attendance"
+  }
+},
+{
+  "model": "auth.permission",
+  "pk": 98,
+  "fields": {
+    "name": "Can change attendance",
+    "content_type": 25,
+    "codename": "change_attendance"
+  }
+},
+{
+  "model": "auth.permission",
+  "pk": 99,
+  "fields": {
+    "name": "Can delete attendance",
+    "content_type": 25,
+    "codename": "delete_attendance"
+  }
+},
+{
+  "model": "auth.permission",
+  "pk": 100,
+  "fields": {
+    "name": "Can view attendance",
+    "content_type": 25,
+    "codename": "view_attendance"
+  }
+},
+{
+  "model": "auth.permission",
+  "pk": 101,
+  "fields": {
+    "name": "Can add director safe stock",
+    "content_type": 26,
+    "codename": "add_directorsafestock"
+  }
+},
+{
+  "model": "auth.permission",
+  "pk": 102,
+  "fields": {
+    "name": "Can change director safe stock",
+    "content_type": 26,
+    "codename": "change_directorsafestock"
+  }
+},
+{
+  "model": "auth.permission",
+  "pk": 103,
+  "fields": {
+    "name": "Can delete director safe stock",
+    "content_type": 26,
+    "codename": "delete_directorsafestock"
+  }
+},
+{
+  "model": "auth.permission",
+  "pk": 104,
+  "fields": {
+    "name": "Can view director safe stock",
+    "content_type": 26,
+    "codename": "view_directorsafestock"
+  }
+},
+{
+  "model": "auth.permission",
+  "pk": 105,
+  "fields": {
+    "name": "Can add multi choice balance",
+    "content_type": 27,
+    "codename": "add_multichoicebalance"
+  }
+},
+{
+  "model": "auth.permission",
+  "pk": 106,
+  "fields": {
+    "name": "Can change multi choice balance",
+    "content_type": 27,
+    "codename": "change_multichoicebalance"
+  }
+},
+{
+  "model": "auth.permission",
+  "pk": 107,
+  "fields": {
+    "name": "Can delete multi choice balance",
+    "content_type": 27,
+    "codename": "delete_multichoicebalance"
+  }
+},
+{
+  "model": "auth.permission",
+  "pk": 108,
+  "fields": {
+    "name": "Can view multi choice balance",
+    "content_type": 27,
+    "codename": "view_multichoicebalance"
+  }
+},
+{
+  "model": "contenttypes.contenttype",
+  "pk": 1,
+  "fields": {
+    "app_label": "admin",
+    "model": "logentry"
+  }
+},
+{
+  "model": "contenttypes.contenttype",
+  "pk": 2,
+  "fields": {
+    "app_label": "auth",
+    "model": "permission"
+  }
+},
+{
+  "model": "contenttypes.contenttype",
+  "pk": 3,
+  "fields": {
+    "app_label": "auth",
+    "model": "group"
+  }
+},
+{
+  "model": "contenttypes.contenttype",
+  "pk": 4,
+  "fields": {
+    "app_label": "contenttypes",
+    "model": "contenttype"
+  }
+},
+{
+  "model": "contenttypes.contenttype",
+  "pk": 5,
+  "fields": {
+    "app_label": "sessions",
+    "model": "session"
+  }
+},
+{
+  "model": "contenttypes.contenttype",
+  "pk": 6,
+  "fields": {
+    "app_label": "core",
+    "model": "branch"
+  }
+},
+{
+  "model": "contenttypes.contenttype",
+  "pk": 7,
+  "fields": {
+    "app_label": "core",
+    "model": "user"
+  }
+},
+{
+  "model": "contenttypes.contenttype",
+  "pk": 8,
+  "fields": {
+    "app_label": "core",
+    "model": "devicetag"
+  }
+},
+{
+  "model": "contenttypes.contenttype",
+  "pk": 9,
+  "fields": {
+    "app_label": "core",
+    "model": "serviceactivity"
+  }
+},
+{
+  "model": "contenttypes.contenttype",
+  "pk": 10,
+  "fields": {
+    "app_label": "core",
+    "model": "servicetarget"
+  }
+},
+{
+  "model": "contenttypes.contenttype",
+  "pk": 11,
+  "fields": {
+    "app_label": "core",
+    "model": "performance"
+  }
+},
+{
+  "model": "contenttypes.contenttype",
+  "pk": 12,
+  "fields": {
+    "app_label": "core",
+    "model": "product"
+  }
+},
+{
+  "model": "contenttypes.contenttype",
+  "pk": 13,
+  "fields": {
+    "app_label": "core",
+    "model": "retailcategory"
+  }
+},
+{
+  "model": "contenttypes.contenttype",
+  "pk": 14,
+  "fields": {
+    "app_label": "core",
+    "model": "branchsafestock"
+  }
+},
+{
+  "model": "contenttypes.contenttype",
+  "pk": 15,
+  "fields": {
+    "app_label": "core",
+    "model": "retailsubcategory"
+  }
+},
+{
+  "model": "contenttypes.contenttype",
+  "pk": 16,
+  "fields": {
+    "app_label": "core",
+    "model": "staffstock"
+  }
+},
+{
+  "model": "contenttypes.contenttype",
+  "pk": 17,
+  "fields": {
+    "app_label": "core",
+    "model": "stockmovement"
+  }
+},
+{
+  "model": "contenttypes.contenttype",
+  "pk": 18,
+  "fields": {
+    "app_label": "core",
+    "model": "multichoiceactivity"
+  }
+},
+{
+  "model": "contenttypes.contenttype",
+  "pk": 19,
+  "fields": {
+    "app_label": "core",
+    "model": "retailsale"
+  }
+},
+{
+  "model": "contenttypes.contenttype",
+  "pk": 20,
+  "fields": {
+    "app_label": "core",
+    "model": "retailsubsubcategory"
+  }
+},
+{
+  "model": "contenttypes.contenttype",
+  "pk": 21,
+  "fields": {
+    "app_label": "core",
+    "model": "multichoicesale"
+  }
+},
+{
+  "model": "contenttypes.contenttype",
+  "pk": 22,
+  "fields": {
+    "app_label": "core",
+    "model": "multichoiceweeklyreport"
+  }
+},
+{
+  "model": "contenttypes.contenttype",
+  "pk": 23,
+  "fields": {
+    "app_label": "core",
+    "model": "expense"
+  }
+},
+{
+  "model": "contenttypes.contenttype",
+  "pk": 24,
+  "fields": {
+    "app_label": "core",
+    "model": "stockrequest"
+  }
+},
+{
+  "model": "contenttypes.contenttype",
+  "pk": 25,
+  "fields": {
+    "app_label": "core",
+    "model": "attendance"
+  }
+},
+{
+  "model": "contenttypes.contenttype",
+  "pk": 26,
+  "fields": {
+    "app_label": "core",
+    "model": "directorsafestock"
+  }
+},
+{
+  "model": "contenttypes.contenttype",
+  "pk": 27,
+  "fields": {
+    "app_label": "core",
+    "model": "multichoicebalance"
+  }
+},
+{
+  "model": "sessions.session",
+  "pk": "f5g4pf4y11pg3vwwb05cy3kg41885v9l",
+  "fields": {
+    "session_data": ".eJxVjMsOwiAQRf-FtSFQGGRcuu83kGEGpGrapI-V8d-1SRe6veec-1KJtrWlbSlzGkRdVKdOv1smfpRxB3Kn8TZpnsZ1HrLeFX3QRfeTlOf1cP8OGi3tW5suSC0QUSIG6LyY6nwAInTsTfZgLQcDwIwZSbI7Z66RHNpSAWNR7w_Tizfk:1vzL5c:nlYi-fdqgclQsC3sAH6dyQgC8vDQt8Qm13LwVGdsnYc",
+    "expire_date": "2026-03-22T20:51:04.068Z"
+  }
+},
+{
+  "model": "sessions.session",
+  "pk": "jtxbajq6jbs5jaxrrpc25a25kbqs320j",
+  "fields": {
+    "session_data": ".eJxVjEEOwiAQRe_C2hAYCgWX7j0DmWFAqoYmpV0Z765NutDtf-_9l4i4rTVuPS9xYnEWgzj9boTpkdsO-I7tNss0t3WZSO6KPGiX15nz83K4fwcVe_3WTnkASKizI2O1UYOl0WskJHYJinUuFTAFyRsfskX2RZUCTKN1wQTx_gDbgTgE:1w2UmI:5VYYqnmLzdhJtEVq5WdsSFJW_lz-24DhIzWmqGF54TY",
+    "expire_date": "2026-03-31T13:48:10.325Z"
+  }
+},
+{
+  "model": "sessions.session",
+  "pk": "mwvza0sv7a5pu7y2y8b4ccw3pp8p7g3h",
+  "fields": {
+    "session_data": ".eJxVjEEOwiAQRe_C2hAYCgWX7j0DmWFAqoYmpV0Z765NutDtf-_9l4i4rTVuPS9xYnEWgzj9boTpkdsO-I7tNss0t3WZSO6KPGiX15nz83K4fwcVe_3WTnkASKizI2O1UYOl0WskJHYJinUuFTAFyRsfskX2RZUCTKN1wQTx_gDbgTgE:1vyqWb:gDZFO2HITkwY0ezw6DVb7pfsHly0x3M6-MU2vlMUOEs",
+    "expire_date": "2026-03-21T12:12:53.012Z"
+  }
+},
+{
+  "model": "sessions.session",
+  "pk": "nnuk0ua39osoonrzivig6cimhubump3e",
+  "fields": {
+    "session_data": ".eJxVjEEOwiAQRe_C2hAYCgWX7j0DmWFAqoYmpV0Z765NutDtf-_9l4i4rTVuPS9xYnEWgzj9boTpkdsO-I7tNss0t3WZSO6KPGiX15nz83K4fwcVe_3WTnkASKizI2O1UYOl0WskJHYJinUuFTAFyRsfskX2RZUCTKN1wQTx_gDbgTgE:1vzLQE:nzl4fbhs80R5N8JZ9hjmM6eD0rTS-l1nTfEh94cGmUc",
+    "expire_date": "2026-03-22T21:12:22.641Z"
+  }
+},
+{
+  "model": "sessions.session",
+  "pk": "zgdyj2hoe59yptio55fwir1empvsevu0",
+  "fields": {
+    "session_data": ".eJxVjEsOwjAMBe-SNYr6SRyXJXvOUNmOQwqokZp2hbg7VOoCtm9m3suMtK153Kou4xTN2aA5_W5M8tB5B_FO861YKfO6TGx3xR602muJ-rwc7t9Bppq_dVJxkMj72LWiTEzoGRgHFQVMg0gLEtAFFNUISBxAXFToe26oa8z7Ay3wOWY:1vzLR4:Pl-FtFq7YBcsxfQO5eDvjHgOhjFOPKUEi6TyLgkRS8s",
+    "expire_date": "2026-03-22T21:13:14.341Z"
+  }
+},
+{
+  "model": "core.branch",
+  "pk": 1,
+  "fields": {
+    "name": "Mbierebe Branch",
+    "latitude": 4.9942,
+    "longitude": 7.8904,
+    "allowed_radius": 300,
+    "location_locked": true
+  }
+},
+{
+  "model": "core.branch",
+  "pk": 2,
+  "fields": {
+    "name": "Aka Etinan Branch",
+    "latitude": null,
+    "longitude": null,
+    "allowed_radius": 100,
+    "location_locked": false
+  }
+},
+{
+  "model": "core.branch",
+  "pk": 3,
+  "fields": {
+    "name": "NUNG UDOE BRANCH",
+    "latitude": 4.9154,
+    "longitude": 7.9638,
+    "allowed_radius": 100,
+    "location_locked": true
+  }
+},
+{
+  "model": "core.branch",
+  "pk": 4,
+  "fields": {
+    "name": "Plaza Branch",
+    "latitude": null,
+    "longitude": null,
+    "allowed_radius": 100,
+    "location_locked": false
+  }
+},
+{
+  "model": "core.branch",
+  "pk": 5,
+  "fields": {
+    "name": "Okobo Branch",
+    "latitude": null,
+    "longitude": null,
+    "allowed_radius": 100,
+    "location_locked": false
+  }
+},
+{
+  "model": "core.user",
+  "pk": 2,
+  "fields": {
+    "password": "pbkdf2_sha256$720000$eIsfzRwXHdGlVZHdx9H7Te$XTDYvLAJ4fVyCFw1Z5h3Hv6sMC9cAh7Rxw5xIAQTg/w=",
+    "last_login": "2026-03-15T16:39:15.108Z",
+    "is_superuser": true,
+    "username": "SuperAdmin",
+    "first_name": "",
+    "last_name": "",
+    "email": "ekeminimonday62@gmail.com",
+    "is_staff": true,
+    "is_active": true,
+    "date_joined": "2026-02-17T19:19:04.590Z",
+    "role": "",
+    "branch": null,
+    "failed_login_count": 0,
+    "is_locked": false,
+    "groups": [],
+    "user_permissions": []
+  }
+},
+{
+  "model": "core.user",
+  "pk": 4,
+  "fields": {
+    "password": "pbkdf2_sha256$720000$UAfq6bcNzd2LSX7BQ0P9FM$vpIsj/qzR4khP3EEI4Te0X03YSqL7aRXmKQU/IxeWUE=",
+    "last_login": "2026-03-17T13:48:10.556Z",
+    "is_superuser": false,
+    "username": "Patricia",
+    "first_name": "Patricia",
+    "last_name": "Isikong",
+    "email": "patriciaisikong015@gmail.com",
+    "is_staff": true,
+    "is_active": true,
+    "date_joined": "2026-02-18T14:05:45Z",
+    "role": "MANAGER",
+    "branch": 1,
+    "failed_login_count": 0,
+    "is_locked": false,
+    "groups": [],
+    "user_permissions": [
+      1,
+      2,
+      3,
+      4,
+      9,
+      10,
+      11,
+      12,
+      5,
+      8,
+      13,
+      15,
+      16,
+      97,
+      98,
+      99,
+      100,
+      24,
+      53,
+      54,
+      55,
+      56,
+      29,
+      30,
+      31,
+      32,
+      89,
+      90,
+      91,
+      92,
+      41,
+      42,
+      43,
+      44,
+      45,
+      46,
+      47,
+      48,
+      49,
+      50,
+      51,
+      52,
+      73,
+      74,
+      75,
+      76,
+      57,
+      58,
+      59,
+      60,
+      77,
+      78,
+      79,
+      80,
+      33,
+      34,
+      35,
+      36,
+      37,
+      38,
+      39,
+      40,
+      61,
+      62,
+      63,
+      64,
+      65,
+      66,
+      67,
+      68,
+      93,
+      94,
+      95,
+      96,
+      28,
+      17,
+      18,
+      19,
+      20
+    ]
+  }
+},
+{
+  "model": "core.user",
+  "pk": 5,
+  "fields": {
+    "password": "pbkdf2_sha256$720000$CHUCrwoQe2kyy0Ae3TQXY6$v0VKh3YplFdPNsllCpACcioyH7sHhUjvHHu4dlR2XnU=",
+    "last_login": "2026-03-17T13:50:39.860Z",
+    "is_superuser": false,
+    "username": "Idongesit",
+    "first_name": "Idongesit",
+    "last_name": "",
+    "email": "",
+    "is_staff": true,
+    "is_active": true,
+    "date_joined": "2026-02-19T17:27:21Z",
+    "role": "TELECOM",
+    "branch": 1,
+    "failed_login_count": 0,
+    "is_locked": false,
+    "groups": [],
+    "user_permissions": [
+      1,
+      4,
+      12,
+      8,
+      13,
+      16,
+      24,
+      29,
+      32,
+      41,
+      44,
+      33,
+      36,
+      40,
+      28,
+      17,
+      20
+    ]
+  }
+},
+{
+  "model": "core.user",
+  "pk": 6,
+  "fields": {
+    "password": "pbkdf2_sha256$720000$KyecR5LpGa1krzR2kWQdCh$cucPtpI5WfhrzUx6mX3lJGeOhWd8iDWbaX8JLIVofEI=",
+    "last_login": "2026-03-17T13:49:41.710Z",
+    "is_superuser": false,
+    "username": "Ekemini",
+    "first_name": "Ekemini",
+    "last_name": "Monday",
+    "email": "ekeminimonday62@gmail.com",
+    "is_staff": true,
+    "is_active": true,
+    "date_joined": "2026-02-23T15:50:31Z",
+    "role": "MULTICHOICE",
+    "branch": 3,
+    "failed_login_count": 0,
+    "is_locked": false,
+    "groups": [],
+    "user_permissions": [
+      1,
+      2,
+      4,
+      9,
+      10,
+      11,
+      12,
+      5,
+      7,
+      8,
+      13,
+      16,
+      24,
+      69,
+      70,
+      71,
+      72,
+      105,
+      106,
+      107,
+      108,
+      81,
+      82,
+      83,
+      84,
+      85,
+      86,
+      87,
+      88,
+      41,
+      42,
+      43,
+      44,
+      45,
+      48,
+      33,
+      36,
+      61,
+      64,
+      17,
+      18,
+      19,
+      20
+    ]
+  }
+},
+{
+  "model": "core.user",
+  "pk": 7,
+  "fields": {
+    "password": "pbkdf2_sha256$720000$xhgoeMtaMJ0Fp4e6yxZqBG$IGw8CBA5QtbfLGUc7ExRpeEKCg8kxSEDsh/DcB1y94c=",
+    "last_login": "2026-03-21T15:57:33.174Z",
+    "is_superuser": false,
+    "username": "Tonia",
+    "first_name": "Anthonia",
+    "last_name": "Itiat",
+    "email": "anthoniaitait@gmail.com",
+    "is_staff": true,
+    "is_active": true,
+    "date_joined": "2026-02-23T15:55:16Z",
+    "role": "RETAIL",
+    "branch": 3,
+    "failed_login_count": 0,
+    "is_locked": false,
+    "groups": [],
+    "user_permissions": [
+      1,
+      4,
+      9,
+      12,
+      8,
+      13,
+      16,
+      41,
+      44,
+      45,
+      47,
+      48,
+      49,
+      50,
+      51,
+      52,
+      73,
+      74,
+      76,
+      57,
+      58,
+      59,
+      60,
+      77,
+      78,
+      80,
+      61,
+      62,
+      64,
+      65,
+      66,
+      68,
+      93,
+      96,
+      17,
+      20
+    ]
+  }
+},
+{
+  "model": "core.user",
+  "pk": 8,
+  "fields": {
+    "password": "pbkdf2_sha256$720000$8NrctBH8t5nQ3ze0lwk4jE$yHwOpjAX97dVf5oVtS87QngaohZioadt311BlrITUNk=",
+    "last_login": "2026-03-17T13:47:35.894Z",
+    "is_superuser": true,
+    "username": "Director",
+    "first_name": "Nsikak",
+    "last_name": "Akpan",
+    "email": "globalphonelinzsystems@gmail.com",
+    "is_staff": false,
+    "is_active": true,
+    "date_joined": "2026-02-23T16:04:14Z",
+    "role": "DIRECTOR",
+    "branch": null,
+    "failed_login_count": 0,
+    "is_locked": false,
+    "groups": [],
+    "user_permissions": [
+      1,
+      2,
+      3,
+      4,
+      9,
+      10,
+      11,
+      12,
+      5,
+      6,
+      7,
+      8,
+      13,
+      14,
+      15,
+      16,
+      97,
+      98,
+      99,
+      100,
+      21,
+      22,
+      23,
+      24,
+      53,
+      54,
+      55,
+      56,
+      29,
+      30,
+      31,
+      32,
+      101,
+      102,
+      103,
+      104,
+      89,
+      90,
+      91,
+      92,
+      69,
+      70,
+      71,
+      72,
+      105,
+      106,
+      107,
+      108,
+      81,
+      82,
+      83,
+      84,
+      85,
+      86,
+      87,
+      88,
+      41,
+      42,
+      43,
+      44,
+      45,
+      46,
+      47,
+      48,
+      49,
+      50,
+      51,
+      52,
+      73,
+      74,
+      75,
+      76,
+      57,
+      58,
+      59,
+      60,
+      77,
+      78,
+      79,
+      80,
+      33,
+      34,
+      35,
+      36,
+      37,
+      38,
+      39,
+      40,
+      61,
+      62,
+      63,
+      64,
+      65,
+      66,
+      67,
+      68,
+      93,
+      94,
+      95,
+      96,
+      25,
+      26,
+      27,
+      28,
+      17,
+      18,
+      19,
+      20
+    ]
+  }
+},
+{
+  "model": "core.user",
+  "pk": 9,
+  "fields": {
+    "password": "pbkdf2_sha256$720000$c1FKU47LwoMIuuTe2iityt$UsU1JVhvlYUD6P9I/LP6wNAazomSmHKLDNDl+7oAuyE=",
+    "last_login": "2026-03-15T17:03:19.138Z",
+    "is_superuser": false,
+    "username": "Joseph",
+    "first_name": "Joseph",
+    "last_name": "Effiong",
+    "email": "",
+    "is_staff": true,
+    "is_active": true,
+    "date_joined": "2026-03-15T16:40:11Z",
+    "role": "MANAGER",
+    "branch": 2,
+    "failed_login_count": 0,
+    "is_locked": false,
+    "groups": [],
+    "user_permissions": [
+      1,
+      2,
+      3,
+      4,
+      9,
+      10,
+      11,
+      12,
+      5,
+      6,
+      8,
+      13,
+      15,
+      16,
+      97,
+      98,
+      100,
+      24,
+      53,
+      54,
+      56,
+      29,
+      30,
+      31,
+      32,
+      89,
+      90,
+      92,
+      41,
+      42,
+      44,
+      45,
+      46,
+      47,
+      48,
+      49,
+      50,
+      52,
+      73,
+      74,
+      75,
+      76,
+      57,
+      58,
+      60,
+      77,
+      78,
+      79,
+      80,
+      33,
+      34,
+      35,
+      36,
+      37,
+      38,
+      39,
+      40,
+      61,
+      62,
+      63,
+      64,
+      65,
+      66,
+      67,
+      68,
+      93,
+      94,
+      95,
+      96,
+      28,
+      17,
+      20
+    ]
+  }
+},
+{
+  "model": "core.user",
+  "pk": 10,
+  "fields": {
+    "password": "pbkdf2_sha256$720000$PRIXH6QOXIt6gygATdkBp7$pbPwzuiASde9LGw8iWInQtMwgjvAy1ZpGMbQ7LGky1w=",
+    "last_login": "2026-03-21T15:57:41.932Z",
+    "is_superuser": false,
+    "username": "Christiana",
+    "first_name": "Christiana",
+    "last_name": "Eyoh",
+    "email": "eyohchristiana@gmail.com",
+    "is_staff": true,
+    "is_active": true,
+    "date_joined": "2026-03-15T16:51:12Z",
+    "role": "MANAGER",
+    "branch": 3,
+    "failed_login_count": 0,
+    "is_locked": false,
+    "groups": [],
+    "user_permissions": [
+      1,
+      2,
+      3,
+      4,
+      9,
+      10,
+      11,
+      5,
+      6,
+      8,
+      13,
+      14,
+      16,
+      97,
+      98,
+      100,
+      24,
+      53,
+      54,
+      55,
+      56,
+      29,
+      30,
+      31,
+      32,
+      89,
+      90,
+      91,
+      92,
+      41,
+      42,
+      44,
+      45,
+      46,
+      48,
+      49,
+      50,
+      51,
+      52,
+      74,
+      75,
+      76,
+      59,
+      60,
+      77,
+      79,
+      80,
+      36,
+      37,
+      38,
+      40,
+      61,
+      62,
+      63,
+      64,
+      65,
+      66,
+      67,
+      68,
+      93,
+      95,
+      96,
+      25,
+      26,
+      27,
+      28,
+      17,
+      18,
+      20
+    ]
+  }
+},
+{
+  "model": "core.devicetag",
+  "pk": 1,
+  "fields": {
+    "branch": 1,
+    "tag_name": "MTN0300382"
+  }
+},
+{
+  "model": "core.devicetag",
+  "pk": 2,
+  "fields": {
+    "branch": 1,
+    "tag_name": "MTN03003728"
+  }
+},
+{
+  "model": "core.servicetarget",
+  "pk": 1,
+  "fields": {
+    "branch": 1,
+    "service_type": "SIM Registration",
+    "device_tag": null,
+    "target_number": 50,
+    "date": "2026-02-16",
+    "created_by": null
+  }
+},
+{
+  "model": "core.servicetarget",
+  "pk": 2,
+  "fields": {
+    "branch": 1,
+    "service_type": "SIM_REG",
+    "device_tag": 1,
+    "target_number": 50,
+    "date": "2026-02-21",
+    "created_by": 2
+  }
+},
+{
+  "model": "core.servicetarget",
+  "pk": 3,
+  "fields": {
+    "branch": 1,
+    "service_type": "SIM_REG",
+    "device_tag": 2,
+    "target_number": 50,
+    "date": "2026-02-21",
+    "created_by": 2
+  }
+},
+{
+  "model": "core.directorsafestock",
+  "pk": 1,
+  "fields": {
+    "product": 1,
+    "quantity": 20,
+    "date_added": "2026-03-10T19:34:15.147Z",
+    "notes": ""
+  }
+},
+{
+  "model": "core.serviceactivity",
+  "pk": 1,
+  "fields": {
+    "branch": 1,
+    "staff": 5,
+    "service_type": "SIM_REG",
+    "device_tag": null,
+    "quantity": 4,
+    "date": "2026-02-21",
+    "approved": false,
+    "requires_approval": false
+  }
+},
+{
+  "model": "core.serviceactivity",
+  "pk": 2,
+  "fields": {
+    "branch": 1,
+    "staff": 5,
+    "service_type": "SIM_REG",
+    "device_tag": null,
+    "quantity": 2,
+    "date": "2026-02-21",
+    "approved": false,
+    "requires_approval": false
+  }
+},
+{
+  "model": "core.serviceactivity",
+  "pk": 3,
+  "fields": {
+    "branch": 1,
+    "staff": 5,
+    "service_type": "SIM_REG",
+    "device_tag": 2,
+    "quantity": 5,
+    "date": "2026-02-21",
+    "approved": false,
+    "requires_approval": false
+  }
+},
+{
+  "model": "core.serviceactivity",
+  "pk": 4,
+  "fields": {
+    "branch": 1,
+    "staff": 5,
+    "service_type": "SIM_REG",
+    "device_tag": 1,
+    "quantity": 2,
+    "date": "2026-02-21",
+    "approved": false,
+    "requires_approval": false
+  }
+},
+{
+  "model": "core.serviceactivity",
+  "pk": 5,
+  "fields": {
+    "branch": 1,
+    "staff": 5,
+    "service_type": "SIM_REG",
+    "device_tag": 1,
+    "quantity": 1,
+    "date": "2026-03-10",
+    "approved": true,
+    "requires_approval": false
+  }
+},
+{
+  "model": "core.serviceactivity",
+  "pk": 6,
+  "fields": {
+    "branch": 1,
+    "staff": 5,
+    "service_type": "MIFI",
+    "device_tag": null,
+    "quantity": 1,
+    "date": "2026-03-10",
+    "approved": true,
+    "requires_approval": false
+  }
+},
+{
+  "model": "core.serviceactivity",
+  "pk": 7,
+  "fields": {
+    "branch": 1,
+    "staff": 5,
+    "service_type": "MIFI",
+    "device_tag": null,
+    "quantity": 15000,
+    "date": "2026-03-10",
+    "approved": true,
+    "requires_approval": false
+  }
+},
+{
+  "model": "core.serviceactivity",
+  "pk": 8,
+  "fields": {
+    "branch": 1,
+    "staff": 5,
+    "service_type": "MIFI",
+    "device_tag": null,
+    "quantity": 1,
+    "date": "2026-03-10",
+    "approved": false,
+    "requires_approval": false
+  }
+},
+{
+  "model": "core.serviceactivity",
+  "pk": 9,
+  "fields": {
+    "branch": 1,
+    "staff": 5,
+    "service_type": "WHOLESALE_SIM",
+    "device_tag": null,
+    "quantity": 50,
+    "date": "2026-03-10",
+    "approved": false,
+    "requires_approval": false
+  }
+},
+{
+  "model": "core.retailcategory",
+  "pk": 1,
+  "fields": {
+    "name": "Phones "
+  }
+},
+{
+  "model": "core.retailcategory",
+  "pk": 2,
+  "fields": {
+    "name": "Chargers"
+  }
+},
+{
+  "model": "core.retailcategory",
+  "pk": 3,
+  "fields": {
+    "name": "PowerBanks"
+  }
+},
+{
+  "model": "core.retailcategory",
+  "pk": 4,
+  "fields": {
+    "name": "Batteries "
+  }
+},
+{
+  "model": "core.retailcategory",
+  "pk": 5,
+  "fields": {
+    "name": "Casing"
+  }
+},
+{
+  "model": "core.retailsubcategory",
+  "pk": 1,
+  "fields": {
+    "category": 1,
+    "name": "Button Phones"
+  }
+},
+{
+  "model": "core.retailsubcategory",
+  "pk": 2,
+  "fields": {
+    "category": 4,
+    "name": "Itel"
+  }
+},
+{
+  "model": "core.retailsubsubcategory",
+  "pk": 1,
+  "fields": {
+    "subcategory": 1,
+    "name": "Itel"
+  }
+},
+{
+  "model": "core.product",
+  "pk": 1,
+  "fields": {
+    "subsubcategory": 1,
+    "subcategory": 1,
+    "product_name": "Itel Phone",
+    "model_name": "It2165",
+    "description": null,
+    "imei_serial": "57468",
+    "cost_price": "0.00",
+    "selling_price": "11000.00"
+  }
+},
+{
+  "model": "core.product",
+  "pk": 2,
+  "fields": {
+    "subsubcategory": 1,
+    "subcategory": 1,
+    "product_name": "Itel Phone",
+    "model_name": "It2165",
+    "description": null,
+    "imei_serial": "5746888886696798",
+    "cost_price": "0.00",
+    "selling_price": "11000.00"
+  }
+},
+{
+  "model": "core.branchsafestock",
+  "pk": 1,
+  "fields": {
+    "branch": 1,
+    "product": 1,
+    "quantity": 10
+  }
+},
+{
+  "model": "core.staffstock",
+  "pk": 1,
+  "fields": {
+    "staff": 7,
+    "product": 2,
+    "quantity": 4
+  }
+},
+{
+  "model": "core.stockmovement",
+  "pk": 1,
+  "fields": {
+    "branch": 1,
+    "product": 1,
+    "quantity": 10,
+    "movement_type": "IN",
+    "performed_by": 4,
+    "date": "2026-03-10",
+    "time": "19:28:18.077"
+  }
+},
+{
+  "model": "core.multichoicesale",
+  "pk": 1,
+  "fields": {
+    "staff": 6,
+    "branch": 3,
+    "customer_name": " Christopher Ime",
+    "service_type": "DSTV",
+    "package_type": "Jolli",
+    "transaction_type": "RENEWAL",
+    "cost_price": "0.00",
+    "amount": "6000.00",
+    "date": "2026-02-28",
+    "time": "14:18:11.704"
+  }
+},
+{
+  "model": "core.multichoicesale",
+  "pk": 2,
+  "fields": {
+    "staff": 6,
+    "branch": 3,
+    "customer_name": " Christopher Ime",
+    "service_type": "GOTV",
+    "package_type": "Jolli",
+    "transaction_type": "RENEWAL",
+    "cost_price": "5800.00",
+    "amount": "6000.00",
+    "date": "2026-03-10",
+    "time": "18:57:52.151"
+  }
+},
+{
+  "model": "core.retailsale",
+  "pk": 1,
+  "fields": {
+    "staff": 7,
+    "branch": 3,
+    "product": 2,
+    "quantity": 1,
+    "selling_price": "11000.00",
+    "payment_method": "CASH",
+    "date": "2026-03-10",
+    "time": "19:30:56.644"
+  }
+},
+{
+  "model": "core.stockrequest",
+  "pk": 1,
+  "fields": {
+    "staff": 7,
+    "branch": 3,
+    "product_name": "Itel Battery ",
+    "quantity": 10,
+    "status": "APPROVED",
+    "date_requested": "2026-03-10"
+  }
+},
+{
+  "model": "core.stockrequest",
+  "pk": 2,
+  "fields": {
+    "staff": 7,
+    "branch": 3,
+    "product_name": "Itel Battery BL-5C ",
+    "quantity": 10,
+    "status": "PENDING",
+    "date_requested": "2026-03-10"
+  }
+},
+{
+  "model": "core.attendance",
+  "pk": 1,
+  "fields": {
+    "user": 6,
+    "branch": 3,
+    "session": "morning",
+    "check_in_time": "2026-03-09T11:46:32.788Z",
+    "check_out_time": null,
+    "latitude": 4.915645,
+    "longitude": 7.96399,
+    "distance_from_branch": 34.427347328526594,
+    "selfie": "attendance_selfies/17730567824988490197920804263846.jpg",
+    "date": "2026-03-09",
+    "is_late": false,
+    "is_absent": true,
+    "deduction_amount": "0.00"
+  }
+},
+{
+  "model": "core.attendance",
+  "pk": 2,
+  "fields": {
+    "user": 7,
+    "branch": 3,
+    "session": "morning",
+    "check_in_time": "2026-03-09T11:47:42.777Z",
+    "check_out_time": null,
+    "latitude": 4.915645,
+    "longitude": 7.96399,
+    "distance_from_branch": 34.427347328526594,
+    "selfie": "attendance_selfies/17730568530799026293631379885882.jpg",
+    "date": "2026-03-09",
+    "is_late": false,
+    "is_absent": true,
+    "deduction_amount": "0.00"
+  }
+},
+{
+  "model": "core.attendance",
+  "pk": 3,
+  "fields": {
+    "user": 5,
+    "branch": 1,
+    "session": "morning",
+    "check_in_time": "2026-03-15T16:32:27.791Z",
+    "check_out_time": null,
+    "latitude": 4.9942865,
+    "longitude": 7.8903441,
+    "distance_from_branch": 11.439238834513297,
+    "selfie": "attendance_selfies/17735923383316732223110168747165.jpg",
+    "date": "2026-03-15",
+    "is_late": false,
+    "is_absent": false,
+    "deduction_amount": "0.00"
+  }
+},
+{
+  "model": "core.attendance",
+  "pk": 4,
+  "fields": {
+    "user": 4,
+    "branch": 1,
+    "session": "morning",
+    "check_in_time": "2026-03-15T16:32:52.218Z",
+    "check_out_time": null,
+    "latitude": 4.9942462,
+    "longitude": 7.8904092,
+    "distance_from_branch": 5.237314739920261,
+    "selfie": "attendance_selfies/17735923637212809328647493564449.jpg",
+    "date": "2026-03-15",
+    "is_late": false,
+    "is_absent": false,
+    "deduction_amount": "0.00"
+  }
+}
+]
