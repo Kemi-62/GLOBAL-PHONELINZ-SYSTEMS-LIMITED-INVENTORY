@@ -1,1136 +1,717 @@
 [
-{
-  "model": "admin.logentry",
-  "pk": 6,
-  "fields": {
-    "action_time": "2026-02-17T19:30:33.620Z",
-    "user": 2,
-    "content_type": 7,
-    "object_id": "3",
-    "object_repr": "Manager",
-    "action_flag": 1,
-    "change_message": "[{\"added\": {}}]"
+  {
+    "model": "sessions.session",
+    "pk": "f5g4pf4y11pg3vwwb05cy3kg41885v9l",
+    "fields": {
+      "session_data": ".eJxVjMsOwiAQRf-FtSFQGGRcuu83kGEGpGrapI-V8d-1SRe6veec-1KJtrWlbSlzGkRdVKdOv1smfpRxB3Kn8TZpnsZ1HrLeFX3QRfeTlOf1cP8OGi3tW5suSC0QUSIG6LyY6nwAInTsTfZgLQcDwIwZSbI7Z66RHNpSAWNR7w_Tizfk:1vzL5c:nlYi-fdqgclQsC3sAH6dyQgC8vDQt8Qm13LwVGdsnYc",
+      "expire_date": "2026-03-22T20:51:04.068Z"
+    }
+  },
+  {
+    "model": "sessions.session",
+    "pk": "jtxbajq6jbs5jaxrrpc25a25kbqs320j",
+    "fields": {
+      "session_data": ".eJxVjEEOwiAQRe_C2hAYCgWX7j0DmWFAqoYmpV0Z765NutDtf-_9l4i4rTVuPS9xYnEWgzj9boTpkdsO-I7tNss0t3WZSO6KPGiX15nz83K4fwcVe_3WTnkASKizI2O1UYOl0WskJHYJinUuFTAFyRsfskX2RZUCTKN1wQTx_gDbgTgE:1w2UmI:5VYYqnmLzdhJtEVq5WdsSFJW_lz-24DhIzWmqGF54TY",
+      "expire_date": "2026-03-31T13:48:10.325Z"
+    }
+  },
+  {
+    "model": "sessions.session",
+    "pk": "mwvza0sv7a5pu7y2y8b4ccw3pp8p7g3h",
+    "fields": {
+      "session_data": ".eJxVjEEOwiAQRe_C2hAYCgWX7j0DmWFAqoYmpV0Z765NutDtf-_9l4i4rTVuPS9xYnEWgzj9boTpkdsO-I7tNss0t3WZSO6KPGiX15nz83K4fwcVe_3WTnkASKizI2O1UYOl0WskJHYJinUuFTAFyRsfskX2RZUCTKN1wQTx_gDbgTgE:1vyqWb:gDZFO2HITkwY0ezw6DVb7pfsHly0x3M6-MU2vlMUOEs",
+      "expire_date": "2026-03-21T12:12:53.012Z"
+    }
+  },
+  {
+    "model": "sessions.session",
+    "pk": "nnuk0ua39osoonrzivig6cimhubump3e",
+    "fields": {
+      "session_data": ".eJxVjEEOwiAQRe_C2hAYCgWX7j0DmWFAqoYmpV0Z765NutDtf-_9l4i4rTVuPS9xYnEWgzj9boTpkdsO-I7tNss0t3WZSO6KPGiX15nz83K4fwcVe_3WTnkASKizI2O1UYOl0WskJHYJinUuFTAFyRsfskX2RZUCTKN1wQTx_gDbgTgE:1vzLQE:nzl4fbhs80R5N8JZ9hjmM6eD0rTS-l1nTfEh94cGmUc",
+      "expire_date": "2026-03-22T21:12:22.641Z"
+    }
+  },
+  {
+    "model": "sessions.session",
+    "pk": "w5pkhw5l2q8rq9kjzd6ge2kjf6fp6zof",
+    "fields": {
+      "session_data": ".eJxVjEsOwjAMBe-SNYr6SRyXJXvOUNmOQwqokZp2hbg7VOoCtm9m3suMtK153Kou4xTN2aA5_W5M8tB5B_FO861YKfO6TGx3xR602muJ-rwc7t9Bppq_dVJxkMj72LWiTEzoGRgHFQVMg0gLEtAFFNUISBxAXFToe26oa8z7Ay3wOWY:1w45nE:HNs6G7GggqGTRt7qVVzePv_ka-_tpzbV7g1F2KBPdzc",
+      "expire_date": "2026-04-04T23:31:44.745Z"
+    }
+  },
+  {
+    "model": "sessions.session",
+    "pk": "zgdyj2hoe59yptio55fwir1empvsevu0",
+    "fields": {
+      "session_data": ".eJxVjEsOwjAMBe-SNYr6SRyXJXvOUNmOQwqokZp2hbg7VOoCtm9m3suMtK153Kou4xTN2aA5_W5M8tB5B_FO861YKfO6TGx3xR602muJ-rwc7t9Bppq_dVJxkMj72LWiTEzoGRgHFQVMg0gLEtAFFNUISBxAXFToe26oa8z7Ay3wOWY:1vzLR4:Pl-FtFq7YBcsxfQO5eDvjHgOhjFOPKUEi6TyLgkRS8s",
+      "expire_date": "2026-03-22T21:13:14.341Z"
+    }
+  },
+  {
+    "model": "core.branch",
+    "pk": 1,
+    "fields": {
+      "name": "Mbierebe Branch",
+      "latitude": 4.9942,
+      "longitude": 7.8904,
+      "allowed_radius": 300,
+      "location_locked": true
+    }
+  },
+  {
+    "model": "core.branch",
+    "pk": 2,
+    "fields": {
+      "name": "Aka Etinan Branch",
+      "latitude": null,
+      "longitude": null,
+      "allowed_radius": 100,
+      "location_locked": false
+    }
+  },
+  {
+    "model": "core.branch",
+    "pk": 3,
+    "fields": {
+      "name": "NUNG UDOE BRANCH",
+      "latitude": 4.9154,
+      "longitude": 7.9638,
+      "allowed_radius": 100,
+      "location_locked": true
+    }
+  },
+  {
+    "model": "core.branch",
+    "pk": 4,
+    "fields": {
+      "name": "Plaza Branch",
+      "latitude": null,
+      "longitude": null,
+      "allowed_radius": 100,
+      "location_locked": false
+    }
+  },
+  {
+    "model": "core.branch",
+    "pk": 5,
+    "fields": {
+      "name": "Okobo Branch",
+      "latitude": null,
+      "longitude": null,
+      "allowed_radius": 100,
+      "location_locked": false
+    }
+  },
+  {
+    "model": "core.user",
+    "pk": 2,
+    "fields": {
+      "password": "pbkdf2_sha256$720000$eIsfzRwXHdGlVZHdx9H7Te$XTDYvLAJ4fVyCFw1Z5h3Hv6sMC9cAh7Rxw5xIAQTg/w=",
+      "last_login": "2026-03-15T16:39:15.108Z",
+      "is_superuser": true,
+      "username": "SuperAdmin",
+      "first_name": "",
+      "last_name": "",
+      "email": "ekeminimonday62@gmail.com",
+      "is_staff": true,
+      "is_active": true,
+      "date_joined": "2026-02-17T19:19:04.590Z",
+      "role": "",
+      "branch": null,
+      "failed_login_count": 0,
+      "is_locked": false
+    }
+  },
+  {
+    "model": "core.user",
+    "pk": 4,
+    "fields": {
+      "password": "pbkdf2_sha256$720000$UAfq6bcNzd2LSX7BQ0P9FM$vpIsj/qzR4khP3EEI4Te0X03YSqL7aRXmKQU/IxeWUE=",
+      "last_login": "2026-03-17T13:48:10.556Z",
+      "is_superuser": false,
+      "username": "Patricia",
+      "first_name": "Patricia",
+      "last_name": "Isikong",
+      "email": "patriciaisikong015@gmail.com",
+      "is_staff": true,
+      "is_active": true,
+      "date_joined": "2026-02-18T14:05:45Z",
+      "role": "MANAGER",
+      "branch": 1,
+      "failed_login_count": 0,
+      "is_locked": false
+    }
+  },
+  {
+    "model": "core.user",
+    "pk": 5,
+    "fields": {
+      "password": "pbkdf2_sha256$720000$CHUCrwoQe2kyy0Ae3TQXY6$v0VKh3YplFdPNsllCpACcioyH7sHhUjvHHu4dlR2XnU=",
+      "last_login": "2026-03-17T13:50:39.860Z",
+      "is_superuser": false,
+      "username": "Idongesit",
+      "first_name": "Idongesit",
+      "last_name": "",
+      "email": "",
+      "is_staff": true,
+      "is_active": true,
+      "date_joined": "2026-02-19T17:27:21Z",
+      "role": "TELECOM",
+      "branch": 1,
+      "failed_login_count": 0,
+      "is_locked": false
+    }
+  },
+  {
+    "model": "core.user",
+    "pk": 6,
+    "fields": {
+      "password": "pbkdf2_sha256$720000$KyecR5LpGa1krzR2kWQdCh$cucPtpI5WfhrzUx6mX3lJGeOhWd8iDWbaX8JLIVofEI=",
+      "last_login": "2026-03-21T23:30:55.700Z",
+      "is_superuser": false,
+      "username": "Ekemini",
+      "first_name": "Ekemini",
+      "last_name": "Monday",
+      "email": "ekeminimonday62@gmail.com",
+      "is_staff": true,
+      "is_active": true,
+      "date_joined": "2026-02-23T15:50:31Z",
+      "role": "MULTICHOICE",
+      "branch": 3,
+      "failed_login_count": 0,
+      "is_locked": false
+    }
+  },
+  {
+    "model": "core.user",
+    "pk": 7,
+    "fields": {
+      "password": "pbkdf2_sha256$720000$xhgoeMtaMJ0Fp4e6yxZqBG$IGw8CBA5QtbfLGUc7ExRpeEKCg8kxSEDsh/DcB1y94c=",
+      "last_login": "2026-03-21T15:57:33.174Z",
+      "is_superuser": false,
+      "username": "Tonia",
+      "first_name": "Anthonia",
+      "last_name": "Itiat",
+      "email": "anthoniaitait@gmail.com",
+      "is_staff": true,
+      "is_active": true,
+      "date_joined": "2026-02-23T15:55:16Z",
+      "role": "RETAIL",
+      "branch": 3,
+      "failed_login_count": 0,
+      "is_locked": false
+    }
+  },
+  {
+    "model": "core.user",
+    "pk": 8,
+    "fields": {
+      "password": "pbkdf2_sha256$720000$8NrctBH8t5nQ3ze0lwk4jE$yHwOpjAX97dVf5oVtS87QngaohZioadt311BlrITUNk=",
+      "last_login": "2026-03-21T23:31:44.734Z",
+      "is_superuser": true,
+      "username": "Director",
+      "first_name": "Nsikak",
+      "last_name": "Akpan",
+      "email": "globalphonelinzsystems@gmail.com",
+      "is_staff": false,
+      "is_active": true,
+      "date_joined": "2026-02-23T16:04:14Z",
+      "role": "DIRECTOR",
+      "branch": null,
+      "failed_login_count": 0,
+      "is_locked": false
+    }
+  },
+  {
+    "model": "core.user",
+    "pk": 9,
+    "fields": {
+      "password": "pbkdf2_sha256$720000$c1FKU47LwoMIuuTe2iityt$UsU1JVhvlYUD6P9I/LP6wNAazomSmHKLDNDl+7oAuyE=",
+      "last_login": "2026-03-15T17:03:19.138Z",
+      "is_superuser": false,
+      "username": "Joseph",
+      "first_name": "Joseph",
+      "last_name": "Effiong",
+      "email": "",
+      "is_staff": true,
+      "is_active": true,
+      "date_joined": "2026-03-15T16:40:11Z",
+      "role": "MANAGER",
+      "branch": 2,
+      "failed_login_count": 0,
+      "is_locked": false
+    }
+  },
+  {
+    "model": "core.user",
+    "pk": 10,
+    "fields": {
+      "password": "pbkdf2_sha256$720000$PRIXH6QOXIt6gygATdkBp7$pbPwzuiASde9LGw8iWInQtMwgjvAy1ZpGMbQ7LGky1w=",
+      "last_login": "2026-03-21T23:28:52.442Z",
+      "is_superuser": false,
+      "username": "Christiana",
+      "first_name": "Christiana",
+      "last_name": "Eyoh",
+      "email": "eyohchristiana@gmail.com",
+      "is_staff": true,
+      "is_active": true,
+      "date_joined": "2026-03-15T16:51:12Z",
+      "role": "MANAGER",
+      "branch": 3,
+      "failed_login_count": 0,
+      "is_locked": false
+    }
+  },
+  {
+    "model": "core.devicetag",
+    "pk": 1,
+    "fields": {
+      "branch": 1,
+      "tag_name": "MTN0300382"
+    }
+  },
+  {
+    "model": "core.devicetag",
+    "pk": 2,
+    "fields": {
+      "branch": 1,
+      "tag_name": "MTN03003728"
+    }
+  },
+  {
+    "model": "core.servicetarget",
+    "pk": 1,
+    "fields": {
+      "branch": 1,
+      "service_type": "SIM Registration",
+      "device_tag": null,
+      "target_number": 50,
+      "date": "2026-02-16",
+      "created_by": null
+    }
+  },
+  {
+    "model": "core.servicetarget",
+    "pk": 2,
+    "fields": {
+      "branch": 1,
+      "service_type": "SIM_REG",
+      "device_tag": 1,
+      "target_number": 50,
+      "date": "2026-02-21",
+      "created_by": 2
+    }
+  },
+  {
+    "model": "core.servicetarget",
+    "pk": 3,
+    "fields": {
+      "branch": 1,
+      "service_type": "SIM_REG",
+      "device_tag": 2,
+      "target_number": 50,
+      "date": "2026-02-21",
+      "created_by": 2
+    }
+  },
+  {
+    "model": "core.directorsafestock",
+    "pk": 1,
+    "fields": {
+      "product": 1,
+      "quantity": 20,
+      "date_added": "2026-03-10T19:34:15.147Z",
+      "notes": ""
+    }
+  },
+  {
+    "model": "core.serviceactivity",
+    "pk": 1,
+    "fields": {
+      "branch": 1,
+      "staff": 5,
+      "service_type": "SIM_REG",
+      "device_tag": null,
+      "quantity": 4,
+      "date": "2026-02-21",
+      "approved": false,
+      "requires_approval": false
+    }
+  },
+  {
+    "model": "core.serviceactivity",
+    "pk": 2,
+    "fields": {
+      "branch": 1,
+      "staff": 5,
+      "service_type": "SIM_REG",
+      "device_tag": null,
+      "quantity": 2,
+      "date": "2026-02-21",
+      "approved": false,
+      "requires_approval": false
+    }
+  },
+  {
+    "model": "core.serviceactivity",
+    "pk": 3,
+    "fields": {
+      "branch": 1,
+      "staff": 5,
+      "service_type": "SIM_REG",
+      "device_tag": 2,
+      "quantity": 5,
+      "date": "2026-02-21",
+      "approved": false,
+      "requires_approval": false
+    }
+  },
+  {
+    "model": "core.serviceactivity",
+    "pk": 4,
+    "fields": {
+      "branch": 1,
+      "staff": 5,
+      "service_type": "SIM_REG",
+      "device_tag": 1,
+      "quantity": 2,
+      "date": "2026-02-21",
+      "approved": false,
+      "requires_approval": false
+    }
+  },
+  {
+    "model": "core.serviceactivity",
+    "pk": 5,
+    "fields": {
+      "branch": 1,
+      "staff": 5,
+      "service_type": "SIM_REG",
+      "device_tag": 1,
+      "quantity": 1,
+      "date": "2026-03-10",
+      "approved": true,
+      "requires_approval": false
+    }
+  },
+  {
+    "model": "core.serviceactivity",
+    "pk": 6,
+    "fields": {
+      "branch": 1,
+      "staff": 5,
+      "service_type": "MIFI",
+      "device_tag": null,
+      "quantity": 1,
+      "date": "2026-03-10",
+      "approved": true,
+      "requires_approval": false
+    }
+  },
+  {
+    "model": "core.serviceactivity",
+    "pk": 7,
+    "fields": {
+      "branch": 1,
+      "staff": 5,
+      "service_type": "MIFI",
+      "device_tag": null,
+      "quantity": 15000,
+      "date": "2026-03-10",
+      "approved": true,
+      "requires_approval": false
+    }
+  },
+  {
+    "model": "core.serviceactivity",
+    "pk": 8,
+    "fields": {
+      "branch": 1,
+      "staff": 5,
+      "service_type": "MIFI",
+      "device_tag": null,
+      "quantity": 1,
+      "date": "2026-03-10",
+      "approved": false,
+      "requires_approval": false
+    }
+  },
+  {
+    "model": "core.serviceactivity",
+    "pk": 9,
+    "fields": {
+      "branch": 1,
+      "staff": 5,
+      "service_type": "WHOLESALE_SIM",
+      "device_tag": null,
+      "quantity": 50,
+      "date": "2026-03-10",
+      "approved": false,
+      "requires_approval": false
+    }
+  },
+  {
+    "model": "core.retailcategory",
+    "pk": 1,
+    "fields": {
+      "name": "Phones "
+    }
+  },
+  {
+    "model": "core.retailcategory",
+    "pk": 2,
+    "fields": {
+      "name": "Chargers"
+    }
+  },
+  {
+    "model": "core.retailcategory",
+    "pk": 3,
+    "fields": {
+      "name": "PowerBanks"
+    }
+  },
+  {
+    "model": "core.retailcategory",
+    "pk": 4,
+    "fields": {
+      "name": "Batteries "
+    }
+  },
+  {
+    "model": "core.retailcategory",
+    "pk": 5,
+    "fields": {
+      "name": "Casing"
+    }
+  },
+  {
+    "model": "core.retailsubcategory",
+    "pk": 1,
+    "fields": {
+      "category": 1,
+      "name": "Button Phones"
+    }
+  },
+  {
+    "model": "core.retailsubcategory",
+    "pk": 2,
+    "fields": {
+      "category": 4,
+      "name": "Itel"
+    }
+  },
+  {
+    "model": "core.retailsubsubcategory",
+    "pk": 1,
+    "fields": {
+      "subcategory": 1,
+      "name": "Itel"
+    }
+  },
+  {
+    "model": "core.product",
+    "pk": 1,
+    "fields": {
+      "subsubcategory": 1,
+      "subcategory": 1,
+      "product_name": "Itel Phone",
+      "model_name": "It2165",
+      "description": null,
+      "imei_serial": "57468",
+      "cost_price": "0.00",
+      "selling_price": "11000.00"
+    }
+  },
+  {
+    "model": "core.product",
+    "pk": 2,
+    "fields": {
+      "subsubcategory": 1,
+      "subcategory": 1,
+      "product_name": "Itel Phone",
+      "model_name": "It2165",
+      "description": null,
+      "imei_serial": "5746888886696798",
+      "cost_price": "0.00",
+      "selling_price": "11000.00"
+    }
+  },
+  {
+    "model": "core.branchsafestock",
+    "pk": 1,
+    "fields": {
+      "branch": 1,
+      "product": 1,
+      "quantity": 10
+    }
+  },
+  {
+    "model": "core.staffstock",
+    "pk": 1,
+    "fields": {
+      "staff": 7,
+      "product": 2,
+      "quantity": 4
+    }
+  },
+  {
+    "model": "core.stockmovement",
+    "pk": 1,
+    "fields": {
+      "branch": 1,
+      "product": 1,
+      "quantity": 10,
+      "movement_type": "IN",
+      "performed_by": 4,
+      "date": "2026-03-10",
+      "time": "19:28:18.077"
+    }
+  },
+  {
+    "model": "core.multichoicesale",
+    "pk": 1,
+    "fields": {
+      "staff": 6,
+      "branch": 3,
+      "customer_name": " Christopher Ime",
+      "service_type": "DSTV",
+      "package_type": "Jolli",
+      "transaction_type": "RENEWAL",
+      "cost_price": "0.00",
+      "amount": "6000.00",
+      "date": "2026-02-28",
+      "time": "14:18:11.704"
+    }
+  },
+  {
+    "model": "core.multichoicesale",
+    "pk": 2,
+    "fields": {
+      "staff": 6,
+      "branch": 3,
+      "customer_name": " Christopher Ime",
+      "service_type": "GOTV",
+      "package_type": "Jolli",
+      "transaction_type": "RENEWAL",
+      "cost_price": "5800.00",
+      "amount": "6000.00",
+      "date": "2026-03-10",
+      "time": "18:57:52.151"
+    }
+  },
+  {
+    "model": "core.retailsale",
+    "pk": 1,
+    "fields": {
+      "staff": 7,
+      "branch": 3,
+      "product": 2,
+      "quantity": 1,
+      "selling_price": "11000.00",
+      "payment_method": "CASH",
+      "date": "2026-03-10",
+      "time": "19:30:56.644"
+    }
+  },
+  {
+    "model": "core.stockrequest",
+    "pk": 1,
+    "fields": {
+      "staff": 7,
+      "branch": 3,
+      "product_name": "Itel Battery ",
+      "quantity": 10,
+      "status": "APPROVED",
+      "date_requested": "2026-03-10"
+    }
+  },
+  {
+    "model": "core.stockrequest",
+    "pk": 2,
+    "fields": {
+      "staff": 7,
+      "branch": 3,
+      "product_name": "Itel Battery BL-5C ",
+      "quantity": 10,
+      "status": "PENDING",
+      "date_requested": "2026-03-10"
+    }
+  },
+  {
+    "model": "core.attendance",
+    "pk": 1,
+    "fields": {
+      "user": 6,
+      "branch": 3,
+      "session": "morning",
+      "check_in_time": "2026-03-09T11:46:32.788Z",
+      "check_out_time": null,
+      "latitude": 4.915645,
+      "longitude": 7.96399,
+      "distance_from_branch": 34.427347328526594,
+      "selfie": "attendance_selfies/17730567824988490197920804263846.jpg",
+      "date": "2026-03-09",
+      "is_late": false,
+      "is_absent": true,
+      "deduction_amount": "0.00"
+    }
+  },
+  {
+    "model": "core.attendance",
+    "pk": 2,
+    "fields": {
+      "user": 7,
+      "branch": 3,
+      "session": "morning",
+      "check_in_time": "2026-03-09T11:47:42.777Z",
+      "check_out_time": null,
+      "latitude": 4.915645,
+      "longitude": 7.96399,
+      "distance_from_branch": 34.427347328526594,
+      "selfie": "attendance_selfies/17730568530799026293631379885882.jpg",
+      "date": "2026-03-09",
+      "is_late": false,
+      "is_absent": true,
+      "deduction_amount": "0.00"
+    }
+  },
+  {
+    "model": "core.attendance",
+    "pk": 3,
+    "fields": {
+      "user": 5,
+      "branch": 1,
+      "session": "morning",
+      "check_in_time": "2026-03-15T16:32:27.791Z",
+      "check_out_time": null,
+      "latitude": 4.9942865,
+      "longitude": 7.8903441,
+      "distance_from_branch": 11.439238834513297,
+      "selfie": "attendance_selfies/17735923383316732223110168747165.jpg",
+      "date": "2026-03-15",
+      "is_late": false,
+      "is_absent": false,
+      "deduction_amount": "0.00"
+    }
+  },
+  {
+    "model": "core.attendance",
+    "pk": 4,
+    "fields": {
+      "user": 4,
+      "branch": 1,
+      "session": "morning",
+      "check_in_time": "2026-03-15T16:32:52.218Z",
+      "check_out_time": null,
+      "latitude": 4.9942462,
+      "longitude": 7.8904092,
+      "distance_from_branch": 5.237314739920261,
+      "selfie": "attendance_selfies/17735923637212809328647493564449.jpg",
+      "date": "2026-03-15",
+      "is_late": false,
+      "is_absent": false,
+      "deduction_amount": "0.00"
+    }
   }
-},
-{
-  "model": "admin.logentry",
-  "pk": 7,
-  "fields": {
-    "action_time": "2026-02-17T19:35:42.071Z",
-    "user": 2,
-    "content_type": 7,
-    "object_id": "3",
-    "object_repr": "Manager",
-    "action_flag": 2,
-    "change_message": "[{\"changed\": {\"fields\": [\"First name\", \"Last name\", \"Email address\", \"Staff status\", \"User permissions\"]}}]"
-  }
-},
-{
-  "model": "admin.logentry",
-  "pk": 8,
-  "fields": {
-    "action_time": "2026-02-18T14:00:08.315Z",
-    "user": 2,
-    "content_type": 7,
-    "object_id": "3",
-    "object_repr": "Manager",
-    "action_flag": 3,
-    "change_message": ""
-  }
-},
-{
-  "model": "admin.logentry",
-  "pk": 9,
-  "fields": {
-    "action_time": "2026-02-18T14:05:45.756Z",
-    "user": 2,
-    "content_type": 7,
-    "object_id": "4",
-    "object_repr": "Patricia",
-    "action_flag": 1,
-    "change_message": "[{\"added\": {}}]"
-  }
-},
-{
-  "model": "admin.logentry",
-  "pk": 10,
-  "fields": {
-    "action_time": "2026-02-18T14:08:20.187Z",
-    "user": 2,
-    "content_type": 7,
-    "object_id": "4",
-    "object_repr": "Patricia",
-    "action_flag": 2,
-    "change_message": "[{\"changed\": {\"fields\": [\"First name\", \"Last name\", \"Email address\", \"Staff status\", \"User permissions\", \"Last login\"]}}]"
-  }
-},
-{
-  "model": "admin.logentry",
-  "pk": 11,
-  "fields": {
-    "action_time": "2026-02-19T17:27:21.426Z",
-    "user": 2,
-    "content_type": 7,
-    "object_id": "5",
-    "object_repr": "Idongesit",
-    "action_flag": 1,
-    "change_message": "[{\"added\": {}}]"
-  }
-},
-{
-  "model": "admin.logentry",
-  "pk": 12,
-  "fields": {
-    "action_time": "2026-02-19T17:29:04.459Z",
-    "user": 2,
-    "content_type": 7,
-    "object_id": "5",
-    "object_repr": "Idongesit",
-    "action_flag": 2,
-    "change_message": "[{\"changed\": {\"fields\": [\"First name\", \"Staff status\", \"User permissions\", \"Last login\"]}}]"
-  }
-},
-{
-  "model": "admin.logentry",
-  "pk": 13,
-  "fields": {
-    "action_time": "2026-02-21T13:47:29.439Z",
-    "user": 2,
-    "content_type": 8,
-    "object_id": "1",
-    "object_repr": "MTN0300382",
-    "action_flag": 1,
-    "change_message": "[{\"added\": {}}]"
-  }
-},
-{
-  "model": "admin.logentry",
-  "pk": 14,
-  "fields": {
-    "action_time": "2026-02-21T13:47:52.518Z",
-    "user": 2,
-    "content_type": 10,
-    "object_id": "2",
-    "object_repr": "Mbierebe Branch - SIM_REG - 2026-02-21",
-    "action_flag": 1,
-    "change_message": "[{\"added\": {}}]"
-  }
-},
-{
-  "model": "admin.logentry",
-  "pk": 15,
-  "fields": {
-    "action_time": "2026-02-21T13:48:17.524Z",
-    "user": 2,
-    "content_type": 8,
-    "object_id": "2",
-    "object_repr": "MTN03003728",
-    "action_flag": 1,
-    "change_message": "[{\"added\": {}}]"
-  }
-},
-{
-  "model": "admin.logentry",
-  "pk": 16,
-  "fields": {
-    "action_time": "2026-02-21T13:48:29.195Z",
-    "user": 2,
-    "content_type": 10,
-    "object_id": "3",
-    "object_repr": "Mbierebe Branch - SIM_REG - 2026-02-21",
-    "action_flag": 1,
-    "change_message": "[{\"added\": {}}]"
-  }
-},
-{
-  "model": "admin.logentry",
-  "pk": 17,
-  "fields": {
-    "action_time": "2026-02-23T15:43:51.591Z",
-    "user": 2,
-    "content_type": 7,
-    "object_id": "5",
-    "object_repr": "Idongesit",
-    "action_flag": 2,
-    "change_message": "[{\"changed\": {\"fields\": [\"Role\"]}}]"
-  }
-},
-{
-  "model": "admin.logentry",
-  "pk": 18,
-  "fields": {
-    "action_time": "2026-02-23T15:44:01.382Z",
-    "user": 2,
-    "content_type": 7,
-    "object_id": "4",
-    "object_repr": "Patricia",
-    "action_flag": 2,
-    "change_message": "[{\"changed\": {\"fields\": [\"Role\"]}}]"
-  }
-},
-{
-  "model": "admin.logentry",
-  "pk": 19,
-  "fields": {
-    "action_time": "2026-02-23T15:50:31.276Z",
-    "user": 2,
-    "content_type": 7,
-    "object_id": "6",
-    "object_repr": "Ekemini",
-    "action_flag": 1,
-    "change_message": "[{\"added\": {}}]"
-  }
-},
-{
-  "model": "admin.logentry",
-  "pk": 20,
-  "fields": {
-    "action_time": "2026-02-23T15:53:04.724Z",
-    "user": 2,
-    "content_type": 7,
-    "object_id": "6",
-    "object_repr": "Ekemini",
-    "action_flag": 2,
-    "change_message": "[{\"changed\": {\"fields\": [\"First name\", \"Last name\", \"Email address\", \"Staff status\", \"User permissions\", \"Last login\"]}}]"
-  }
-},
-{
-  "model": "admin.logentry",
-  "pk": 21,
-  "fields": {
-    "action_time": "2026-02-23T15:54:26.041Z",
-    "user": 2,
-    "content_type": 7,
-    "object_id": "4",
-    "object_repr": "Patricia",
-    "action_flag": 2,
-    "change_message": "[{\"changed\": {\"fields\": [\"User permissions\"]}}]"
-  }
-},
-{
-  "model": "admin.logentry",
-  "pk": 22,
-  "fields": {
-    "action_time": "2026-02-23T15:55:16.645Z",
-    "user": 2,
-    "content_type": 7,
-    "object_id": "7",
-    "object_repr": "Tonia",
-    "action_flag": 1,
-    "change_message": "[{\"added\": {}}]"
-  }
-},
-{
-  "model": "admin.logentry",
-  "pk": 23,
-  "fields": {
-    "action_time": "2026-02-23T16:02:13.567Z",
-    "user": 2,
-    "content_type": 7,
-    "object_id": "7",
-    "object_repr": "Tonia",
-    "action_flag": 2,
-    "change_message": "[{\"changed\": {\"fields\": [\"First name\", \"Last name\", \"Email address\", \"Staff status\", \"User permissions\", \"Last login\"]}}]"
-  }
-},
-{
-  "model": "admin.logentry",
-  "pk": 24,
-  "fields": {
-    "action_time": "2026-02-23T16:03:20.204Z",
-    "user": 2,
-    "content_type": 7,
-    "object_id": "8",
-    "object_repr": "Director",
-    "action_flag": 1,
-    "change_message": "[{\"added\": {}}]"
-  }
-},
-{
-  "model": "admin.logentry",
-  "pk": 25,
-  "fields": {
-    "action_time": "2026-02-23T16:04:16.942Z",
-    "user": 2,
-    "content_type": 7,
-    "object_id": "8",
-    "object_repr": "Director",
-    "action_flag": 2,
-    "change_message": "[{\"changed\": {\"fields\": [\"First name\", \"Last name\", \"Email address\", \"Superuser status\", \"User permissions\", \"Last login\", \"Date joined\"]}}]"
-  }
-},
-{
-  "model": "admin.logentry",
-  "pk": 26,
-  "fields": {
-    "action_time": "2026-02-23T16:11:36.751Z",
-    "user": 2,
-    "content_type": 7,
-    "object_id": "8",
-    "object_repr": "Director",
-    "action_flag": 2,
-    "change_message": "[]"
-  }
-},
-{
-  "model": "admin.logentry",
-  "pk": 27,
-  "fields": {
-    "action_time": "2026-02-23T16:12:12.744Z",
-    "user": 2,
-    "content_type": 7,
-    "object_id": "4",
-    "object_repr": "Patricia",
-    "action_flag": 2,
-    "change_message": "[{\"changed\": {\"fields\": [\"User permissions\"]}}]"
-  }
-},
-{
-  "model": "admin.logentry",
-  "pk": 28,
-  "fields": {
-    "action_time": "2026-03-10T19:39:55.893Z",
-    "user": 2,
-    "content_type": 7,
-    "object_id": "8",
-    "object_repr": "Director",
-    "action_flag": 2,
-    "change_message": "[{\"changed\": {\"fields\": [\"User permissions\"]}}]"
-  }
-},
-{
-  "model": "admin.logentry",
-  "pk": 29,
-  "fields": {
-    "action_time": "2026-03-15T16:40:11.599Z",
-    "user": 2,
-    "content_type": 7,
-    "object_id": "9",
-    "object_repr": "Joseph",
-    "action_flag": 1,
-    "change_message": "[{\"added\": {}}]"
-  }
-},
-{
-  "model": "admin.logentry",
-  "pk": 30,
-  "fields": {
-    "action_time": "2026-03-15T16:44:30.792Z",
-    "user": 2,
-    "content_type": 7,
-    "object_id": "9",
-    "object_repr": "Joseph",
-    "action_flag": 2,
-    "change_message": "[{\"changed\": {\"fields\": [\"First name\", \"Last name\", \"Staff status\", \"User permissions\", \"Last login\", \"Role\", \"Branch\"]}}]"
-  }
-},
-{
-  "model": "admin.logentry",
-  "pk": 31,
-  "fields": {
-    "action_time": "2026-03-15T16:45:46.608Z",
-    "user": 2,
-    "content_type": 7,
-    "object_id": "6",
-    "object_repr": "Ekemini",
-    "action_flag": 2,
-    "change_message": "[{\"changed\": {\"fields\": [\"User permissions\"]}}]"
-  }
-},
-{
-  "model": "admin.logentry",
-  "pk": 32,
-  "fields": {
-    "action_time": "2026-03-15T16:46:59.131Z",
-    "user": 2,
-    "content_type": 7,
-    "object_id": "4",
-    "object_repr": "Patricia",
-    "action_flag": 2,
-    "change_message": "[{\"changed\": {\"fields\": [\"User permissions\"]}}]"
-  }
-},
-{
-  "model": "admin.logentry",
-  "pk": 33,
-  "fields": {
-    "action_time": "2026-03-15T16:47:20.147Z",
-    "user": 2,
-    "content_type": 7,
-    "object_id": "8",
-    "object_repr": "Director",
-    "action_flag": 2,
-    "change_message": "[{\"changed\": {\"fields\": [\"User permissions\"]}}]"
-  }
-},
-{
-  "model": "admin.logentry",
-  "pk": 34,
-  "fields": {
-    "action_time": "2026-03-15T16:48:51.761Z",
-    "user": 2,
-    "content_type": 7,
-    "object_id": "7",
-    "object_repr": "Tonia",
-    "action_flag": 2,
-    "change_message": "[{\"changed\": {\"fields\": [\"User permissions\"]}}]"
-  }
-},
-{
-  "model": "admin.logentry",
-  "pk": 35,
-  "fields": {
-    "action_time": "2026-03-15T16:51:12.185Z",
-    "user": 2,
-    "content_type": 7,
-    "object_id": "10",
-    "object_repr": "Christiana",
-    "action_flag": 1,
-    "change_message": "[{\"added\": {}}]"
-  }
-},
-{
-  "model": "admin.logentry",
-  "pk": 36,
-  "fields": {
-    "action_time": "2026-03-15T16:56:58.681Z",
-    "user": 2,
-    "content_type": 7,
-    "object_id": "10",
-    "object_repr": "Christiana",
-    "action_flag": 2,
-    "change_message": "[{\"changed\": {\"fields\": [\"First name\", \"Last name\", \"Email address\", \"Staff status\", \"User permissions\", \"Last login\", \"Role\", \"Branch\"]}}]"
-  }
-},
-{
-  "model": "sessions.session",
-  "pk": "f5g4pf4y11pg3vwwb05cy3kg41885v9l",
-  "fields": {
-    "session_data": ".eJxVjMsOwiAQRf-FtSFQGGRcuu83kGEGpGrapI-V8d-1SRe6veec-1KJtrWlbSlzGkRdVKdOv1smfpRxB3Kn8TZpnsZ1HrLeFX3QRfeTlOf1cP8OGi3tW5suSC0QUSIG6LyY6nwAInTsTfZgLQcDwIwZSbI7Z66RHNpSAWNR7w_Tizfk:1vzL5c:nlYi-fdqgclQsC3sAH6dyQgC8vDQt8Qm13LwVGdsnYc",
-    "expire_date": "2026-03-22T20:51:04.068Z"
-  }
-},
-{
-  "model": "sessions.session",
-  "pk": "jtxbajq6jbs5jaxrrpc25a25kbqs320j",
-  "fields": {
-    "session_data": ".eJxVjEEOwiAQRe_C2hAYCgWX7j0DmWFAqoYmpV0Z765NutDtf-_9l4i4rTVuPS9xYnEWgzj9boTpkdsO-I7tNss0t3WZSO6KPGiX15nz83K4fwcVe_3WTnkASKizI2O1UYOl0WskJHYJinUuFTAFyRsfskX2RZUCTKN1wQTx_gDbgTgE:1w2UmI:5VYYqnmLzdhJtEVq5WdsSFJW_lz-24DhIzWmqGF54TY",
-    "expire_date": "2026-03-31T13:48:10.325Z"
-  }
-},
-{
-  "model": "sessions.session",
-  "pk": "mwvza0sv7a5pu7y2y8b4ccw3pp8p7g3h",
-  "fields": {
-    "session_data": ".eJxVjEEOwiAQRe_C2hAYCgWX7j0DmWFAqoYmpV0Z765NutDtf-_9l4i4rTVuPS9xYnEWgzj9boTpkdsO-I7tNss0t3WZSO6KPGiX15nz83K4fwcVe_3WTnkASKizI2O1UYOl0WskJHYJinUuFTAFyRsfskX2RZUCTKN1wQTx_gDbgTgE:1vyqWb:gDZFO2HITkwY0ezw6DVb7pfsHly0x3M6-MU2vlMUOEs",
-    "expire_date": "2026-03-21T12:12:53.012Z"
-  }
-},
-{
-  "model": "sessions.session",
-  "pk": "nnuk0ua39osoonrzivig6cimhubump3e",
-  "fields": {
-    "session_data": ".eJxVjEEOwiAQRe_C2hAYCgWX7j0DmWFAqoYmpV0Z765NutDtf-_9l4i4rTVuPS9xYnEWgzj9boTpkdsO-I7tNss0t3WZSO6KPGiX15nz83K4fwcVe_3WTnkASKizI2O1UYOl0WskJHYJinUuFTAFyRsfskX2RZUCTKN1wQTx_gDbgTgE:1vzLQE:nzl4fbhs80R5N8JZ9hjmM6eD0rTS-l1nTfEh94cGmUc",
-    "expire_date": "2026-03-22T21:12:22.641Z"
-  }
-},
-{
-  "model": "sessions.session",
-  "pk": "w5pkhw5l2q8rq9kjzd6ge2kjf6fp6zof",
-  "fields": {
-    "session_data": ".eJxVjEsOwjAMBe-SNYr6SRyXJXvOUNmOQwqokZp2hbg7VOoCtm9m3suMtK153Kou4xTN2aA5_W5M8tB5B_FO861YKfO6TGx3xR602muJ-rwc7t9Bppq_dVJxkMj72LWiTEzoGRgHFQVMg0gLEtAFFNUISBxAXFToe26oa8z7Ay3wOWY:1w45nE:HNs6G7GggqGTRt7qVVzePv_ka-_tpzbV7g1F2KBPdzc",
-    "expire_date": "2026-04-04T23:31:44.745Z"
-  }
-},
-{
-  "model": "sessions.session",
-  "pk": "zgdyj2hoe59yptio55fwir1empvsevu0",
-  "fields": {
-    "session_data": ".eJxVjEsOwjAMBe-SNYr6SRyXJXvOUNmOQwqokZp2hbg7VOoCtm9m3suMtK153Kou4xTN2aA5_W5M8tB5B_FO861YKfO6TGx3xR602muJ-rwc7t9Bppq_dVJxkMj72LWiTEzoGRgHFQVMg0gLEtAFFNUISBxAXFToe26oa8z7Ay3wOWY:1vzLR4:Pl-FtFq7YBcsxfQO5eDvjHgOhjFOPKUEi6TyLgkRS8s",
-    "expire_date": "2026-03-22T21:13:14.341Z"
-  }
-},
-{
-  "model": "core.branch",
-  "pk": 1,
-  "fields": {
-    "name": "Mbierebe Branch",
-    "latitude": 4.9942,
-    "longitude": 7.8904,
-    "allowed_radius": 300,
-    "location_locked": true
-  }
-},
-{
-  "model": "core.branch",
-  "pk": 2,
-  "fields": {
-    "name": "Aka Etinan Branch",
-    "latitude": null,
-    "longitude": null,
-    "allowed_radius": 100,
-    "location_locked": false
-  }
-},
-{
-  "model": "core.branch",
-  "pk": 3,
-  "fields": {
-    "name": "NUNG UDOE BRANCH",
-    "latitude": 4.9154,
-    "longitude": 7.9638,
-    "allowed_radius": 100,
-    "location_locked": true
-  }
-},
-{
-  "model": "core.branch",
-  "pk": 4,
-  "fields": {
-    "name": "Plaza Branch",
-    "latitude": null,
-    "longitude": null,
-    "allowed_radius": 100,
-    "location_locked": false
-  }
-},
-{
-  "model": "core.branch",
-  "pk": 5,
-  "fields": {
-    "name": "Okobo Branch",
-    "latitude": null,
-    "longitude": null,
-    "allowed_radius": 100,
-    "location_locked": false
-  }
-},
-{
-  "model": "core.user",
-  "pk": 2,
-  "fields": {
-    "password": "pbkdf2_sha256$720000$eIsfzRwXHdGlVZHdx9H7Te$XTDYvLAJ4fVyCFw1Z5h3Hv6sMC9cAh7Rxw5xIAQTg/w=",
-    "last_login": "2026-03-15T16:39:15.108Z",
-    "is_superuser": true,
-    "username": "SuperAdmin",
-    "first_name": "",
-    "last_name": "",
-    "email": "ekeminimonday62@gmail.com",
-    "is_staff": true,
-    "is_active": true,
-    "date_joined": "2026-02-17T19:19:04.590Z",
-    "role": "",
-    "branch": null,
-    "failed_login_count": 0,
-    "is_locked": false,
-    "groups": [],
-    "user_permissions": []
-  }
-},
-{
-  "model": "core.user",
-  "pk": 4,
-  "fields": {
-    "password": "pbkdf2_sha256$720000$UAfq6bcNzd2LSX7BQ0P9FM$vpIsj/qzR4khP3EEI4Te0X03YSqL7aRXmKQU/IxeWUE=",
-    "last_login": "2026-03-17T13:48:10.556Z",
-    "is_superuser": false,
-    "username": "Patricia",
-    "first_name": "Patricia",
-    "last_name": "Isikong",
-    "email": "patriciaisikong015@gmail.com",
-    "is_staff": true,
-    "is_active": true,
-    "date_joined": "2026-02-18T14:05:45Z",
-    "role": "MANAGER",
-    "branch": 1,
-    "failed_login_count": 0,
-    "is_locked": false,
-    "groups": [],
-    "user_permissions": []
-  }
-},
-{
-  "model": "core.user",
-  "pk": 5,
-  "fields": {
-    "password": "pbkdf2_sha256$720000$CHUCrwoQe2kyy0Ae3TQXY6$v0VKh3YplFdPNsllCpACcioyH7sHhUjvHHu4dlR2XnU=",
-    "last_login": "2026-03-17T13:50:39.860Z",
-    "is_superuser": false,
-    "username": "Idongesit",
-    "first_name": "Idongesit",
-    "last_name": "",
-    "email": "",
-    "is_staff": true,
-    "is_active": true,
-    "date_joined": "2026-02-19T17:27:21Z",
-    "role": "TELECOM",
-    "branch": 1,
-    "failed_login_count": 0,
-    "is_locked": false,
-    "groups": [],
-    "user_permissions": []
-  }
-},
-{
-  "model": "core.user",
-  "pk": 6,
-  "fields": {
-    "password": "pbkdf2_sha256$720000$KyecR5LpGa1krzR2kWQdCh$cucPtpI5WfhrzUx6mX3lJGeOhWd8iDWbaX8JLIVofEI=",
-    "last_login": "2026-03-21T23:30:55.700Z",
-    "is_superuser": false,
-    "username": "Ekemini",
-    "first_name": "Ekemini",
-    "last_name": "Monday",
-    "email": "ekeminimonday62@gmail.com",
-    "is_staff": true,
-    "is_active": true,
-    "date_joined": "2026-02-23T15:50:31Z",
-    "role": "MULTICHOICE",
-    "branch": 3,
-    "failed_login_count": 0,
-    "is_locked": false,
-    "groups": [],
-    "user_permissions": []
-  }
-},
-{
-  "model": "core.user",
-  "pk": 7,
-  "fields": {
-    "password": "pbkdf2_sha256$720000$xhgoeMtaMJ0Fp4e6yxZqBG$IGw8CBA5QtbfLGUc7ExRpeEKCg8kxSEDsh/DcB1y94c=",
-    "last_login": "2026-03-21T15:57:33.174Z",
-    "is_superuser": false,
-    "username": "Tonia",
-    "first_name": "Anthonia",
-    "last_name": "Itiat",
-    "email": "anthoniaitait@gmail.com",
-    "is_staff": true,
-    "is_active": true,
-    "date_joined": "2026-02-23T15:55:16Z",
-    "role": "RETAIL",
-    "branch": 3,
-    "failed_login_count": 0,
-    "is_locked": false,
-    "groups": [],
-    "user_permissions": []
-  }
-},
-{
-  "model": "core.user",
-  "pk": 8,
-  "fields": {
-    "password": "pbkdf2_sha256$720000$8NrctBH8t5nQ3ze0lwk4jE$yHwOpjAX97dVf5oVtS87QngaohZioadt311BlrITUNk=",
-    "last_login": "2026-03-21T23:31:44.734Z",
-    "is_superuser": true,
-    "username": "Director",
-    "first_name": "Nsikak",
-    "last_name": "Akpan",
-    "email": "globalphonelinzsystems@gmail.com",
-    "is_staff": false,
-    "is_active": true,
-    "date_joined": "2026-02-23T16:04:14Z",
-    "role": "DIRECTOR",
-    "branch": null,
-    "failed_login_count": 0,
-    "is_locked": false,
-    "groups": [],
-    "user_permissions": []
-  }
-},
-{
-  "model": "core.user",
-  "pk": 9,
-  "fields": {
-    "password": "pbkdf2_sha256$720000$c1FKU47LwoMIuuTe2iityt$UsU1JVhvlYUD6P9I/LP6wNAazomSmHKLDNDl+7oAuyE=",
-    "last_login": "2026-03-15T17:03:19.138Z",
-    "is_superuser": false,
-    "username": "Joseph",
-    "first_name": "Joseph",
-    "last_name": "Effiong",
-    "email": "",
-    "is_staff": true,
-    "is_active": true,
-    "date_joined": "2026-03-15T16:40:11Z",
-    "role": "MANAGER",
-    "branch": 2,
-    "failed_login_count": 0,
-    "is_locked": false,
-    "groups": [],
-    "user_permissions": []
-  }
-},
-{
-  "model": "core.user",
-  "pk": 10,
-  "fields": {
-    "password": "pbkdf2_sha256$720000$PRIXH6QOXIt6gygATdkBp7$pbPwzuiASde9LGw8iWInQtMwgjvAy1ZpGMbQ7LGky1w=",
-    "last_login": "2026-03-21T23:28:52.442Z",
-    "is_superuser": false,
-    "username": "Christiana",
-    "first_name": "Christiana",
-    "last_name": "Eyoh",
-    "email": "eyohchristiana@gmail.com",
-    "is_staff": true,
-    "is_active": true,
-    "date_joined": "2026-03-15T16:51:12Z",
-    "role": "MANAGER",
-    "branch": 3,
-    "failed_login_count": 0,
-    "is_locked": false,
-    "groups": [],
-    "user_permissions": []
-  }
-},
-{
-  "model": "core.devicetag",
-  "pk": 1,
-  "fields": {
-    "branch": 1,
-    "tag_name": "MTN0300382"
-  }
-},
-{
-  "model": "core.devicetag",
-  "pk": 2,
-  "fields": {
-    "branch": 1,
-    "tag_name": "MTN03003728"
-  }
-},
-{
-  "model": "core.servicetarget",
-  "pk": 1,
-  "fields": {
-    "branch": 1,
-    "service_type": "SIM Registration",
-    "device_tag": null,
-    "target_number": 50,
-    "date": "2026-02-16",
-    "created_by": null
-  }
-},
-{
-  "model": "core.servicetarget",
-  "pk": 2,
-  "fields": {
-    "branch": 1,
-    "service_type": "SIM_REG",
-    "device_tag": 1,
-    "target_number": 50,
-    "date": "2026-02-21",
-    "created_by": 2
-  }
-},
-{
-  "model": "core.servicetarget",
-  "pk": 3,
-  "fields": {
-    "branch": 1,
-    "service_type": "SIM_REG",
-    "device_tag": 2,
-    "target_number": 50,
-    "date": "2026-02-21",
-    "created_by": 2
-  }
-},
-{
-  "model": "core.directorsafestock",
-  "pk": 1,
-  "fields": {
-    "product": 1,
-    "quantity": 20,
-    "date_added": "2026-03-10T19:34:15.147Z",
-    "notes": ""
-  }
-},
-{
-  "model": "core.serviceactivity",
-  "pk": 1,
-  "fields": {
-    "branch": 1,
-    "staff": 5,
-    "service_type": "SIM_REG",
-    "device_tag": null,
-    "quantity": 4,
-    "date": "2026-02-21",
-    "approved": false,
-    "requires_approval": false
-  }
-},
-{
-  "model": "core.serviceactivity",
-  "pk": 2,
-  "fields": {
-    "branch": 1,
-    "staff": 5,
-    "service_type": "SIM_REG",
-    "device_tag": null,
-    "quantity": 2,
-    "date": "2026-02-21",
-    "approved": false,
-    "requires_approval": false
-  }
-},
-{
-  "model": "core.serviceactivity",
-  "pk": 3,
-  "fields": {
-    "branch": 1,
-    "staff": 5,
-    "service_type": "SIM_REG",
-    "device_tag": 2,
-    "quantity": 5,
-    "date": "2026-02-21",
-    "approved": false,
-    "requires_approval": false
-  }
-},
-{
-  "model": "core.serviceactivity",
-  "pk": 4,
-  "fields": {
-    "branch": 1,
-    "staff": 5,
-    "service_type": "SIM_REG",
-    "device_tag": 1,
-    "quantity": 2,
-    "date": "2026-02-21",
-    "approved": false,
-    "requires_approval": false
-  }
-},
-{
-  "model": "core.serviceactivity",
-  "pk": 5,
-  "fields": {
-    "branch": 1,
-    "staff": 5,
-    "service_type": "SIM_REG",
-    "device_tag": 1,
-    "quantity": 1,
-    "date": "2026-03-10",
-    "approved": true,
-    "requires_approval": false
-  }
-},
-{
-  "model": "core.serviceactivity",
-  "pk": 6,
-  "fields": {
-    "branch": 1,
-    "staff": 5,
-    "service_type": "MIFI",
-    "device_tag": null,
-    "quantity": 1,
-    "date": "2026-03-10",
-    "approved": true,
-    "requires_approval": false
-  }
-},
-{
-  "model": "core.serviceactivity",
-  "pk": 7,
-  "fields": {
-    "branch": 1,
-    "staff": 5,
-    "service_type": "MIFI",
-    "device_tag": null,
-    "quantity": 15000,
-    "date": "2026-03-10",
-    "approved": true,
-    "requires_approval": false
-  }
-},
-{
-  "model": "core.serviceactivity",
-  "pk": 8,
-  "fields": {
-    "branch": 1,
-    "staff": 5,
-    "service_type": "MIFI",
-    "device_tag": null,
-    "quantity": 1,
-    "date": "2026-03-10",
-    "approved": false,
-    "requires_approval": false
-  }
-},
-{
-  "model": "core.serviceactivity",
-  "pk": 9,
-  "fields": {
-    "branch": 1,
-    "staff": 5,
-    "service_type": "WHOLESALE_SIM",
-    "device_tag": null,
-    "quantity": 50,
-    "date": "2026-03-10",
-    "approved": false,
-    "requires_approval": false
-  }
-},
-{
-  "model": "core.retailcategory",
-  "pk": 1,
-  "fields": {
-    "name": "Phones "
-  }
-},
-{
-  "model": "core.retailcategory",
-  "pk": 2,
-  "fields": {
-    "name": "Chargers"
-  }
-},
-{
-  "model": "core.retailcategory",
-  "pk": 3,
-  "fields": {
-    "name": "PowerBanks"
-  }
-},
-{
-  "model": "core.retailcategory",
-  "pk": 4,
-  "fields": {
-    "name": "Batteries "
-  }
-},
-{
-  "model": "core.retailcategory",
-  "pk": 5,
-  "fields": {
-    "name": "Casing"
-  }
-},
-{
-  "model": "core.retailsubcategory",
-  "pk": 1,
-  "fields": {
-    "category": 1,
-    "name": "Button Phones"
-  }
-},
-{
-  "model": "core.retailsubcategory",
-  "pk": 2,
-  "fields": {
-    "category": 4,
-    "name": "Itel"
-  }
-},
-{
-  "model": "core.retailsubsubcategory",
-  "pk": 1,
-  "fields": {
-    "subcategory": 1,
-    "name": "Itel"
-  }
-},
-{
-  "model": "core.product",
-  "pk": 1,
-  "fields": {
-    "subsubcategory": 1,
-    "subcategory": 1,
-    "product_name": "Itel Phone",
-    "model_name": "It2165",
-    "description": null,
-    "imei_serial": "57468",
-    "cost_price": "0.00",
-    "selling_price": "11000.00"
-  }
-},
-{
-  "model": "core.product",
-  "pk": 2,
-  "fields": {
-    "subsubcategory": 1,
-    "subcategory": 1,
-    "product_name": "Itel Phone",
-    "model_name": "It2165",
-    "description": null,
-    "imei_serial": "5746888886696798",
-    "cost_price": "0.00",
-    "selling_price": "11000.00"
-  }
-},
-{
-  "model": "core.branchsafestock",
-  "pk": 1,
-  "fields": {
-    "branch": 1,
-    "product": 1,
-    "quantity": 10
-  }
-},
-{
-  "model": "core.staffstock",
-  "pk": 1,
-  "fields": {
-    "staff": 7,
-    "product": 2,
-    "quantity": 4
-  }
-},
-{
-  "model": "core.stockmovement",
-  "pk": 1,
-  "fields": {
-    "branch": 1,
-    "product": 1,
-    "quantity": 10,
-    "movement_type": "IN",
-    "performed_by": 4,
-    "date": "2026-03-10",
-    "time": "19:28:18.077"
-  }
-},
-{
-  "model": "core.multichoicesale",
-  "pk": 1,
-  "fields": {
-    "staff": 6,
-    "branch": 3,
-    "customer_name": " Christopher Ime",
-    "service_type": "DSTV",
-    "package_type": "Jolli",
-    "transaction_type": "RENEWAL",
-    "cost_price": "0.00",
-    "amount": "6000.00",
-    "date": "2026-02-28",
-    "time": "14:18:11.704"
-  }
-},
-{
-  "model": "core.multichoicesale",
-  "pk": 2,
-  "fields": {
-    "staff": 6,
-    "branch": 3,
-    "customer_name": " Christopher Ime",
-    "service_type": "GOTV",
-    "package_type": "Jolli",
-    "transaction_type": "RENEWAL",
-    "cost_price": "5800.00",
-    "amount": "6000.00",
-    "date": "2026-03-10",
-    "time": "18:57:52.151"
-  }
-},
-{
-  "model": "core.retailsale",
-  "pk": 1,
-  "fields": {
-    "staff": 7,
-    "branch": 3,
-    "product": 2,
-    "quantity": 1,
-    "selling_price": "11000.00",
-    "payment_method": "CASH",
-    "date": "2026-03-10",
-    "time": "19:30:56.644"
-  }
-},
-{
-  "model": "core.stockrequest",
-  "pk": 1,
-  "fields": {
-    "staff": 7,
-    "branch": 3,
-    "product_name": "Itel Battery ",
-    "quantity": 10,
-    "status": "APPROVED",
-    "date_requested": "2026-03-10"
-  }
-},
-{
-  "model": "core.stockrequest",
-  "pk": 2,
-  "fields": {
-    "staff": 7,
-    "branch": 3,
-    "product_name": "Itel Battery BL-5C ",
-    "quantity": 10,
-    "status": "PENDING",
-    "date_requested": "2026-03-10"
-  }
-},
-{
-  "model": "core.attendance",
-  "pk": 1,
-  "fields": {
-    "user": 6,
-    "branch": 3,
-    "session": "morning",
-    "check_in_time": "2026-03-09T11:46:32.788Z",
-    "check_out_time": null,
-    "latitude": 4.915645,
-    "longitude": 7.96399,
-    "distance_from_branch": 34.427347328526594,
-    "selfie": "attendance_selfies/17730567824988490197920804263846.jpg",
-    "date": "2026-03-09",
-    "is_late": false,
-    "is_absent": true,
-    "deduction_amount": "0.00"
-  }
-},
-{
-  "model": "core.attendance",
-  "pk": 2,
-  "fields": {
-    "user": 7,
-    "branch": 3,
-    "session": "morning",
-    "check_in_time": "2026-03-09T11:47:42.777Z",
-    "check_out_time": null,
-    "latitude": 4.915645,
-    "longitude": 7.96399,
-    "distance_from_branch": 34.427347328526594,
-    "selfie": "attendance_selfies/17730568530799026293631379885882.jpg",
-    "date": "2026-03-09",
-    "is_late": false,
-    "is_absent": true,
-    "deduction_amount": "0.00"
-  }
-},
-{
-  "model": "core.attendance",
-  "pk": 3,
-  "fields": {
-    "user": 5,
-    "branch": 1,
-    "session": "morning",
-    "check_in_time": "2026-03-15T16:32:27.791Z",
-    "check_out_time": null,
-    "latitude": 4.9942865,
-    "longitude": 7.8903441,
-    "distance_from_branch": 11.439238834513297,
-    "selfie": "attendance_selfies/17735923383316732223110168747165.jpg",
-    "date": "2026-03-15",
-    "is_late": false,
-    "is_absent": false,
-    "deduction_amount": "0.00"
-  }
-},
-{
-  "model": "core.attendance",
-  "pk": 4,
-  "fields": {
-    "user": 4,
-    "branch": 1,
-    "session": "morning",
-    "check_in_time": "2026-03-15T16:32:52.218Z",
-    "check_out_time": null,
-    "latitude": 4.9942462,
-    "longitude": 7.8904092,
-    "distance_from_branch": 5.237314739920261,
-    "selfie": "attendance_selfies/17735923637212809328647493564449.jpg",
-    "date": "2026-03-15",
-    "is_late": false,
-    "is_absent": false,
-    "deduction_amount": "0.00"
-  }
-}
 ]
