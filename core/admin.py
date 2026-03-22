@@ -1,18 +1,28 @@
 from django.contrib import admin
 from django.contrib.auth.admin import UserAdmin as BaseUserAdmin
-from .models import *
+from .models import User
 
 @admin.register(User)
 class CustomUserAdmin(BaseUserAdmin):
-    list_display = ("username", "role", "branch", "is_locked")
+    model = User
+
+    list_display = ("username", "get_role", "get_branch", "is_locked")
     list_filter = ("role", "branch", "is_locked")
     search_fields = ("username", "email")
+
     fieldsets = BaseUserAdmin.fieldsets + (
         ('GPSL Info', {
             'fields': ('role', 'branch', 'failed_login_count', 'is_locked'),
         }),
     )
 
+    def get_role(self, obj):
+        return obj.role or "-"
+    get_role.short_description = "Role"
+
+    def get_branch(self, obj):
+        return obj.branch.name if obj.branch else "-"
+    get_branch.short_description = "Branch"
 @admin.register(Product)
 class ProductAdmin(admin.ModelAdmin):
     list_display = ("model_name", "product_name", "cost_price", "selling_price", "imei_serial")
