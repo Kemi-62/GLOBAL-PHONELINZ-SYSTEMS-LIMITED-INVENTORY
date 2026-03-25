@@ -5,10 +5,16 @@ version: 2
 services:
   web:
     type: python
-    name: Web Service
+    name: gpsl-app
     env: python
+    plan: free
     buildCommand: |
       pip install -r requirements.txt
       python manage.py migrate
+      python manage.py loaddata data.json
+      python manage.py seed_roles
       python manage.py collectstatic --noinput
-    startCommand: gunicorn myproject.wsgi:application
+    startCommand: gunicorn django_project.wsgi:application
+    envVars:
+      - key: PYTHON_VERSION
+        value: 3.11.9
