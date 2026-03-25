@@ -24,7 +24,7 @@ BASE_DIR = Path(__file__).resolve().parent.parent
 SECRET_KEY = config('SECRET_KEY', default='django-insecure-4ju2n@$f9d0c=h)_g0lbb%k9&@rf(xa$d$g$&5ri$uf)*gev^4')
 
 # SECURITY WARNING: don't run with debug turned on in production!
-DEBUG = True
+DEBUG = False
 
 ALLOWED_HOSTS = ['*']
 CSRF_TRUSTED_ORIGINS = [
@@ -64,6 +64,7 @@ MIDDLEWARE = [
     'django.middleware.csrf.CsrfViewMiddleware',
     'django.contrib.auth.middleware.AuthenticationMiddleware',
     'django.contrib.messages.middleware.MessageMiddleware',
+STATICFILES_STORAGE = "whitenoise.storage.CompressedManifestStaticFilesStorag
 ]
 
 # Only use clickjacking protection in deployments because the Development Web View uses
@@ -169,3 +170,9 @@ EMAIL_HOST_PASSWORD = 'your_app_password'
 # https://docs.djangoproject.com/en/5.0/ref/settings/#default-auto-field
 
 DEFAULT_AUTO_FIELD = 'django.db.models.BigAutoField'
+CONN_MAX_AGE = 60
+from django.views.decorators.cache import cache_page
+
+@cache_page(60)  # cache for 1 min
+def dashboard(request):
+    ...
