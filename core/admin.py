@@ -1,7 +1,26 @@
 from django.contrib import admin
 from django.contrib.auth.admin import UserAdmin as BaseUserAdmin
-from .models import User
-
+from .models import (
+    User,
+    Product,
+    Branch,
+    RetailSale,
+    Attendance,
+    DirectorSafeStock,
+    BranchSafeStock,
+    ServiceActivity,
+    ServiceTarget,
+    DeviceTag,
+    MultiChoiceSale,
+    RetailCategory,
+    RetailSubCategory,
+    RetailSubSubCategory,
+    StaffStock,
+    Expense,
+    StockRequest,
+    MultiChoiceWeeklyReport,
+    StockMovement
+)
 @admin.register(User)
 class CustomUserAdmin(BaseUserAdmin):
     model = User
