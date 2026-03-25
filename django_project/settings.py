@@ -64,7 +64,6 @@ MIDDLEWARE = [
     'django.middleware.csrf.CsrfViewMiddleware',
     'django.contrib.auth.middleware.AuthenticationMiddleware',
     'django.contrib.messages.middleware.MessageMiddleware',
-STATICFILES_STORAGE = "whitenoise.storage.CompressedManifestStaticFilesStorag
 ]
 
 # Only use clickjacking protection in deployments because the Development Web View uses
