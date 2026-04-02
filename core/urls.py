@@ -36,4 +36,10 @@ urlpatterns = [
     path('record-physical-product/', views.record_physical_product, name='record_physical_product'),
     path('attendance/export-pdf/', views.export_monthly_attendance_pdf, name='export_monthly_attendance_pdf'),
     path('record-balance/', views.record_balance, name='record_balance'),
+    path('upload-stock-csv/', views.upload_stock_csv, name='upload_stock_csv'),
+    path('customer-crm/', views.customer_crm, name='customer_crm'),
+    path('stock-alerts/', views.stock_alerts, name='stock_alerts'),
+    path('staff-checkout/<int:staff_id>/', views.staff_checkout, name='staff_checkout'),
+    path('staff-checkin/<int:staff_id>/', views.staff_checkin, name='staff_checkin'),
+    path('add-device-commission/', views.add_device_commission, name='add_device_commission'),
 ]

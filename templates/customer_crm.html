@@ -1,0 +1,42 @@
+{% extends "base.html" %}
+{% block content %}
+<div class="card">
+    <h2>👥 Customer CRM</h2>
+    <p style="color: var(--gray-600);">Track customers and purchase history</p>
+</div>
+
+<div class="card">
+    <form method="GET" style="display: flex; gap: 10px;">
+        <input type="text" name="search" placeholder="Search by name or phone" value="{{ search }}" style="flex: 1;">
+        <button type="submit" class="btn btn-primary">Search</button>
+    </form>
+</div>
+
+<div class="card">
+    <h3>📊 Total Customers: {{ total_customers }}</h3>
+    <table>
+        <thead>
+            <tr>
+                <th>Name</th>
+                <th>Phone</th>
+                <th>Purchases</th>
+                <th>Total Spent</th>
+                <th>Last Purchase</th>
+            </tr>
+        </thead>
+        <tbody>
+            {% for customer in customers %}
+            <tr>
+                <td>{{ customer.name }}</td>
+                <td>{{ customer.phone_number }}</td>
+                <td>{{ customer.purchase_count }}</td>
+                <td>₦{{ customer.total_spent|floatformat:2 }}</td>
+                <td>{{ customer.last_purchase|date:"M d, Y" }}</td>
+            </tr>
+            {% empty %}
+            <tr><td colspan="5" style="text-align:center;">No customers found</td></tr>
+            {% endfor %}
+        </tbody>
+    </table>
+</div>
+{% endblock %}

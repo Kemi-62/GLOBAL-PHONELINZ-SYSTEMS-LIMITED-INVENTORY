@@ -1249,3 +1249,102 @@ def export_monthly_attendance_pdf(request):
     
     buffer.seek(0)
     return HttpResponse(buffer, content_type="application/pdf", headers={'Content-Disposition': 'attachment; filename="Monthly_Attendance_Report.pdf"'})
+
+# CSV Upload - Inventory Import
+@role_required("DIRECTOR")
+def upload_stock_csv(request):
+    if request.method == 'POST' and request.FILES.get('csv_file'):
+        csv_file = request.FILES['csv_file']
+        import csv
+        try:
+            decoded = csv_file.read().decode('utf-8').splitlines()
+            reader = csv.DictReader(decoded)
+            count = 0
+            for row in reader:
+                BranchSafeStock.objects.update_or_create(
+                    branch=request.user.branch,
+                    product_id=row.get('product_id'),
+                    defaults={'quantity': int(row.get('quantity', 0))}
+                )
+                count += 1
+            messages.success(request, f"Imported {count} stock items successfully!")
+        except Exception as e:
+            messages.error(request, f"CSV error: {str(e)}")
+    return redirect('director_dashboard')
+
+# CRM Dashboard - Customer Analytics
+@role_required("DIRECTOR")
+def customer_crm(request):
+    from .models import Customer
+    customers = Customer.objects.filter(branch=request.user.branch).order_by('-last_purchase')
+    search = request.GET.get('search', '')
+    if search:
+        from django.db.models import Q
+        customers = customers.filter(Q(name__icontains=search) | Q(phone_number__icontains=search))
+    
+    context = {
+        'customers': customers,
+        'total_customers': customers.count(),
+        'search': search,
+    }
+    return render(request, 'customer_crm.html', context)
+
+# Stock Alerts
+@login_required
+def stock_alerts(request):
+    from .models import StockAlert
+    alerts = StockAlert.objects.filter(branch=request.user.branch, is_active=True)
+    context = {'alerts': alerts}
+    return render(request, 'stock_alerts.html', context)
+
+# Staff Checkout for Outings
+@role_required("MANAGER")
+def staff_checkout(request, staff_id):
+    from .models import CheckInOutLog
+    if request.method == 'POST':
+        purpose = request.POST.get('purpose', 'Office outing')
+        CheckInOutLog.objects.create(
+            staff_id=staff_id,
+            branch=request.user.branch,
+            check_in_time=timezone.now(),
+            purpose=purpose,
+            is_checkout=True
+        )
+        messages.success(request, "Staff checked out")
+    return redirect('manager_dashboard')
+
+# Staff Checkin from Outings
+@role_required("MANAGER")
+def staff_checkin(request, staff_id):
+    from .models import CheckInOutLog
+    last_checkout = CheckInOutLog.objects.filter(
+        staff_id=staff_id,
+        is_checkout=True,
+        check_out_time__isnull=True
+    ).last()
+    
+    if last_checkout:
+        last_checkout.check_out_time = timezone.now()
+        last_checkout.save()
+        messages.success(request, "Staff checked in")
+    
+    return redirect('manager_dashboard')
+
+# Device Tag Commission Tracking
+@role_required("MANAGER")
+def add_device_commission(request):
+    from .models import DeviceTagCommission
+    if request.method == 'POST':
+        device_tag_id = request.POST.get('device_tag_id')
+        month_year = request.POST.get('month_year')
+        commission = request.POST.get('commission_amount')
+        
+        DeviceTagCommission.objects.update_or_create(
+            branch=request.user.branch,
+            device_tag_id=device_tag_id,
+            month_year=month_year,
+            defaults={'commission_amount': commission, 'created_by': request.user}
+        )
+        messages.success(request, "Commission recorded successfully")
+    
+    return redirect('manager_dashboard')

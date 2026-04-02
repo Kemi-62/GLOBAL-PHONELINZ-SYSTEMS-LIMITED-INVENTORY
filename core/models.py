@@ -4,6 +4,7 @@ from django.db.models import Sum
 from datetime import date
 from django.utils import timezone
 from decimal import Decimal
+import json
 
 # -----------------------
 # Branch
@@ -255,6 +256,7 @@ class MultiChoiceSale(models.Model):
     branch = models.ForeignKey(Branch, on_delete=models.CASCADE)
 
     customer_name = models.CharField(max_length=150)
+    customer_phone = models.CharField(max_length=20, null=True, blank=True)
     service_type = models.CharField(max_length=20, choices=(("DSTV", "DSTV"), ("GOTV", "GOTV")), default="DSTV")
     package_type = models.CharField(max_length=100)
     transaction_type = models.CharField(
@@ -315,6 +317,7 @@ class RetailSale(models.Model):
     staff = models.ForeignKey(User, on_delete=models.CASCADE)
     branch = models.ForeignKey(Branch, on_delete=models.CASCADE)
     product = models.ForeignKey(Product, on_delete=models.CASCADE)
+    customer_phone = models.CharField(max_length=20, null=True, blank=True)
 
     quantity = models.PositiveIntegerField()
     selling_price = models.DecimalField(max_digits=12, decimal_places=2)
@@ -348,6 +351,63 @@ class StockRequest(models.Model):
     quantity = models.PositiveIntegerField()
     status = models.CharField(max_length=10, choices=STATUS_CHOICES, default='PENDING')
     date_requested = models.DateField(auto_now_add=True)
+
+# -----------------------
+# Customer CRM
+# -----------------------
+class Customer(models.Model):
+    name = models.CharField(max_length=150)
+    phone_number = models.CharField(max_length=20, unique=True)
+    branch = models.ForeignKey(Branch, on_delete=models.CASCADE)
+    purchase_count = models.IntegerField(default=0)
+    total_spent = models.DecimalField(max_digits=12, decimal_places=2, default=0)
+    last_purchase = models.DateTimeField(null=True, blank=True)
+    created_at = models.DateTimeField(auto_now_add=True)
+
+    def __str__(self):
+        return f"{self.name} - {self.phone_number}"
+
+class StockAlert(models.Model):
+    ALERT_TYPES = (
+        ('LOW_STOCK', 'Low Stock'),
+        ('OUT_OF_STOCK', 'Out of Stock'),
+    )
+    product = models.ForeignKey(Product, on_delete=models.CASCADE)
+    branch = models.ForeignKey(Branch, on_delete=models.CASCADE)
+    alert_type = models.CharField(max_length=20, choices=ALERT_TYPES)
+    threshold = models.IntegerField()
+    current_quantity = models.IntegerField()
+    is_active = models.BooleanField(default=True)
+    created_at = models.DateTimeField(auto_now_add=True)
+
+    def __str__(self):
+        return f"{self.product.model_name} - {self.alert_type}"
+
+class DeviceTagCommission(models.Model):
+    branch = models.ForeignKey(Branch, on_delete=models.CASCADE)
+    device_tag = models.ForeignKey(DeviceTag, on_delete=models.CASCADE)
+    month_year = models.CharField(max_length=7)  # YYYY-MM format
+    commission_amount = models.DecimalField(max_digits=12, decimal_places=2)
+    created_by = models.ForeignKey(User, on_delete=models.SET_NULL, null=True)
+    created_at = models.DateTimeField(auto_now_add=True)
+
+    class Meta:
+        unique_together = ('device_tag', 'month_year')
+
+    def __str__(self):
+        return f"{self.device_tag.tag_name} - {self.month_year}"
+
+class CheckInOutLog(models.Model):
+    staff = models.ForeignKey(User, on_delete=models.CASCADE)
+    branch = models.ForeignKey(Branch, on_delete=models.CASCADE)
+    check_in_time = models.DateTimeField()
+    check_out_time = models.DateTimeField(null=True, blank=True)
+    purpose = models.CharField(max_length=200, null=True, blank=True)
+    is_checkout = models.BooleanField(default=False)
+    date = models.DateField(auto_now_add=True)
+
+    def __str__(self):
+        return f"{self.staff.username} - {self.date}"
 
 class Attendance(models.Model):
     SESSION_CHOICES = (

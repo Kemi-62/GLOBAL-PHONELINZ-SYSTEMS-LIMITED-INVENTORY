@@ -29,7 +29,34 @@ A Django-based ERP system for a telecom/retail business to track employee servic
 - **Multi-Role Support**: Attendance features visible on all staff dashboards (TELECOM, RETAIL, MULTICHOICE, MANAGER)
 - **Role-Based Access Control**: Directors only access to attendance analytics and branch configuration
 
-## MultiChoice Balance Tracking (Latest Round)
+## 8 Major Improvements - Batch Build (Latest Round)
+### ✅ BUILT:
+1. **Customer Phone Collection** - Added phone fields to MultiChoice, Telecom, & Retail sales
+2. **CRM System** - New Customer model with purchase tracking, frequency analysis, and CRM dashboard
+3. **CSV Stock Import** - Upload CSV to bulk update branch inventory
+4. **Stock Out Alerts** - StockAlert model with configurable thresholds
+5. **Multiple Check-in/Out** - CheckInOutLog tracks office outings throughout day
+6. **Device Tag Commission** - DeviceTagCommission tracks commissions per device tag monthly
+7. **Product Import** - Director can import staff products and manage cost allocation
+
+### ❌ NOT BUILT (requires specialized libraries):
+8. **Blink Detection** - Would need facial recognition (OpenCV/MediaPipe) - recommend Autonomous mode for this
+
+### Models Added:
+- `Customer` - CRM tracking with phone, purchase count, total spent
+- `StockAlert` - Alert thresholds for products
+- `DeviceTagCommission` - Monthly commission by device tag
+- `CheckInOutLog` - Staff outings with check-in/out times
+
+### New Endpoints:
+- `/upload-stock-csv/` - CSV bulk import
+- `/customer-crm/` - Customer analytics dashboard
+- `/stock-alerts/` - Alert monitoring
+- `/staff-checkout/<id>/` - Record staff outing
+- `/staff-checkin/<id>/` - Record staff return
+- `/add-device-commission/` - Record monthly commission
+
+## MultiChoice Balance Tracking
 - **Monday Balance Check**: New form on MultiChoice Dashboard for staff to input current account balance every Monday morning
 - **Commission Tracking**: Staff can record balance to confirm if commission payment was received and track remaining account balance
 - **Balance History**: Displays a table of all balance entries for the week with timestamps, amounts, and optional notes
