@@ -397,4 +397,32 @@ function showSection(id, btn) {
         </div>
     </div>
 </div>
+
+<div class="card" style="margin-top: 2rem;">
+    <h3>📍 Staff Check In/Out Logs</h3>
+    <table>
+        <thead>
+            <tr>
+                <th>Staff</th>
+                <th>Date</th>
+                <th>Check In</th>
+                <th>Check Out</th>
+                <th>Purpose</th>
+            </tr>
+        </thead>
+        <tbody>
+            {% for log in check_logs %}
+            <tr>
+                <td>{{ log.staff.username }}</td>
+                <td>{{ log.date|date:"M d, Y" }}</td>
+                <td>{{ log.check_in_time|date:"H:i" }}</td>
+                <td>{{ log.check_out_time|date:"H:i"|default:"—" }}</td>
+                <td>{{ log.purpose|default:"Outing" }}</td>
+            </tr>
+            {% empty %}
+            <tr><td colspan="5" style="text-align:center;">No outings logged</td></tr>
+            {% endfor %}
+        </tbody>
+    </table>
+</div>
 {% endblock %}

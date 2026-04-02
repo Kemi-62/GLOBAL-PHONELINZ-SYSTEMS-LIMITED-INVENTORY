@@ -234,6 +234,9 @@ def staff_dashboard(request):
         total=Sum("quantity")
     )["total"] or 0
 
+    from .models import CheckInOutLog
+    check_logs = CheckInOutLog.objects.filter(staff=request.user).order_by('-date', '-check_in_time')[:20]
+    
     context = {
         "device_progress": device_progress,
         "device_tags": DeviceTag.objects.filter(branch=request.user.branch),
@@ -241,6 +244,7 @@ def staff_dashboard(request):
         "pending_activities": pending_activities,
         "monthly_total": monthly_total,
         "categories": categories,
+        "check_logs": check_logs,
     }
     return render(request, "staff_dashboard.html", context)
 
@@ -370,6 +374,9 @@ def manager_dashboard(request):
     # Global Category Context for Sidebar
     categories = RetailCategory.objects.all()
 
+    from .models import CheckInOutLog
+    check_logs = CheckInOutLog.objects.filter(branch=request.user.branch).order_by('-date', '-check_in_time')[:20]
+
     context = {
         'target_data': target_data,
         'activities': activities,
@@ -387,6 +394,7 @@ def manager_dashboard(request):
         "search_query": search_query,
         "pending_stock_requests": pending_stock_requests,
         "expenses": expenses,
+        "check_logs": check_logs,
     }
     return render(request, "manager_dashboard.html", context)
 
@@ -405,14 +413,17 @@ def approve_activity(request, activity_id):
 
 @role_required("RETAIL")
 def retail_dashboard(request):
+    from .models import CheckInOutLog
 
     staff = request.user
     staff_stock = StaffStock.objects.filter(staff=staff).select_related('product')
     categories = RetailCategory.objects.all()
+    check_logs = CheckInOutLog.objects.filter(staff=staff).order_by('-date', '-check_in_time')[:20]
 
     return render(request, "retail_dashboard.html", {
         "staff_stock": staff_stock,
-        "categories": categories
+        "categories": categories,
+        "check_logs": check_logs,
     })
 
 @login_required
@@ -493,6 +504,9 @@ def multichoice_dashboard(request):
     if weekly_report:
         balance_history = weekly_report.balance_history.all()
     
+    from .models import CheckInOutLog
+    check_logs = CheckInOutLog.objects.filter(staff=request.user).order_by('-date', '-check_in_time')[:20]
+
     return render(request, "multichoice_dashboard.html", {
         "today_sales": today_sales,
         "total_today": total_today,
@@ -502,6 +516,7 @@ def multichoice_dashboard(request):
         "is_saturday": is_saturday,
         "weekly_total_sales": weekly_total_sales,
         "balance_history": balance_history,
+        "check_logs": check_logs,
     })
 
 @login_required
@@ -844,6 +859,9 @@ def director_dashboard(request):
         quantity__lt=1
     )
 
+    from .models import CheckInOutLog
+    check_logs = CheckInOutLog.objects.filter(branch=request.user.branch).order_by('-date', '-check_in_time')[:20]
+
     context = {
         "branch_summary": branch_summary,
         "device_tags": device_tags,
@@ -864,6 +882,7 @@ def director_dashboard(request):
         "top_products": top_products,
         "low_stock": low_stock,
         "categories": categories,
+        "check_logs": check_logs,
     }
 
     return render(request, "director_dashboard.html", context)

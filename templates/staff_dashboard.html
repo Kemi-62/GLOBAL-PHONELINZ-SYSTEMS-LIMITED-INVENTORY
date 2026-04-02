@@ -28,6 +28,11 @@
                 </div>
 
                 <div style="margin-bottom: 1rem;">
+                    <label>Customer Phone:</label>
+                    <input type="tel" name="customer_phone" placeholder="e.g., 08012345678">
+                </div>
+
+                <div style="margin-bottom: 1rem;">
                     <label>Quantity:</label>
                     <input type="number" name="quantity" required placeholder="Enter amount">
                 </div>
@@ -145,6 +150,32 @@
             <p style="color: #666; font-size: 1.1rem;">No SIM Registration targets set for this month.</p>
         </div>
     {% endfor %}
+</div>
+
+<div class="card" style="margin-top: 2rem;">
+    <h3>📍 My Check In/Out Logs</h3>
+    <table>
+        <thead>
+            <tr>
+                <th>Date</th>
+                <th>Check In</th>
+                <th>Check Out</th>
+                <th>Purpose</th>
+            </tr>
+        </thead>
+        <tbody>
+            {% for log in check_logs %}
+            <tr>
+                <td>{{ log.date|date:"M d, Y" }}</td>
+                <td>{{ log.check_in_time|date:"H:i" }}</td>
+                <td>{{ log.check_out_time|date:"H:i"|default:"—" }}</td>
+                <td>{{ log.purpose|default:"Outing" }}</td>
+            </tr>
+            {% empty %}
+            <tr><td colspan="4" style="text-align:center;">No outings logged</td></tr>
+            {% endfor %}
+        </tbody>
+    </table>
 </div>
 
 {% endblock %}
