@@ -444,6 +444,13 @@
         <a href="{% url 'director_safe_stock' %}" class="sidebar-link">📦 Director Safe</a>
         <a href="{% url 'export_monthly_attendance_pdf' %}" class="sidebar-link">📥 Download Report</a>
     </div>
+    
+    <div style="margin-top: 1rem; padding-top: 1rem; border-top: 1px solid rgba(255,255,255,0.1);">
+        <h4 style="color: rgba(255,255,255,0.5); font-size: 0.8rem; text-transform: uppercase; letter-spacing: 1px; margin-bottom: 1rem;">CRM & Inventory</h4>
+        <a href="{% url 'customer_crm' %}" class="sidebar-link">👥 Customer CRM</a>
+        <a href="{% url 'stock_alerts' %}" class="sidebar-link">⚠️ Stock Alerts</a>
+        <a href="{% url 'upload_stock_csv' %}" class="sidebar-link">📤 Import CSV Stock</a>
+    </div>
     {% endif %}
     
     <!-- MANAGER QUICK ACTIONS -->
@@ -454,6 +461,12 @@
         <a href="{% url 'release_stock' %}" class="sidebar-link">📤 Release Stock</a>
         <a href="{% url 'check_in' %}" class="sidebar-link">📍 Check In</a>
         <a href="{% url 'attendance_history' %}" class="sidebar-link">📋 Attendance</a>
+    </div>
+    
+    <div style="margin-top: 1rem; padding-top: 1rem; border-top: 1px solid rgba(255,255,255,0.1);">
+        <h4 style="color: rgba(255,255,255,0.5); font-size: 0.8rem; text-transform: uppercase; letter-spacing: 1px; margin-bottom: 1rem;">Staff & Commissions</h4>
+        <a href="{% url 'stock_alerts' %}" class="sidebar-link">⚠️ Stock Alerts</a>
+        <a href="{% url 'add_device_commission' %}" class="sidebar-link">💰 Device Commission</a>
     </div>
     {% endif %}
     

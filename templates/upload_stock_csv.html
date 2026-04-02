@@ -1,0 +1,35 @@
+{% extends "base.html" %}
+{% block content %}
+<div class="card">
+    <h2>📤 Import Stock from CSV</h2>
+    <p style="color: var(--gray-600);">Bulk update your branch inventory</p>
+</div>
+
+<div class="card">
+    <h3>CSV Format</h3>
+    <p>Your CSV file should have these columns:</p>
+    <pre style="background: #f5f5f5; padding: 1rem; border-radius: 8px; overflow-x: auto;">product_id,quantity
+1,50
+2,30
+3,100</pre>
+</div>
+
+<div class="card">
+    <form method="POST" enctype="multipart/form-data">
+        {% csrf_token %}
+        <label for="csv_file">Select CSV File:</label>
+        <input type="file" name="csv_file" id="csv_file" accept=".csv" required style="margin-top: 1rem;">
+        <button type="submit" class="btn btn-primary" style="margin-top: 1rem;">📤 Upload Stock</button>
+    </form>
+</div>
+
+{% if messages %}
+<div style="margin-top: 2rem;">
+    {% for message in messages %}
+    <div class="card" style="background: {% if message.tags == 'error' %}#FEE2E2{% else %}#DCFCE7{% endif %}; border-left: 4px solid {% if message.tags == 'error' %}var(--danger-color){% else %}var(--success-color){% endif %};">
+        <strong>{{ message }}</strong>
+    </div>
+    {% endfor %}
+</div>
+{% endif %}
+{% endblock %}

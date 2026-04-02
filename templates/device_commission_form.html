@@ -1,0 +1,34 @@
+{% extends "base.html" %}
+{% block content %}
+<div class="card">
+    <h2>💰 Device Tag Commission</h2>
+    <p style="color: var(--gray-600);">Record monthly commission per device tag</p>
+</div>
+
+<div class="card">
+    <form method="POST">
+        {% csrf_token %}
+        <div style="margin-bottom: 1.5rem;">
+            <label for="device_tag_id">Device Tag:</label>
+            <select name="device_tag_id" id="device_tag_id" required style="margin-top: 0.5rem; padding: 0.5rem; width: 100%; border: 1px solid #ddd; border-radius: 4px;">
+                <option value="">-- Select Device Tag --</option>
+                {% for tag in device_tags %}
+                <option value="{{ tag.id }}">{{ tag.tag_name }}</option>
+                {% endfor %}
+            </select>
+        </div>
+        
+        <div style="margin-bottom: 1.5rem;">
+            <label for="month_year">Month (YYYY-MM):</label>
+            <input type="text" name="month_year" id="month_year" placeholder="2026-04" required style="margin-top: 0.5rem; padding: 0.5rem; width: 100%; border: 1px solid #ddd; border-radius: 4px;">
+        </div>
+        
+        <div style="margin-bottom: 1.5rem;">
+            <label for="commission_amount">Commission Amount (₦):</label>
+            <input type="number" name="commission_amount" id="commission_amount" step="0.01" required style="margin-top: 0.5rem; padding: 0.5rem; width: 100%; border: 1px solid #ddd; border-radius: 4px;">
+        </div>
+        
+        <button type="submit" class="btn btn-primary">💾 Save Commission</button>
+    </form>
+</div>
+{% endblock %}

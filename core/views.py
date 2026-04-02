@@ -1334,6 +1334,8 @@ def staff_checkin(request, staff_id):
 @role_required("MANAGER")
 def add_device_commission(request):
     from .models import DeviceTagCommission
+    device_tags = DeviceTag.objects.filter(branch=request.user.branch)
+    
     if request.method == 'POST':
         device_tag_id = request.POST.get('device_tag_id')
         month_year = request.POST.get('month_year')
@@ -1346,5 +1348,7 @@ def add_device_commission(request):
             defaults={'commission_amount': commission, 'created_by': request.user}
         )
         messages.success(request, "Commission recorded successfully")
+        return redirect('manager_dashboard')
     
-    return redirect('manager_dashboard')
+    context = {'device_tags': device_tags}
+    return render(request, 'device_commission_form.html', context)
