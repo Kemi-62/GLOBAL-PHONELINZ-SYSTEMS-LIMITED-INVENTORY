@@ -56,6 +56,7 @@ class DeviceTag(models.Model):
 # Daily Service Targets
 # -----------------------
 class ServiceTarget(models.Model):
+    customer_phone = models.CharField(max_length=15, null=True, blank=True)
     SERVICE_CHOICES = [
         ('SIM_REG', 'SIM Registration'),
         ('SIM_SWAP', 'SIM Swap'),
@@ -119,6 +120,7 @@ class DirectorSafeStock(models.Model):
 
 
 class ServiceActivity(models.Model):
+    customer_phone = models.CharField(max_length=15, null=True, blank=True)
     SERVICE_CHOICES = (
         ('SIM_REG', 'SIM Registration'),
         ('SIM_SWAP', 'SIM Swap'),
@@ -178,6 +180,8 @@ class RetailSubSubCategory(models.Model):
 
     def __str__(self):
         return f"{self.subcategory} - {self.name}"
+        
+customer_phone = models.CharField(max_length=15, null=True, blank=True)
 
 class Expense(models.Model):
     EXPENSE_CATEGORIES = (
@@ -367,3 +371,13 @@ class Attendance(models.Model):
 
     def __str__(self):
         return f"{self.user.username} - {self.date}"
+
+class Customer(models.Model):
+
+    phone_number = models.CharField(max_length=15, unique=True)
+    name = models.CharField(max_length=100, blank=True, null=True)
+
+    created_at = models.DateTimeField(auto_now_add=True)
+
+    def __str__(self):
+        return self.phone_number
