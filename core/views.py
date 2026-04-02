@@ -1371,3 +1371,100 @@ def add_device_commission(request):
     
     context = {'device_tags': device_tags}
     return render(request, 'device_commission_form.html', context)
+
+# MultiChoice Commission Tracking - Daily Balance & Detection
+@login_required
+def record_daily_balance(request):
+    from .models import CommissionPayment
+    from datetime import timedelta
+    
+    if request.method == 'POST' and request.user.role == 'MULTICHOICE':
+        balance = Decimal(request.POST.get('balance', 0))
+        notes = request.POST.get('notes', '')
+        
+        today = timezone.now().date()
+        week_start = today - timedelta(days=today.weekday())
+        
+        weekly_report, _ = MultiChoiceWeeklyReport.objects.get_or_create(
+            staff=request.user,
+            branch=request.user.branch,
+            week_start_date=week_start
+        )
+        
+        balance_record = MultiChoiceBalance.objects.create(
+            weekly_report=weekly_report,
+            balance_amount=balance,
+            notes=notes
+        )
+        
+        # Detect commission (check if balance increased from yesterday)
+        prev_balance = MultiChoiceBalance.objects.filter(
+            weekly_report__staff=request.user,
+            date__lt=today
+        ).order_by('-date', '-time').first()
+        
+        if prev_balance and balance > prev_balance.balance_amount:
+            commission_amt = balance - prev_balance.balance_amount
+            balance_record.is_commission_payment = True
+            balance_record.save()
+            
+            CommissionPayment.objects.create(
+                staff=request.user,
+                branch=request.user.branch,
+                balance_record=balance_record,
+                previous_balance=prev_balance.balance_amount,
+                current_balance=balance,
+                commission_detected=commission_amt,
+                date_paid=today
+            )
+            messages.success(request, f"✅ Commission detected & recorded: ₦{commission_amt:,.2f}")
+        else:
+            messages.success(request, f"✓ Balance recorded: ₦{balance:,.2f}")
+    
+    return redirect('multichoice_dashboard')
+
+# Director - View all commissions paid to staff
+@role_required("DIRECTOR")
+def commission_tracking(request):
+    from .models import CommissionPayment
+    from datetime import timedelta
+    
+    commissions = CommissionPayment.objects.filter(
+        branch=request.user.branch
+    ).select_related('staff').order_by('-date_detected')
+    
+    total_commissions = commissions.aggregate(total=Sum('commission_detected'))['total'] or 0
+    
+    staff_filter = request.GET.get('staff')
+    if staff_filter:
+        commissions = commissions.filter(staff_id=staff_filter)
+    
+    staff_list = User.objects.filter(branch=request.user.branch, role='MULTICHOICE')
+    
+    context = {
+        'commissions': commissions,
+        'total_commissions': total_commissions,
+        'staff_list': staff_list,
+        'selected_staff': staff_filter,
+    }
+    return render(request, 'commission_tracking.html', context)
+
+# MultiChoice Staff - View their commission history
+@login_required
+def my_commissions(request):
+    from .models import CommissionPayment
+    
+    if request.user.role != 'MULTICHOICE':
+        return HttpResponseForbidden("Not allowed")
+    
+    commissions = CommissionPayment.objects.filter(
+        staff=request.user
+    ).order_by('-date_detected')
+    
+    total_earned = commissions.aggregate(total=Sum('commission_detected'))['total'] or 0
+    
+    context = {
+        'commissions': commissions,
+        'total_earned': total_earned,
+    }
+    return render(request, 'my_commissions.html', context)

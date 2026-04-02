@@ -301,12 +301,31 @@ class MultiChoiceBalance(models.Model):
     date = models.DateField(auto_now_add=True)
     time = models.TimeField(auto_now_add=True)
     notes = models.CharField(max_length=200, blank=True, null=True)
+    is_commission_payment = models.BooleanField(default=False)
 
     class Meta:
         ordering = ['-date', '-time']
 
     def __str__(self):
         return f"{self.weekly_report.staff.username} - ₦{self.balance_amount} on {self.date}"
+
+class CommissionPayment(models.Model):
+    staff = models.ForeignKey(User, on_delete=models.CASCADE)
+    branch = models.ForeignKey(Branch, on_delete=models.CASCADE)
+    balance_record = models.ForeignKey(MultiChoiceBalance, on_delete=models.SET_NULL, null=True, blank=True)
+    
+    previous_balance = models.DecimalField(max_digits=12, decimal_places=2)
+    current_balance = models.DecimalField(max_digits=12, decimal_places=2)
+    commission_detected = models.DecimalField(max_digits=12, decimal_places=2)
+    
+    date_detected = models.DateTimeField(auto_now_add=True)
+    date_paid = models.DateField(null=True, blank=True)
+    
+    is_confirmed = models.BooleanField(default=False)
+    notes = models.CharField(max_length=200, blank=True, null=True)
+
+    def __str__(self):
+        return f"{self.staff.username} - ₦{self.commission_detected} on {self.date_detected}"
 
 class RetailSale(models.Model):
     PAYMENT_METHODS = (

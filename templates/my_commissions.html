@@ -1,0 +1,40 @@
+{% extends "base.html" %}
+{% block content %}
+<div class="card">
+    <h2>💰 My Commissions</h2>
+    <p style="color: var(--gray-600);">Track commission payments you've received</p>
+</div>
+
+<div class="card" style="border-left: 5px solid var(--success-color);">
+    <h3 style="margin: 0;">Total Commissions Earned</h3>
+    <p style="font-size: 2.5rem; font-weight: bold; color: var(--mtn-blue); margin: 0.5rem 0;">₦{{ total_earned|floatformat:2 }}</p>
+</div>
+
+<div class="card">
+    <h3>📋 Commission History</h3>
+    <table>
+        <thead>
+            <tr>
+                <th>Date Received</th>
+                <th>Commission Amount</th>
+                <th>Previous Balance</th>
+                <th>New Balance</th>
+                <th>Notes</th>
+            </tr>
+        </thead>
+        <tbody>
+            {% for commission in commissions %}
+            <tr>
+                <td><strong>{{ commission.date_paid|date:"M d, Y H:i" }}</strong></td>
+                <td style="font-weight: bold; color: #28a745;">₦{{ commission.commission_detected|floatformat:2 }}</td>
+                <td>₦{{ commission.previous_balance|floatformat:2 }}</td>
+                <td>₦{{ commission.current_balance|floatformat:2 }}</td>
+                <td>{{ commission.notes|default:"Commission paid" }}</td>
+            </tr>
+            {% empty %}
+            <tr><td colspan="5" style="text-align:center; padding: 2rem;">No commission payments yet. Record daily balances to track payments.</td></tr>
+            {% endfor %}
+        </tbody>
+    </table>
+</div>
+{% endblock %}

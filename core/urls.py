@@ -42,4 +42,7 @@ urlpatterns = [
     path('staff-checkout/<int:staff_id>/', views.staff_checkout, name='staff_checkout'),
     path('staff-checkin/<int:staff_id>/', views.staff_checkin, name='staff_checkin'),
     path('add-device-commission/', views.add_device_commission, name='add_device_commission'),
+    path('record-daily-balance/', views.record_daily_balance, name='record_daily_balance'),
+    path('commission-tracking/', views.commission_tracking, name='commission_tracking'),
+    path('my-commissions/', views.my_commissions, name='my_commissions'),
 ]
