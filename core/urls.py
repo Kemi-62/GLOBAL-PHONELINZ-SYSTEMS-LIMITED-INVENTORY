@@ -47,4 +47,5 @@ urlpatterns = [
     path('commission-tracking/', views.commission_tracking, name='commission_tracking'),
     path('my-commissions/', views.my_commissions, name='my_commissions'),
     path('edit-staff-stock-price/<int:stock_id>/', views.edit_staff_stock_price, name='edit_staff_stock_price'),
+    path('edit-product-price/<int:product_id>/', views.edit_product_price, name='edit_product_price'),
 ]

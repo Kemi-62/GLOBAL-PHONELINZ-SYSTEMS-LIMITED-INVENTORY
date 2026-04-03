@@ -1004,10 +1004,55 @@ def product_catalog(request):
 @login_required
 def add_stock_to_safe(request):
     if request.method == "POST" and request.user.role == "MANAGER":
-        branch = request.user.branch
-        
-        # Check if creating new product
-        if request.POST.get("is_new_product") == "true":
+        try:
+            branch = request.user.branch
+            
+            # Check if creating new product
+            if request.POST.get("is_new_product") == "true":
+                cat_id = request.POST.get("category")
+                subcat_name = request.POST.get("new_subcategory")
+                subsubcat_name = request.POST.get("new_subsubcategory")
+                
+                category = RetailCategory.objects.get(id=cat_id)
+                subcategory, _ = RetailSubCategory.objects.get_or_create(category=category, name=subcat_name)
+                
+                subsubcategory = None
+                if subsubcat_name:
+                    subsubcategory, _ = RetailSubSubCategory.objects.get_or_create(subcategory=subcategory, name=subsubcat_name)
+                
+                product = Product.objects.create(
+                    subcategory=subcategory,
+                    subsubcategory=subsubcategory,
+                    product_name=request.POST.get("product_name", ""),
+                    model_name=request.POST.get("model_name"),
+                    description=request.POST.get("description", ""),
+                    imei_serial=request.POST.get("imei_serial", ""),
+                    cost_price=float(request.POST.get("cost_price", 0)) or 0,
+                    selling_price=float(request.POST.get("selling_price", 0)) or 0
+                )
+            else:
+                product_id = request.POST.get("product")
+                product = Product.objects.get(id=product_id)
+
+            quantity = int(request.POST.get("quantity"))
+            safe_stock, created = BranchSafeStock.objects.get_or_create(branch=branch, product=product)
+            safe_stock.quantity += quantity
+            safe_stock.save()
+
+            StockMovement.objects.create(
+                branch=branch, product=product, quantity=quantity,
+                movement_type="IN", performed_by=request.user
+            )
+            messages.success(request, f"Added {quantity} of {product.model_name} to safe.")
+        except Exception as e:
+            messages.error(request, f"Error adding stock: {str(e)}")
+
+    return redirect("manager_dashboard")
+
+@login_required
+def staff_create_product(request):
+    if request.method == "POST" and request.user.role == "RETAIL":
+        try:
             cat_id = request.POST.get("category")
             subcat_name = request.POST.get("new_subcategory")
             subsubcat_name = request.POST.get("new_subsubcategory")
@@ -1022,62 +1067,22 @@ def add_stock_to_safe(request):
             product = Product.objects.create(
                 subcategory=subcategory,
                 subsubcategory=subsubcategory,
-                product_name=request.POST.get("product_name"),
+                product_name=request.POST.get("product_name", ""),
                 model_name=request.POST.get("model_name"),
                 description=request.POST.get("description", ""),
-                imei_serial=request.POST.get("imei_serial", ""),
-                cost_price=request.POST.get("cost_price") or 0,
-                selling_price=request.POST.get("selling_price") or 0
+                imei_serial=request.POST.get("imei", ""),
+                cost_price=0,
+                selling_price=float(request.POST.get("selling_price", 0)) or 0
             )
-        else:
-            product_id = request.POST.get("product")
-            product = Product.objects.get(id=product_id)
-
-        quantity = int(request.POST.get("quantity"))
-        safe_stock, created = BranchSafeStock.objects.get_or_create(branch=branch, product=product)
-        safe_stock.quantity += quantity
-        safe_stock.save()
-
-        StockMovement.objects.create(
-            branch=branch, product=product, quantity=quantity,
-            movement_type="IN", performed_by=request.user
-        )
-        messages.success(request, f"Added {quantity} of {product.model_name} to safe.")
-
-    return redirect("manager_dashboard")
-
-@login_required
-def staff_create_product(request):
-    if request.method == "POST" and request.user.role == "RETAIL":
-        # Implementation for staff creating product directly (non-safe stock)
-        cat_id = request.POST.get("category")
-        subcat_name = request.POST.get("new_subcategory")
-        subsubcat_name = request.POST.get("new_subsubcategory")
-        
-        category = RetailCategory.objects.get(id=cat_id)
-        subcategory, _ = RetailSubCategory.objects.get_or_create(category=category, name=subcat_name)
-        
-        subsubcategory = None
-        if subsubcat_name:
-            subsubcategory, _ = RetailSubSubCategory.objects.get_or_create(subcategory=subcategory, name=subsubcat_name)
-        
-        product = Product.objects.create(
-            subcategory=subcategory,
-            subsubcategory=subsubcategory,
-            product_name=request.POST.get("product_name"),
-            model_name=request.POST.get("model_name"),
-            description=request.POST.get("description"),
-            imei_serial=request.POST.get("imei"),
-            cost_price=request.POST.get("cost_price", 0),
-            selling_price=request.POST.get("selling_price")
-        )
-        
-        quantity = int(request.POST.get("quantity"))
-        staff_stock, _ = StaffStock.objects.get_or_create(staff=request.user, product=product)
-        staff_stock.quantity += quantity
-        staff_stock.save()
-        
-        messages.success(request, f"Product {product.model_name} created and added to your stock.")
+            
+            quantity = int(request.POST.get("quantity", 1))
+            staff_stock, _ = StaffStock.objects.get_or_create(staff=request.user, product=product)
+            staff_stock.quantity += quantity
+            staff_stock.save()
+            
+            messages.success(request, f"Product {product.model_name} created and added to your stock.")
+        except Exception as e:
+            messages.error(request, f"Error creating product: {str(e)}")
     return redirect("retail_dashboard")
 
 @login_required
@@ -1513,3 +1518,19 @@ def edit_director_stock(request, stock_id):
         messages.error(request, "Stock not found.")
     
     return redirect("director_safe_stock")
+
+@login_required
+def edit_product_price(request, product_id):
+    """Allow retail staff to edit product selling price from catalog"""
+    try:
+        product = Product.objects.get(id=product_id)
+        new_price = request.GET.get('price')
+        
+        if new_price:
+            product.selling_price = float(new_price)
+            product.save()
+            messages.success(request, f"Price updated to ₦{new_price} for {product.model_name}")
+    except Product.DoesNotExist:
+        messages.error(request, "Product not found.")
+    
+    return redirect("product_catalog")
