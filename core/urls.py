@@ -31,6 +31,7 @@ urlpatterns = [
     path('director/safe/', views.director_safe_stock, name='director_safe_stock'),
     path('director/safe/add/', views.add_director_stock, name='add_director_stock'),
     path('director/safe/delete/<int:stock_id>/', views.delete_director_stock, name='delete_director_stock'),
+    path('edit-director-stock/<int:stock_id>/', views.edit_director_stock, name='edit_director_stock'),
     path('director/safe/create-product/', views.create_director_product, name='create_director_product'),
     path('product-catalog/', views.product_catalog, name='product_catalog'),
     path('record-physical-product/', views.record_physical_product, name='record_physical_product'),
@@ -45,4 +46,5 @@ urlpatterns = [
     path('record-daily-balance/', views.record_daily_balance, name='record_daily_balance'),
     path('commission-tracking/', views.commission_tracking, name='commission_tracking'),
     path('my-commissions/', views.my_commissions, name='my_commissions'),
+    path('edit-staff-stock-price/<int:stock_id>/', views.edit_staff_stock_price, name='edit_staff_stock_price'),
 ]

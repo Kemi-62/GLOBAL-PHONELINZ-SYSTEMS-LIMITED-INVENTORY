@@ -60,7 +60,8 @@
                         <td><strong>{{ stock.quantity }}</strong></td>
                         <td>₦{{ stock.total_value }}</td>
                         <td>{{ stock.date_added|date:"M d, Y" }}</td>
-                        <td>
+                        <td style="display: flex; gap: 0.5rem;">
+                            <button type="button" class="btn" onclick="editStock({{ stock.id }}, '{{ stock.product.model_name }}', {{ stock.quantity }})" style="padding: 0.5rem 1rem; background: var(--mtn-yellow); color: black; font-size: 0.85rem;">Edit</button>
                             <form method="POST" action="{% url 'delete_director_stock' stock.id %}" style="display:inline;">
                                 {% csrf_token %}
                                 <button type="submit" class="btn" style="padding: 0.5rem 1rem; background: var(--danger-color); color: white; font-size: 0.85rem;" onclick="return confirm('Delete?');">Delete</button>
@@ -246,6 +247,13 @@ function toggleTab2(tab) {
     document.getElementById('btn-single-dir').style.color = (tab === 'single-prod') ? 'white' : 'black';
     document.getElementById('btn-bulk-dir').style.background = (tab === 'bulk-csv-dir') ? 'var(--mtn-blue)' : '#ddd';
     document.getElementById('btn-bulk-dir').style.color = (tab === 'bulk-csv-dir') ? 'white' : 'black';
+}
+
+function editStock(stockId, productName, currentQty) {
+    const newQty = prompt(`Edit quantity for ${productName}\n(Current: ${currentQty}):`, currentQty);
+    if (newQty !== null && newQty !== '') {
+        window.location.href = `/edit-director-stock/${stockId}/?quantity=${parseInt(newQty)}`;
+    }
 }
 </script>
 {% endblock %}

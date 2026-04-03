@@ -226,12 +226,14 @@ function showSection(id, btn) {
                         <select name="category">
                             {% for cat in categories %}<option value="{{ cat.id }}">{{ cat.name }}</option>{% endfor %}
                         </select>
-                        <input type="text" name="new_subcategory" placeholder="Sub Category">
-                        <input type="text" name="new_subsubcategory" placeholder="Sub Sub Category (Optional)">
-                        <input type="text" name="product_name" placeholder="Product Name">
-                        <input type="text" name="model_name" placeholder="Model Name">
-                        <input type="text" name="imei" placeholder="Last 5 IMEI" maxlength="5">
-                        <input type="number" step="0.01" name="selling_price" placeholder="Selling Price">
+                        <input type="text" name="new_subcategory" placeholder="Sub Category" style="margin-top: 0.5rem;">
+                        <input type="text" name="new_subsubcategory" placeholder="Sub Sub Category (Optional)" style="margin-top: 0.5rem;">
+                        <input type="text" name="product_name" placeholder="Product Name" style="margin-top: 0.5rem;">
+                        <input type="text" name="model_name" placeholder="Model Name" style="margin-top: 0.5rem;">
+                        <input type="text" name="imei_serial" placeholder="Full IMEI" style="margin-top: 0.5rem;">
+                        <input type="text" name="description" placeholder="Description (Optional)" style="margin-top: 0.5rem;">
+                        <input type="number" step="0.01" name="cost_price" placeholder="Cost Price" required style="margin-top: 0.5rem;">
+                        <input type="number" step="0.01" name="selling_price" placeholder="Selling Price" required style="margin-top: 0.5rem;">
                     </div>
 
                     <label style="display: block; margin-top: 1rem;">Quantity Received</label>

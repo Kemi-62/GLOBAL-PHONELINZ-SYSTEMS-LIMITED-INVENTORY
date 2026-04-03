@@ -1017,10 +1017,10 @@ def add_stock_to_safe(request):
                 subsubcategory=subsubcategory,
                 product_name=request.POST.get("product_name"),
                 model_name=request.POST.get("model_name"),
-                description=request.POST.get("description"),
-                imei_serial=request.POST.get("imei"),
-                cost_price=request.POST.get("cost_price", 0),
-                selling_price=request.POST.get("selling_price")
+                description=request.POST.get("description", ""),
+                imei_serial=request.POST.get("imei_serial", ""),
+                cost_price=request.POST.get("cost_price") or 0,
+                selling_price=request.POST.get("selling_price") or 0
             )
         else:
             product_id = request.POST.get("product")
@@ -1468,3 +1468,41 @@ def my_commissions(request):
         'total_earned': total_earned,
     }
     return render(request, 'my_commissions.html', context)
+
+@login_required
+def edit_staff_stock_price(request, stock_id):
+    """Allow retail staff to edit selling price of their stock"""
+    if request.user.role != "RETAIL":
+        messages.error(request, "Access denied.")
+        return redirect("retail_dashboard")
+    
+    try:
+        stock = StaffStock.objects.get(id=stock_id, staff=request.user)
+        new_price = request.GET.get('price')
+        
+        if new_price:
+            stock.product.selling_price = float(new_price)
+            stock.product.save()
+            messages.success(request, f"Price updated to ₦{new_price} for {stock.product.model_name}")
+    except StaffStock.DoesNotExist:
+        messages.error(request, "Stock not found.")
+    
+    return redirect("retail_dashboard")
+
+@role_required("DIRECTOR")
+def edit_director_stock(request, stock_id):
+    """Allow director to edit quantity of safe stock"""
+    try:
+        stock = DirectorSafeStock.objects.get(id=stock_id)
+        new_quantity = request.GET.get('quantity')
+        
+        if new_quantity:
+            new_qty = int(new_quantity)
+            old_qty = stock.quantity
+            stock.quantity = new_qty
+            stock.save()
+            messages.success(request, f"Updated {stock.product.model_name} quantity from {old_qty} to {new_qty}")
+    except DirectorSafeStock.DoesNotExist:
+        messages.error(request, "Stock not found.")
+    
+    return redirect("director_safe_stock")
