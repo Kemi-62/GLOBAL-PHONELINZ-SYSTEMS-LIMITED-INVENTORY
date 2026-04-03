@@ -414,16 +414,23 @@ def approve_activity(request, activity_id):
 @role_required("RETAIL")
 def retail_dashboard(request):
     from .models import CheckInOutLog
+    from decimal import Decimal
 
     staff = request.user
     staff_stock = StaffStock.objects.filter(staff=staff).select_related('product')
     categories = RetailCategory.objects.all()
     check_logs = CheckInOutLog.objects.filter(staff=staff).order_by('-date', '-check_in_time')[:20]
+    sales_history = RetailSale.objects.filter(staff=staff).select_related('product').order_by('-date', '-id')[:50]
+    
+    # Add total_revenue to each sale for display
+    for sale in sales_history:
+        sale.total_revenue = Decimal(sale.quantity) * sale.selling_price
 
     return render(request, "retail_dashboard.html", {
         "staff_stock": staff_stock,
         "categories": categories,
         "check_logs": check_logs,
+        "sales_history": sales_history,
     })
 
 @login_required
