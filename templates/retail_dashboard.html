@@ -85,10 +85,11 @@
             <div id="bulk-csv" style="display: none;">
                 <form method="POST" action="{% url 'upload_stock_csv' %}" enctype="multipart/form-data">
                     {% csrf_token %}
-                    <p style="color: #666; margin-bottom: 1rem;">Upload CSV with product details. Format:</p>
-                    <pre style="background: #f5f5f5; padding: 1rem; border-radius: 4px; overflow-x: auto;">model_name,category_id,quantity,selling_price
-iPhone 15,1,5,850000
-Samsung S24,2,3,750000</pre>
+                    <p style="color: #666; margin-bottom: 1rem;">Upload CSV with multiple products. Use same fields as single product form.</p>
+                    <p style="font-weight: 600; margin-bottom: 0.5rem;">CSV Format:</p>
+                    <pre style="background: #f5f5f5; padding: 1rem; border-radius: 4px; overflow-x: auto; font-size: 0.8rem;">product_name,model_name,category_id,new_subcategory,new_subsubcategory,imei_serial,selling_price,quantity
+Apple iPhone,iPhone 15,1,Phones,Premium,123456789,850000,5
+Samsung Galaxy,S24,2,Phones,Flagship,987654321,750000,3</pre>
                     <label style="display: block; margin-top: 1rem;">
                         <strong>Select CSV File:</strong>
                         <input type="file" name="csv_file" accept=".csv" required style="margin-top: 0.5rem; padding: 0.5rem;">
