@@ -192,7 +192,109 @@
         </table>
     </div>
     <div style="flex: 1; min-width: 300px;">
-        <h3 class="section-title" style="color: #dc3545;">Low Stock Alert (Below 5)</h3>
+        <h3 class="section-title">📊 Daily Sales Across All Branches</h3>
+<div style="display: flex; gap: 1rem; margin-bottom: 1.5rem; flex-wrap: wrap;">
+    <button type="button" class="btn" onclick="toggleSalesView('summary')" id="btn-summary" style="background: var(--mtn-blue); color: white;">📈 Summary by Branch</button>
+    <button type="button" class="btn" onclick="toggleSalesView('detailed')" id="btn-detailed" style="background: #ddd; color: #333;">📋 Detailed Sales</button>
+</div>
+
+<!-- Summary View: Branches with Totals -->
+<div id="summary-view" style="display: block;">
+    <div class="card">
+        <h4 style="margin-top: 0;">Revenue Per Branch (Today)</h4>
+        {% if branch_sales_summary %}
+            {% for branch_name, data in branch_sales_summary.items %}
+                <div style="margin-bottom: 2rem; padding: 1rem; background: #f9f9f9; border-left: 4px solid var(--mtn-blue); border-radius: 4px;">
+                    <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 0.5rem;">
+                        <h4 style="margin: 0; color: var(--mtn-blue);">{{ branch_name }}</h4>
+                        <button type="button" class="btn" onclick="expandBranch('{{ branch_name|slugify }}')" style="background: var(--mtn-yellow); color: black; padding: 0.4rem 0.8rem; font-size: 0.85rem;">View Sales</button>
+                    </div>
+                    <div style="display: grid; grid-template-columns: repeat(3, 1fr); gap: 1rem; margin-top: 1rem;">
+                        <div>
+                            <p style="font-size: 0.85rem; color: #666; margin: 0;">Total Items</p>
+                            <p style="font-size: 1.5rem; font-weight: bold; color: #333; margin: 0.3rem 0;">{{ data.total_qty }}</p>
+                        </div>
+                        <div>
+                            <p style="font-size: 0.85rem; color: #666; margin: 0;">Total Revenue</p>
+                            <p style="font-size: 1.5rem; font-weight: bold; color: var(--mtn-green); margin: 0.3rem 0;">₦{{ data.total_revenue|floatformat:2 }}</p>
+                        </div>
+                        <div>
+                            <p style="font-size: 0.85rem; color: #666; margin: 0;">Transactions</p>
+                            <p style="font-size: 1.5rem; font-weight: bold; color: #666; margin: 0.3rem 0;">{{ data.sales|length }}</p>
+                        </div>
+                    </div>
+                    
+                    <!-- Expandable Sales Details -->
+                    <div id="branch-{{ branch_name|slugify }}" style="display: none; margin-top: 1rem; border-top: 1px solid #ddd; padding-top: 1rem;">
+                        <table style="width: 100%; font-size: 0.9rem;">
+                            <thead>
+                                <tr style="background: #f0f0f0;">
+                                    <th style="padding: 0.6rem; text-align: left;">Product</th>
+                                    <th style="padding: 0.6rem; text-align: center;">Qty</th>
+                                    <th style="padding: 0.6rem; text-align: right;">Price</th>
+                                    <th style="padding: 0.6rem; text-align: right;">Amount</th>
+                                    <th style="padding: 0.6rem; text-align: left;">Staff</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {% for sale in data.sales %}
+                                    <tr style="border-bottom: 1px solid #eee;">
+                                        <td style="padding: 0.6rem;">{{ sale.product }}</td>
+                                        <td style="padding: 0.6rem; text-align: center;">{{ sale.quantity }}</td>
+                                        <td style="padding: 0.6rem; text-align: right;">₦{{ sale.price|floatformat:0 }}</td>
+                                        <td style="padding: 0.6rem; text-align: right; color: var(--mtn-green); font-weight: 600;">₦{{ sale.amount|floatformat:2 }}</td>
+                                        <td style="padding: 0.6rem;">{{ sale.staff }}</td>
+                                    </tr>
+                                {% endfor %}
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            {% endfor %}
+        {% else %}
+            <p style="text-align: center; color: #999; padding: 2rem;">No sales recorded today</p>
+        {% endif %}
+    </div>
+</div>
+
+<!-- Detailed View: All Sales in One Table -->
+<div id="detailed-view" style="display: none;">
+    <div class="card">
+        <h4 style="margin-top: 0;">All Sales Today</h4>
+        {% if daily_sales %}
+            <table style="width: 100%; border-collapse: collapse; font-size: 0.9rem;">
+                <thead>
+                    <tr style="background: #f8f9fa; border-bottom: 2px solid #ddd;">
+                        <th style="padding: 0.8rem; text-align: left; color: #333;">Branch</th>
+                        <th style="padding: 0.8rem; text-align: left; color: #333;">Product</th>
+                        <th style="padding: 0.8rem; text-align: center; color: #333;">Qty</th>
+                        <th style="padding: 0.8rem; text-align: right; color: #333;">Price</th>
+                        <th style="padding: 0.8rem; text-align: right; color: #333;">Total</th>
+                        <th style="padding: 0.8rem; text-align: left; color: #333;">Staff</th>
+                        <th style="padding: 0.8rem; text-align: center; color: #333;">Payment</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for sale in daily_sales %}
+                        <tr style="border-bottom: 1px solid #eee;">
+                            <td style="padding: 0.8rem; font-weight: 600;">{{ sale.branch.name }}</td>
+                            <td style="padding: 0.8rem;">{{ sale.product.model_name }}</td>
+                            <td style="padding: 0.8rem; text-align: center;">{{ sale.quantity }}</td>
+                            <td style="padding: 0.8rem; text-align: right;">₦{{ sale.selling_price }}</td>
+                            <td style="padding: 0.8rem; text-align: right; color: var(--mtn-green); font-weight: 600;">₦{{ sale.total_amount|floatformat:2 }}</td>
+                            <td style="padding: 0.8rem;">{{ sale.staff.username }}</td>
+                            <td style="padding: 0.8rem; text-align: center; font-size: 0.85rem;">{{ sale.payment_method }}</td>
+                        </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        {% else %}
+            <p style="text-align: center; color: #999; padding: 2rem;">No sales recorded today</p>
+        {% endif %}
+    </div>
+</div>
+
+<h3 class="section-title" style="color: #dc3545;">Low Stock Alert (Below 5)</h3>
         <table>
             <thead>
                 <tr>
@@ -295,5 +397,35 @@
         }
     });
 });
+
+function toggleSalesView(view) {
+    const summary = document.getElementById('summary-view');
+    const detailed = document.getElementById('detailed-view');
+    const btnSummary = document.getElementById('btn-summary');
+    const btnDetailed = document.getElementById('btn-detailed');
+    
+    if (view === 'summary') {
+        summary.style.display = 'block';
+        detailed.style.display = 'none';
+        btnSummary.style.background = 'var(--mtn-blue)';
+        btnSummary.style.color = 'white';
+        btnDetailed.style.background = '#ddd';
+        btnDetailed.style.color = '#333';
+    } else {
+        summary.style.display = 'none';
+        detailed.style.display = 'block';
+        btnSummary.style.background = '#ddd';
+        btnSummary.style.color = '#333';
+        btnDetailed.style.background = 'var(--mtn-blue)';
+        btnDetailed.style.color = 'white';
+    }
+}
+
+function expandBranch(branchSlug) {
+    const detailsDiv = document.getElementById('branch-' + branchSlug);
+    if (detailsDiv) {
+        detailsDiv.style.display = detailsDiv.style.display === 'none' ? 'block' : 'none';
+    }
+}
 </script>
 {% endblock %}

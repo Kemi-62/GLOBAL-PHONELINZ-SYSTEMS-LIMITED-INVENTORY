@@ -661,76 +661,123 @@ def export_branch_report(request):
 
 @login_required
 def generate_branch_report_pdf(request, branch_id):
-    if request.user.role not in ['DIRECTOR', 'MANAGER']:
-        return HttpResponseForbidden("Not authorized")
-    
-    branch = Branch.objects.get(id=branch_id)
-    today = date.today()
-    
-    response = HttpResponse(content_type='application/pdf')
-    response['Content-Disposition'] = f'attachment; filename="Report_{branch.name}_{today}.pdf"'
-    
-    p = canvas.Canvas(response, pagesize=letter)
-    width, height = letter
-    
-    # Header
-    p.setFont("Helvetica-Bold", 16)
-    p.drawString(100, height - 50, f"Daily Branch Report: {branch.name}")
-    p.setFont("Helvetica", 12)
-    p.drawString(100, height - 70, f"Date: {today}")
-    
-    # Telecom Summary
-    activities = ServiceActivity.objects.filter(branch=branch, date=today)
-    total_sim = activities.count()
-    
-    p.setFont("Helvetica-Bold", 14)
-    p.drawString(100, height - 110, "Telecom Performance")
-    p.setFont("Helvetica", 12)
-    p.drawString(120, height - 130, f"Total SIM Registrations: {total_sim}")
-    
-    # Retail Summary
-    sales = RetailSale.objects.filter(branch=branch, date=today)
-    total_qty = sales.aggregate(Sum('quantity'))['quantity__sum'] or 0
-    total_rev = sales.aggregate(total=Sum(F('quantity') * F('selling_price')))['total'] or 0
-    
-    p.setFont("Helvetica-Bold", 14)
-    p.drawString(100, height - 170, "Retail Performance")
-    p.setFont("Helvetica", 12)
-    p.drawString(120, height - 190, f"Total Items Sold: {total_qty}")
-    p.drawString(120, height - 210, f"Total Revenue: NGN {total_rev:,.2f}")
-    
-    # MultiChoice Summary
-    mc_sales = MultiChoiceSale.objects.filter(branch=branch, date=today)
-    mc_rev = mc_sales.aggregate(Sum('amount'))['amount__sum'] or 0
-    
-    p.setFont("Helvetica-Bold", 14)
-    p.drawString(100, height - 250, "MultiChoice Performance")
-    p.setFont("Helvetica", 12)
-    p.drawString(120, height - 270, f"Total Revenue: NGN {mc_rev:,.2f}")
-    
-    # Expenses
-    exps = Expense.objects.filter(branch=branch, date=today)
-    total_exp = exps.aggregate(Sum('amount'))['amount__sum'] or 0
-    
-    p.setFont("Helvetica-Bold", 14)
-    p.drawString(100, height - 310, "Expenses")
-    p.setFont("Helvetica", 12)
-    p.drawString(120, height - 330, f"Total Expenses: NGN {total_exp:,.2f}")
-    
-    # Net Profit
-    # Note: Simplified profit calculation for PDF
-    retail_profit = sales.aggregate(profit=Sum((F('selling_price') - F('product__cost_price')) * F('quantity')))['profit'] or 0
-    net_profit = retail_profit - total_exp
-    
-    p.setFont("Helvetica-Bold", 14)
-    p.drawString(100, height - 370, "Financial Summary")
-    p.setFont("Helvetica", 12)
-    p.drawString(120, height - 390, f"Gross Retail Profit: NGN {retail_profit:,.2f}")
-    p.drawString(120, height - 410, f"Net Profit (Retail - Expenses): NGN {net_profit:,.2f}")
-    
-    p.showPage()
-    p.save()
-    return response
+    try:
+        if request.user.role not in ['DIRECTOR', 'MANAGER']:
+            return HttpResponseForbidden("Not authorized")
+        
+        branch = Branch.objects.get(id=branch_id)
+        today = timezone.now().date()
+        
+        response = HttpResponse(content_type='application/pdf')
+        response['Content-Disposition'] = f'attachment; filename="Daily_Report_{branch.name}_{today}.pdf"'
+        
+        p = canvas.Canvas(response, pagesize=letter)
+        width, height = letter
+        y_pos = height - 50
+        
+        # Header
+        p.setFont("Helvetica-Bold", 16)
+        p.drawString(50, y_pos, f"DAILY BRANCH REPORT: {branch.name.upper()}")
+        y_pos -= 20
+        p.setFont("Helvetica", 11)
+        p.drawString(50, y_pos, f"Date: {today.strftime('%d-%b-%Y')}")
+        y_pos -= 30
+        
+        # -------- RETAIL SALES DETAIL --------
+        sales = RetailSale.objects.filter(branch=branch, date=today).select_related('product', 'staff')
+        total_qty = sum(s.quantity for s in sales)
+        total_rev = sum(Decimal(s.quantity) * s.selling_price for s in sales)
+        
+        p.setFont("Helvetica-Bold", 12)
+        p.drawString(50, y_pos, "RETAIL SALES SUMMARY")
+        y_pos -= 15
+        p.setFont("Helvetica", 10)
+        p.drawString(70, y_pos, f"Total Items Sold: {total_qty}")
+        y_pos -= 12
+        p.drawString(70, y_pos, f"Total Revenue: ₦{total_rev:,.2f}")
+        y_pos -= 20
+        
+        # Sales Detail Table Header
+        p.setFont("Helvetica-Bold", 9)
+        p.drawString(50, y_pos, "Product")
+        p.drawString(180, y_pos, "Qty")
+        p.drawString(220, y_pos, "Price")
+        p.drawString(280, y_pos, "Amount")
+        p.drawString(380, y_pos, "Staff")
+        y_pos -= 12
+        p.line(50, y_pos, 550, y_pos)
+        y_pos -= 12
+        
+        # Sales Detail Rows
+        p.setFont("Helvetica", 8)
+        for sale in sales[:15]:  # Limit to 15 sales per page
+            amount = Decimal(sale.quantity) * sale.selling_price
+            p.drawString(50, y_pos, sale.product.model_name[:30])
+            p.drawString(180, y_pos, str(sale.quantity))
+            p.drawString(220, y_pos, f"₦{sale.selling_price:,.0f}")
+            p.drawString(280, y_pos, f"₦{amount:,.0f}")
+            p.drawString(380, y_pos, sale.staff.username[:15])
+            y_pos -= 10
+            if y_pos < 100:
+                p.showPage()
+                y_pos = height - 50
+        
+        y_pos -= 20
+        
+        # -------- TELECOM SUMMARY --------
+        activities = ServiceActivity.objects.filter(branch=branch, date=today)
+        total_sim = activities.count()
+        
+        p.setFont("Helvetica-Bold", 12)
+        p.drawString(50, y_pos, "TELECOM PERFORMANCE")
+        y_pos -= 15
+        p.setFont("Helvetica", 10)
+        p.drawString(70, y_pos, f"Total SIM Registrations: {total_sim}")
+        y_pos -= 20
+        
+        # -------- MULTICHOICE SUMMARY --------
+        mc_sales = MultiChoiceSale.objects.filter(branch=branch, date=today)
+        mc_rev = sum(s.amount for s in mc_sales)
+        
+        p.setFont("Helvetica-Bold", 12)
+        p.drawString(50, y_pos, "MULTICHOICE REVENUE")
+        y_pos -= 15
+        p.setFont("Helvetica", 10)
+        p.drawString(70, y_pos, f"Total Revenue: ₦{mc_rev:,.2f}")
+        y_pos -= 20
+        
+        # -------- EXPENSES & PROFIT --------
+        exps = Expense.objects.filter(branch=branch, date=today)
+        total_exp = sum(e.amount for e in exps)
+        
+        p.setFont("Helvetica-Bold", 12)
+        p.drawString(50, y_pos, "EXPENSES")
+        y_pos -= 15
+        p.setFont("Helvetica", 10)
+        p.drawString(70, y_pos, f"Total Expenses: ₦{total_exp:,.2f}")
+        y_pos -= 20
+        
+        # Financial Summary
+        retail_profit = sum((Decimal(s.selling_price) - Decimal(s.product.cost_price or 0)) * s.quantity for s in sales)
+        net_profit = retail_profit - total_exp
+        
+        p.setFont("Helvetica-Bold", 12)
+        p.drawString(50, y_pos, "FINANCIAL SUMMARY")
+        y_pos -= 15
+        p.setFont("Helvetica", 10)
+        p.drawString(70, y_pos, f"Gross Profit (Retail): ₦{retail_profit:,.2f}")
+        y_pos -= 12
+        p.drawString(70, y_pos, f"Total Expenses: ₦{total_exp:,.2f}")
+        y_pos -= 12
+        p.setFont("Helvetica-Bold", 10)
+        p.drawString(70, y_pos, f"Net Profit: ₦{net_profit:,.2f}")
+        
+        p.showPage()
+        p.save()
+        return response
+    except Exception as e:
+        messages.error(request, f"Error generating PDF: {str(e)}")
+        return redirect("director_dashboard")
 
 @login_required
 def record_multichoice_sale(request):
@@ -869,6 +916,36 @@ def director_dashboard(request):
     from .models import CheckInOutLog
     check_logs = CheckInOutLog.objects.filter(branch=request.user.branch).order_by('-date', '-check_in_time')[:20]
 
+    # -------- DAILY SALES BY BRANCH (NEW) --------
+    daily_sales = RetailSale.objects.filter(date=today).select_related('product', 'branch', 'staff').order_by('-branch__name', '-id')
+    
+    # Add total_revenue to each sale for template display
+    daily_sales_list = list(daily_sales)
+    for sale in daily_sales_list:
+        sale.total_amount = Decimal(sale.quantity) * sale.selling_price
+    
+    # Branch-wise sales summary
+    branch_sales_summary = {}
+    for sale in daily_sales_list:
+        branch_key = sale.branch.name
+        if branch_key not in branch_sales_summary:
+            branch_sales_summary[branch_key] = {
+                'sales': [],
+                'total_qty': 0,
+                'total_revenue': 0
+            }
+        sale_amount = Decimal(sale.quantity) * sale.selling_price
+        branch_sales_summary[branch_key]['sales'].append({
+            'product': sale.product.model_name,
+            'quantity': sale.quantity,
+            'price': sale.selling_price,
+            'amount': sale_amount,
+            'date': sale.date,
+            'staff': sale.staff.username,
+        })
+        branch_sales_summary[branch_key]['total_qty'] += sale.quantity
+        branch_sales_summary[branch_key]['total_revenue'] += sale_amount
+
     context = {
         "branch_summary": branch_summary,
         "device_tags": device_tags,
@@ -890,6 +967,8 @@ def director_dashboard(request):
         "low_stock": low_stock,
         "categories": categories,
         "check_logs": check_logs,
+        "daily_sales": daily_sales,
+        "branch_sales_summary": branch_sales_summary,
     }
 
     return render(request, "director_dashboard.html", context)
