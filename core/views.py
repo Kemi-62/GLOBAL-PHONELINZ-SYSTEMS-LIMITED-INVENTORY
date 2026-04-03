@@ -665,6 +665,10 @@ def generate_branch_report_pdf(request, branch_id):
         if request.user.role not in ['DIRECTOR', 'MANAGER']:
             return HttpResponseForbidden("Not authorized")
         
+        if not branch_id or branch_id == '':
+            messages.error(request, "Please select a branch")
+            return redirect("director_dashboard")
+        
         branch = Branch.objects.get(id=branch_id)
         today = timezone.now().date()
         
@@ -721,6 +725,24 @@ def generate_branch_report_pdf(request, branch_id):
             if y_pos < 100:
                 p.showPage()
                 y_pos = height - 50
+        
+        y_pos -= 20
+        
+        # -------- STOCK OUT ALERTS --------
+        low_stock = BranchSafeStock.objects.filter(branch=branch, quantity__lt=1)
+        
+        p.setFont("Helvetica-Bold", 12)
+        p.drawString(50, y_pos, "STOCK OUT ALERTS")
+        y_pos -= 15
+        if low_stock.exists():
+            p.setFont("Helvetica", 8)
+            for stock in low_stock[:10]:
+                p.drawString(70, y_pos, f"⚠️  {stock.product.model_name} - Qty: {stock.quantity}")
+                y_pos -= 10
+        else:
+            p.setFont("Helvetica", 10)
+            p.drawString(70, y_pos, "✓ No stock out items")
+            y_pos -= 10
         
         y_pos -= 20
         
@@ -820,6 +842,9 @@ def director_dashboard(request):
         total=Sum("quantity")
     ).order_by("-total")
 
+    # Get all branches for PDF dropdown
+    all_branches = Branch.objects.all()
+
     device_tags = DeviceTag.objects.all()
 
     # ---------------- REVENUE & PROFIT LOGIC ----------------
@@ -916,10 +941,44 @@ def director_dashboard(request):
     from .models import CheckInOutLog
     check_logs = CheckInOutLog.objects.filter(branch=request.user.branch).order_by('-date', '-check_in_time')[:20]
 
-    # -------- DAILY SALES BY BRANCH (NEW) --------
+    context = {
+        "branch_summary": branch_summary,
+        "device_tags": device_tags,
+        "selected_device": device_filter,
+        "total_quantity": total_quantity,
+        "total_revenue": total_revenue,
+        "total_profit": net_profit,
+        "gross_profit": gross_profit,
+        "total_expenses": total_expenses,
+        "monthly_revenue": monthly_revenue,
+        "monthly_profit": monthly_net_profit,
+        "monthly_gross_profit": monthly_gross_profit,
+        "monthly_expenses": monthly_expenses,
+        "multichoice_total": multichoice_total,
+        "multichoice_by_branch": multichoice_by_branch,
+        "branch_performance": branch_performance,
+        "staff_performance": staff_performance,
+        "top_products": top_products,
+        "low_stock": low_stock,
+        "categories": categories,
+        "check_logs": check_logs,
+        "all_branches": all_branches,
+    }
+
+    return render(request, "director_dashboard.html", context)
+
+@role_required("DIRECTOR")
+def daily_sales_report(request):
+    """Daily sales across all branches for director"""
+    from django.utils import timezone
+    
+    today = timezone.now().date()
+    categories = RetailCategory.objects.all()
+    
+    # Fetch daily sales
     daily_sales = RetailSale.objects.filter(date=today).select_related('product', 'branch', 'staff').order_by('-branch__name', '-id')
     
-    # Add total_revenue to each sale for template display
+    # Add total_amount to each sale
     daily_sales_list = list(daily_sales)
     for sale in daily_sales_list:
         sale.total_amount = Decimal(sale.quantity) * sale.selling_price
@@ -945,33 +1004,15 @@ def director_dashboard(request):
         })
         branch_sales_summary[branch_key]['total_qty'] += sale.quantity
         branch_sales_summary[branch_key]['total_revenue'] += sale_amount
-
+    
     context = {
-        "branch_summary": branch_summary,
-        "device_tags": device_tags,
-        "selected_device": device_filter,
-        "total_quantity": total_quantity,
-        "total_revenue": total_revenue,
-        "total_profit": net_profit,
-        "gross_profit": gross_profit,
-        "total_expenses": total_expenses,
-        "monthly_revenue": monthly_revenue,
-        "monthly_profit": monthly_net_profit,
-        "monthly_gross_profit": monthly_gross_profit,
-        "monthly_expenses": monthly_expenses,
-        "multichoice_total": multichoice_total,
-        "multichoice_by_branch": multichoice_by_branch,
-        "branch_performance": branch_performance,
-        "staff_performance": staff_performance,
-        "top_products": top_products,
-        "low_stock": low_stock,
-        "categories": categories,
-        "check_logs": check_logs,
-        "daily_sales": daily_sales,
-        "branch_sales_summary": branch_sales_summary,
+        'daily_sales': daily_sales_list,
+        'branch_sales_summary': branch_sales_summary,
+        'categories': categories,
+        'today': today,
     }
-
-    return render(request, "director_dashboard.html", context)
+    
+    return render(request, 'daily_sales_report.html', context)
 
 @role_required("DIRECTOR")
 def director_safe_stock(request):

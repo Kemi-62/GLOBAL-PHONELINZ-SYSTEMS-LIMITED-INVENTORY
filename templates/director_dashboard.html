@@ -17,16 +17,17 @@
 <div class="card">
     <h2 style="margin: 0; color: var(--mtn-blue);">Director Dashboard</h2>
     <p style="color: var(--gray-600); margin-top: 0.5rem;">Executive overview and analytics</p>
-    <div style="display: flex; gap: 10px; margin-top: 1.5rem; flex-wrap: wrap;">
+    <div style="display: flex; gap: 10px; margin-top: 1.5rem; flex-wrap: wrap; align-items: center;">
         <button onclick="window.print()" class="btn btn-primary">📄 Export to PDF</button>
-        <form action="" method="GET" style="display: flex; gap: 10px; align-items: center;">
-            <select name="report_branch" style="padding: 8px; border-radius: 4px; border: 1px solid #ddd;">
-                {% for branch in branch_summary %}
-                    <option value="{{ branch.branch__id }}">{{ branch.branch__name }}</option>
+        <div style="display: flex; gap: 10px; align-items: center;">
+            <select id="pdf-branch-select" style="padding: 8px 12px; border-radius: 4px; border: 1px solid #ddd; font-size: 0.95rem;">
+                <option value="">-- Select Branch for PDF --</option>
+                {% for branch in all_branches %}
+                    <option value="{{ branch.id }}">{{ branch.name }}</option>
                 {% endfor %}
             </select>
-            <button type="button" onclick="const bid = this.previousElementSibling.value; if(bid) window.location.href='/branch-report-pdf/'+bid+'/'" class="btn btn-success">📥 Daily PDF</button>
-        </form>
+            <button type="button" onclick="downloadBranchPDF()" class="btn btn-success" style="padding: 0.7rem 1.2rem;">📥 Daily PDF</button>
+        </div>
     </div>
 </div>
 
@@ -398,34 +399,13 @@
     });
 });
 
-function toggleSalesView(view) {
-    const summary = document.getElementById('summary-view');
-    const detailed = document.getElementById('detailed-view');
-    const btnSummary = document.getElementById('btn-summary');
-    const btnDetailed = document.getElementById('btn-detailed');
-    
-    if (view === 'summary') {
-        summary.style.display = 'block';
-        detailed.style.display = 'none';
-        btnSummary.style.background = 'var(--mtn-blue)';
-        btnSummary.style.color = 'white';
-        btnDetailed.style.background = '#ddd';
-        btnDetailed.style.color = '#333';
-    } else {
-        summary.style.display = 'none';
-        detailed.style.display = 'block';
-        btnSummary.style.background = '#ddd';
-        btnSummary.style.color = '#333';
-        btnDetailed.style.background = 'var(--mtn-blue)';
-        btnDetailed.style.color = 'white';
+function downloadBranchPDF() {
+    const branchId = document.getElementById('pdf-branch-select').value;
+    if (!branchId) {
+        alert('Please select a branch');
+        return;
     }
-}
-
-function expandBranch(branchSlug) {
-    const detailsDiv = document.getElementById('branch-' + branchSlug);
-    if (detailsDiv) {
-        detailsDiv.style.display = detailsDiv.style.display === 'none' ? 'block' : 'none';
-    }
+    window.location.href = '/branch-report-pdf/' + branchId + '/';
 }
 </script>
 {% endblock %}

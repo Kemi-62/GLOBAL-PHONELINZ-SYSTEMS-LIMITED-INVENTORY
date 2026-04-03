@@ -8,6 +8,7 @@ urlpatterns = [
     path('telecom/', views.staff_dashboard, name='telecom_dashboard'),
     path('manager/', views.manager_dashboard, name='manager_dashboard'),
     path('director/', views.director_dashboard, name='director_dashboard'),
+    path('daily-sales-report/', views.daily_sales_report, name='daily_sales_report'),
     path('retail/', views.retail_dashboard, name='retail_dashboard'),
     path('multichoice/', views.multichoice_dashboard, name='multichoice_dashboard'),
     path('approve/<int:activity_id>/', views.approve_activity, name='approve_activity'),

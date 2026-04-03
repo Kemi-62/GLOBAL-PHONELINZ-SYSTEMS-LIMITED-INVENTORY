@@ -1,0 +1,161 @@
+{% extends "base.html" %}
+
+{% block title %}Daily Sales Report{% endblock %}
+
+{% block content %}
+<style>
+    .sales-card {
+        background: white;
+        border-radius: 8px;
+        padding: 1.5rem;
+        margin-bottom: 2rem;
+        box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+    }
+    
+    .branch-card {
+        background: #f9f9f9;
+        border-left: 4px solid var(--mtn-blue);
+        padding: 1rem;
+        margin-bottom: 1.5rem;
+        border-radius: 4px;
+    }
+    
+    .metrics {
+        display: grid;
+        grid-template-columns: repeat(3, 1fr);
+        gap: 1rem;
+        margin-bottom: 1.5rem;
+    }
+    
+    .metric-box {
+        text-align: center;
+        padding: 1rem;
+        background: white;
+        border-radius: 4px;
+        border: 1px solid #eee;
+    }
+    
+    .metric-value {
+        font-size: 2rem;
+        font-weight: bold;
+        color: var(--mtn-blue);
+    }
+    
+    .metric-label {
+        font-size: 0.85rem;
+        color: #666;
+        margin-top: 0.5rem;
+    }
+    
+    .sales-table {
+        width: 100%;
+        border-collapse: collapse;
+        font-size: 0.9rem;
+    }
+    
+    .sales-table th {
+        background: #f0f0f0;
+        padding: 0.8rem;
+        text-align: left;
+        font-weight: 600;
+        border-bottom: 2px solid #ddd;
+    }
+    
+    .sales-table td {
+        padding: 0.8rem;
+        border-bottom: 1px solid #eee;
+    }
+    
+    .sales-table tr:hover {
+        background: #f9f9f9;
+    }
+    
+    .total-row {
+        background: #f0f0f0;
+        font-weight: 600;
+    }
+    
+    @media (max-width: 768px) {
+        .metrics {
+            grid-template-columns: 1fr;
+        }
+    }
+</style>
+
+<div class="sales-card">
+    <h2 style="margin: 0; color: var(--mtn-blue);">📊 Daily Sales Report</h2>
+    <p style="color: #666; margin-top: 0.5rem;">{{ today|date:"l, F j, Y" }}</p>
+    
+    <a href="{% url 'director_dashboard' %}" class="btn btn-secondary" style="margin-top: 1rem; display: inline-block;">← Back to Dashboard</a>
+</div>
+
+{% if branch_sales_summary %}
+    {% for branch_name, data in branch_sales_summary.items %}
+    <div class="branch-card">
+        <h3 style="margin: 0 0 1rem 0; color: var(--mtn-blue);">{{ branch_name }}</h3>
+        
+        <!-- Metrics -->
+        <div class="metrics">
+            <div class="metric-box">
+                <div class="metric-value">{{ data.total_qty }}</div>
+                <div class="metric-label">Total Items</div>
+            </div>
+            <div class="metric-box">
+                <div class="metric-value" style="color: var(--mtn-green);">₦{{ data.total_revenue|floatformat:0 }}</div>
+                <div class="metric-label">Total Revenue</div>
+            </div>
+            <div class="metric-box">
+                <div class="metric-value">{{ data.sales|length }}</div>
+                <div class="metric-label">Transactions</div>
+            </div>
+        </div>
+        
+        <!-- Sales Table -->
+        {% if data.sales %}
+        <table class="sales-table">
+            <thead>
+                <tr>
+                    <th>Product</th>
+                    <th style="text-align: center;">Qty</th>
+                    <th style="text-align: right;">Unit Price</th>
+                    <th style="text-align: right;">Total</th>
+                    <th>Staff</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for sale in data.sales %}
+                <tr>
+                    <td>{{ sale.product }}</td>
+                    <td style="text-align: center;">{{ sale.quantity }}</td>
+                    <td style="text-align: right;">₦{{ sale.price }}</td>
+                    <td style="text-align: right; color: var(--mtn-green); font-weight: 600;">₦{{ sale.amount|floatformat:2 }}</td>
+                    <td>{{ sale.staff }}</td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+        {% else %}
+        <p style="text-align: center; color: #999; padding: 2rem;">No sales for this branch today</p>
+        {% endif %}
+    </div>
+    {% endfor %}
+{% else %}
+<div class="sales-card">
+    <p style="text-align: center; color: #999; padding: 3rem; font-size: 1.1rem;">
+        ✓ No sales recorded yet today
+    </p>
+</div>
+{% endif %}
+
+<script>
+function downloadBranchPDF() {
+    const branchId = document.getElementById('pdf-branch-select').value;
+    if (!branchId) {
+        alert('Please select a branch');
+        return;
+    }
+    window.location.href = '/branch-report-pdf/' + branchId + '/';
+}
+</script>
+
+{% endblock %}

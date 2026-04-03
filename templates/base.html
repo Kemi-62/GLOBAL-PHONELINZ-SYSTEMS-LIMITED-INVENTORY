@@ -439,7 +439,8 @@
     {% if user.role == "DIRECTOR" %}
     <div style="margin-top: 2rem; padding-top: 1rem; border-top: 1px solid rgba(255,255,255,0.1);">
         <h4 style="color: rgba(255,255,255,0.5); font-size: 0.8rem; text-transform: uppercase; letter-spacing: 1px; margin-bottom: 1rem;">Quick Actions</h4>
-        <a href="{% url 'director_attendance_dashboard' %}" class="sidebar-link">📊 View Attendance</a>
+        <a href="{% url 'daily_sales_report' %}" class="sidebar-link">📊 Daily Sales</a>
+        <a href="{% url 'director_attendance_dashboard' %}" class="sidebar-link">📈 View Attendance</a>
         <a href="{% url 'manage_branch_locations' %}" class="sidebar-link">📍 Configure Branches</a>
         <a href="{% url 'director_safe_stock' %}" class="sidebar-link">📦 Director Safe</a>
         <a href="{% url 'export_monthly_attendance_pdf' %}" class="sidebar-link">📥 Download Report</a>
