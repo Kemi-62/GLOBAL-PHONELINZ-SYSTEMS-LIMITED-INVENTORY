@@ -974,6 +974,7 @@ def daily_sales_report(request):
     
     today = timezone.now().date()
     categories = RetailCategory.objects.all()
+    all_branches = Branch.objects.all()
     
     # Fetch daily sales
     daily_sales = RetailSale.objects.filter(date=today).select_related('product', 'branch', 'staff').order_by('-branch__name', '-id')
@@ -985,6 +986,9 @@ def daily_sales_report(request):
     
     # Branch-wise sales summary
     branch_sales_summary = {}
+    total_qty = 0
+    total_revenue = Decimal(0)
+    
     for sale in daily_sales_list:
         branch_key = sale.branch.name
         if branch_key not in branch_sales_summary:
@@ -1004,11 +1008,16 @@ def daily_sales_report(request):
         })
         branch_sales_summary[branch_key]['total_qty'] += sale.quantity
         branch_sales_summary[branch_key]['total_revenue'] += sale_amount
+        total_qty += sale.quantity
+        total_revenue += sale_amount
     
     context = {
         'daily_sales': daily_sales_list,
         'branch_sales_summary': branch_sales_summary,
+        'total_qty': total_qty,
+        'total_revenue': total_revenue,
         'categories': categories,
+        'all_branches': all_branches,
         'today': today,
     }
     

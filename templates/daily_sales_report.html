@@ -75,79 +75,201 @@
         font-weight: 600;
     }
     
+    .toggle-buttons {
+        display: flex;
+        gap: 1rem;
+        margin-bottom: 1.5rem;
+        flex-wrap: wrap;
+    }
+    
+    .btn-toggle {
+        padding: 0.8rem 1.5rem;
+        border-radius: 4px;
+        border: none;
+        cursor: pointer;
+        font-weight: 600;
+        transition: all 0.3s ease;
+    }
+    
+    .btn-toggle.active {
+        background: var(--mtn-blue);
+        color: white;
+    }
+    
+    .btn-toggle.inactive {
+        background: #ddd;
+        color: #333;
+    }
+    
     @media (max-width: 768px) {
         .metrics {
             grid-template-columns: 1fr;
+        }
+        .toggle-buttons {
+            flex-direction: column;
+        }
+        .btn-toggle {
+            width: 100%;
         }
     }
 </style>
 
 <div class="sales-card">
-    <h2 style="margin: 0; color: var(--mtn-blue);">📊 Daily Sales Report</h2>
+    <h2 style="margin: 0; color: var(--mtn-blue);">📊 Daily Sales Across All Branches</h2>
     <p style="color: #666; margin-top: 0.5rem;">{{ today|date:"l, F j, Y" }}</p>
     
-    <a href="{% url 'director_dashboard' %}" class="btn btn-secondary" style="margin-top: 1rem; display: inline-block;">← Back to Dashboard</a>
+    <!-- Overall Totals -->
+    <div class="metrics" style="margin-top: 1.5rem;">
+        <div class="metric-box">
+            <div class="metric-value">{{ total_qty }}</div>
+            <div class="metric-label">Total Items Sold</div>
+        </div>
+        <div class="metric-box">
+            <div class="metric-value" style="color: var(--mtn-green);">₦{{ total_revenue|floatformat:0 }}</div>
+            <div class="metric-label">Total Revenue</div>
+        </div>
+        <div class="metric-box">
+            <div class="metric-value">{{ daily_sales|length }}</div>
+            <div class="metric-label">All Transactions</div>
+        </div>
+    </div>
+    
+    <!-- Toggle Buttons -->
+    <div class="toggle-buttons">
+        <button type="button" class="btn-toggle active" onclick="toggleSalesView('summary')" id="btn-summary">📈 Summary by Branch</button>
+        <button type="button" class="btn-toggle inactive" onclick="toggleSalesView('detailed')" id="btn-detailed">📋 Detailed Sales</button>
+    </div>
+    
+    <a href="{% url 'director_dashboard' %}" class="btn btn-secondary" style="display: inline-block;">← Back to Dashboard</a>
 </div>
 
-{% if branch_sales_summary %}
-    {% for branch_name, data in branch_sales_summary.items %}
-    <div class="branch-card">
-        <h3 style="margin: 0 0 1rem 0; color: var(--mtn-blue);">{{ branch_name }}</h3>
-        
-        <!-- Metrics -->
-        <div class="metrics">
-            <div class="metric-box">
-                <div class="metric-value">{{ data.total_qty }}</div>
-                <div class="metric-label">Total Items</div>
+<!-- Summary View: Branches with Totals -->
+<div id="summary-view" style="display: block;">
+    {% if branch_sales_summary %}
+        {% for branch_name, data in branch_sales_summary.items %}
+        <div class="branch-card">
+            <h3 style="margin: 0 0 1rem 0; color: var(--mtn-blue);">{{ branch_name }}</h3>
+            
+            <!-- Metrics -->
+            <div class="metrics">
+                <div class="metric-box">
+                    <div class="metric-value">{{ data.total_qty }}</div>
+                    <div class="metric-label">Total Items</div>
+                </div>
+                <div class="metric-box">
+                    <div class="metric-value" style="color: var(--mtn-green);">₦{{ data.total_revenue|floatformat:2 }}</div>
+                    <div class="metric-label">Total Revenue</div>
+                </div>
+                <div class="metric-box">
+                    <div class="metric-value">{{ data.sales|length }}</div>
+                    <div class="metric-label">Transactions</div>
+                </div>
             </div>
-            <div class="metric-box">
-                <div class="metric-value" style="color: var(--mtn-green);">₦{{ data.total_revenue|floatformat:0 }}</div>
-                <div class="metric-label">Total Revenue</div>
-            </div>
-            <div class="metric-box">
-                <div class="metric-value">{{ data.sales|length }}</div>
-                <div class="metric-label">Transactions</div>
+            
+            <!-- Expandable Sales Table -->
+            <button type="button" class="btn btn-info" onclick="expandBranch('{{ branch_name|slugify }}')" style="margin-top: 0.5rem;">View Sales ▼</button>
+            
+            <div id="branch-{{ branch_name|slugify }}" style="display: none; margin-top: 1rem; border-top: 1px solid #ddd; padding-top: 1rem;">
+                {% if data.sales %}
+                <table class="sales-table">
+                    <thead>
+                        <tr>
+                            <th>Product</th>
+                            <th style="text-align: center;">Qty</th>
+                            <th style="text-align: right;">Unit Price</th>
+                            <th style="text-align: right;">Total</th>
+                            <th>Staff</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for sale in data.sales %}
+                        <tr>
+                            <td>{{ sale.product }}</td>
+                            <td style="text-align: center;">{{ sale.quantity }}</td>
+                            <td style="text-align: right;">₦{{ sale.price }}</td>
+                            <td style="text-align: right; color: var(--mtn-green); font-weight: 600;">₦{{ sale.amount|floatformat:2 }}</td>
+                            <td>{{ sale.staff }}</td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+                {% else %}
+                <p style="text-align: center; color: #999; padding: 1rem;">No sales for this branch today</p>
+                {% endif %}
             </div>
         </div>
-        
-        <!-- Sales Table -->
-        {% if data.sales %}
-        <table class="sales-table">
-            <thead>
-                <tr>
-                    <th>Product</th>
-                    <th style="text-align: center;">Qty</th>
-                    <th style="text-align: right;">Unit Price</th>
-                    <th style="text-align: right;">Total</th>
-                    <th>Staff</th>
-                </tr>
-            </thead>
-            <tbody>
-                {% for sale in data.sales %}
-                <tr>
-                    <td>{{ sale.product }}</td>
-                    <td style="text-align: center;">{{ sale.quantity }}</td>
-                    <td style="text-align: right;">₦{{ sale.price }}</td>
-                    <td style="text-align: right; color: var(--mtn-green); font-weight: 600;">₦{{ sale.amount|floatformat:2 }}</td>
-                    <td>{{ sale.staff }}</td>
-                </tr>
-                {% endfor %}
-            </tbody>
-        </table>
+        {% endfor %}
+    {% else %}
+    <div class="sales-card">
+        <p style="text-align: center; color: #999; padding: 2rem;">No sales recorded today</p>
+    </div>
+    {% endif %}
+</div>
+
+<!-- Detailed View: All Sales in One Table -->
+<div id="detailed-view" style="display: none;">
+    <div class="sales-card">
+        <h3 style="margin-top: 0;">All Sales Today</h3>
+        {% if daily_sales %}
+            <table class="sales-table">
+                <thead>
+                    <tr style="background: #f8f9fa;">
+                        <th>Branch</th>
+                        <th>Product</th>
+                        <th style="text-align: center;">Qty</th>
+                        <th style="text-align: right;">Price</th>
+                        <th style="text-align: right;">Total</th>
+                        <th>Staff</th>
+                        <th style="text-align: center;">Payment</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for sale in daily_sales %}
+                    <tr>
+                        <td style="font-weight: 600;">{{ sale.branch.name }}</td>
+                        <td>{{ sale.product.model_name }}</td>
+                        <td style="text-align: center;">{{ sale.quantity }}</td>
+                        <td style="text-align: right;">₦{{ sale.selling_price }}</td>
+                        <td style="text-align: right; color: var(--mtn-green); font-weight: 600;">₦{{ sale.total_amount|floatformat:2 }}</td>
+                        <td>{{ sale.staff.username }}</td>
+                        <td style="text-align: center; font-size: 0.85rem;">{{ sale.payment_method }}</td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
         {% else %}
-        <p style="text-align: center; color: #999; padding: 2rem;">No sales for this branch today</p>
+            <p style="text-align: center; color: #999; padding: 2rem;">No sales recorded today</p>
         {% endif %}
     </div>
-    {% endfor %}
-{% else %}
-<div class="sales-card">
-    <p style="text-align: center; color: #999; padding: 3rem; font-size: 1.1rem;">
-        ✓ No sales recorded yet today
-    </p>
 </div>
-{% endif %}
 
 <script>
+function toggleSalesView(view) {
+    const summary = document.getElementById('summary-view');
+    const detailed = document.getElementById('detailed-view');
+    const btnSummary = document.getElementById('btn-summary');
+    const btnDetailed = document.getElementById('btn-detailed');
+    
+    if (view === 'summary') {
+        summary.style.display = 'block';
+        detailed.style.display = 'none';
+        btnSummary.className = 'btn-toggle active';
+        btnDetailed.className = 'btn-toggle inactive';
+    } else {
+        summary.style.display = 'none';
+        detailed.style.display = 'block';
+        btnSummary.className = 'btn-toggle inactive';
+        btnDetailed.className = 'btn-toggle active';
+    }
+}
+
+function expandBranch(branchSlug) {
+    const detailsDiv = document.getElementById('branch-' + branchSlug);
+    if (detailsDiv) {
+        detailsDiv.style.display = detailsDiv.style.display === 'none' ? 'block' : 'none';
+    }
+}
+
 function downloadBranchPDF() {
     const branchId = document.getElementById('pdf-branch-select').value;
     if (!branchId) {
