@@ -49,4 +49,6 @@ urlpatterns = [
     path('my-commissions/', views.my_commissions, name='my_commissions'),
     path('edit-staff-stock-price/<int:stock_id>/', views.edit_staff_stock_price, name='edit_staff_stock_price'),
     path('edit-product-price/<int:product_id>/', views.edit_product_price, name='edit_product_price'),
+    path('add-sim-received/', views.add_sim_received, name='add_sim_received'),
+    path('set-sim-opening-balance/', views.set_sim_opening_balance, name='set_sim_opening_balance'),
 ]

@@ -191,7 +191,7 @@ def staff_dashboard(request):
                 if achieved >= target.target_number:
                     requires_approval = True
 
-        ServiceActivity.objects.create(
+        activity = ServiceActivity.objects.create(
             branch=request.user.branch,
             staff=request.user,
             service_type=service_type,
@@ -200,6 +200,26 @@ def staff_dashboard(request):
             requires_approval=requires_approval,
             approved=not requires_approval
         )
+        
+        # Deduct from SIM inventory for SIM-related services
+        if service_type in ['SIM_REG', 'SIM_SWAP', 'SIM_UPGRADE']:
+            from .models import SimInventory, SimInventoryLog
+            try:
+                sim_inventory = SimInventory.objects.get(branch=request.user.branch)
+                sim_inventory.total_sold += quantity
+                sim_inventory.save()
+                
+                # Create log entry
+                SimInventoryLog.objects.create(
+                    inventory=sim_inventory,
+                    transaction_type='SOLD',
+                    quantity=quantity,
+                    description=f"{service_type.replace('_', ' ')}: {quantity} SIM (by {request.user.username})",
+                    created_by=request.user
+                )
+            except SimInventory.DoesNotExist:
+                pass
+        
         return redirect("staff_dashboard")
 
     sim_targets = targets.filter(service_type="SIM_REG")
@@ -374,8 +394,12 @@ def manager_dashboard(request):
     # Global Category Context for Sidebar
     categories = RetailCategory.objects.all()
 
-    from .models import CheckInOutLog
+    from .models import CheckInOutLog, SimInventory, SimInventoryLog
     check_logs = CheckInOutLog.objects.filter(branch=request.user.branch).order_by('-date', '-check_in_time')[:20]
+
+    # ---------- SIM INVENTORY ----------
+    sim_inventory, created = SimInventory.objects.get_or_create(branch=branch)
+    sim_logs = SimInventoryLog.objects.filter(inventory=sim_inventory).order_by('-date_created')[:15]
 
     context = {
         'target_data': target_data,
@@ -395,6 +419,8 @@ def manager_dashboard(request):
         "pending_stock_requests": pending_stock_requests,
         "expenses": expenses,
         "check_logs": check_logs,
+        "sim_inventory": sim_inventory,
+        "sim_logs": sim_logs,
     }
     return render(request, "manager_dashboard.html", context)
 
@@ -1361,13 +1387,33 @@ def record_physical_product(request):
         quantity = int(request.POST.get("quantity"))
         price = float(request.POST.get("price"))
         
-        ServiceActivity.objects.create(
+        activity = ServiceActivity.objects.create(
             branch=request.user.branch,
             staff=request.user,
             service_type=product_type,
             quantity=quantity,
             date=timezone.now().date()
         )
+        
+        # Deduct from SIM inventory for Wholesale SIM
+        if product_type == 'WHOLESALE_SIM':
+            from .models import SimInventory, SimInventoryLog
+            try:
+                sim_inventory = SimInventory.objects.get(branch=request.user.branch)
+                sim_inventory.total_sold += quantity
+                sim_inventory.save()
+                
+                # Create log entry
+                SimInventoryLog.objects.create(
+                    inventory=sim_inventory,
+                    transaction_type='SOLD',
+                    quantity=quantity,
+                    description=f"Wholesale SIM: {quantity} SIM sold (by {request.user.username})",
+                    created_by=request.user
+                )
+            except SimInventory.DoesNotExist:
+                pass
+        
         messages.success(request, f"Recorded {quantity} {product_type} at ₦{price} each")
     
     return redirect("staff_dashboard")
@@ -1663,3 +1709,74 @@ def edit_product_price(request, product_id):
         messages.error(request, "Product not found.")
     
     return redirect("product_catalog")
+
+
+@role_required("MANAGER")
+def add_sim_received(request):
+    """Manager adds SIM received during stock outs"""
+    if request.method == 'POST':
+        from .models import SimInventory, SimInventoryLog
+        
+        quantity = int(request.POST.get('quantity', 0))
+        notes = request.POST.get('notes', '')
+        
+        if quantity > 0:
+            sim_inventory = SimInventory.objects.get(branch=request.user.branch)
+            sim_inventory.total_received += quantity
+            sim_inventory.save()
+            
+            # Create log entry
+            SimInventoryLog.objects.create(
+                inventory=sim_inventory,
+                transaction_type='RECEIVED',
+                quantity=quantity,
+                description=f"SIM received (stock out): {notes}",
+                created_by=request.user
+            )
+            
+            messages.success(request, f"Added {quantity} SIM to inventory")
+        else:
+            messages.error(request, "Quantity must be greater than 0")
+    
+    return redirect("manager_dashboard")
+
+
+@role_required("MANAGER")
+def set_sim_opening_balance(request):
+    """Manager sets opening SIM balance for the month"""
+    if request.method == 'POST':
+        from .models import SimInventory, SimInventoryLog
+        from django.utils import timezone
+        
+        quantity = int(request.POST.get('quantity', 0))
+        
+        if quantity >= 0:
+            sim_inventory = SimInventory.objects.get(branch=request.user.branch)
+            
+            # Only set if not already set for this month
+            now = timezone.now()
+            if sim_inventory.current_month != now.month or sim_inventory.current_year != now.year:
+                # Reset for new month
+                sim_inventory.opening_balance = quantity
+                sim_inventory.total_received = 0
+                sim_inventory.total_sold = 0
+                sim_inventory.current_month = now.month
+                sim_inventory.current_year = now.year
+                sim_inventory.save()
+                
+                # Create log entry
+                SimInventoryLog.objects.create(
+                    inventory=sim_inventory,
+                    transaction_type='OPENING',
+                    quantity=quantity,
+                    description=f"Opening balance for {now.strftime('%B %Y')}",
+                    created_by=request.user
+                )
+                
+                messages.success(request, f"Opening SIM balance set to {quantity} for this month")
+            else:
+                messages.warning(request, "Opening balance already set for this month")
+        else:
+            messages.error(request, "Quantity must be 0 or greater")
+    
+    return redirect("manager_dashboard")

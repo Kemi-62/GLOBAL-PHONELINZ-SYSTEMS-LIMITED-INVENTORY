@@ -65,6 +65,7 @@ function showSection(id, btn) {
 
 <div class="nav-tabs">
     <button class="nav-btn active-tab" onclick="showSection('telecom', this)">Telecom Reports</button>
+    <button class="nav-btn" onclick="showSection('sim_inventory', this)">🔄 SIM Inventory</button>
     <button class="nav-btn" onclick="showSection('retail', this)">Retail Inventory</button>
     <button class="nav-btn" onclick="showSection('expenses', this)">Expenses</button>
     <button class="nav-btn" onclick="showSection('multichoice', this)">MultiChoice</button>
@@ -145,6 +146,113 @@ function showSection(id, btn) {
                 {% endfor %}
             </tbody>
         </table>
+    </div>
+</div>
+
+<!-- SIM INVENTORY SECTION -->
+<div id="sim_inventory" class="section">
+    <div class="card" style="margin-bottom: 2rem; background: linear-gradient(135deg, #1e3a8a 0%, #3b82f6 100%); color: white; border-left: 5px solid var(--mtn-yellow);">
+        <h3 style="margin-top: 0; display: flex; align-items: center; gap: 10px; color: white;">
+            <span>📱</span> SIM Inventory Management
+        </h3>
+        <p style="margin: 0; font-size: 0.9rem; color: rgba(255,255,255,0.9);">Unified SIM inventory tracking for all SIM-related services and products</p>
+    </div>
+
+    <!-- Current Inventory Status -->
+    <div class="card">
+        <h4 style="margin-top: 0;">Current Inventory Status</h4>
+        <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 1.5rem; margin-bottom: 2rem;">
+            <div style="background: #f0f7ff; padding: 1.5rem; border-radius: 8px; border-left: 4px solid #0066cc;">
+                <div style="font-size: 0.85rem; color: #666; margin-bottom: 0.5rem;">Opening Balance</div>
+                <div style="font-size: 2rem; font-weight: bold; color: #0066cc;">{{ sim_inventory.opening_balance }}</div>
+            </div>
+            <div style="background: #f0fff7; padding: 1.5rem; border-radius: 8px; border-left: 4px solid #00aa33;">
+                <div style="font-size: 0.85rem; color: #666; margin-bottom: 0.5rem;">SIM Received</div>
+                <div style="font-size: 2rem; font-weight: bold; color: #00aa33;">{{ sim_inventory.total_received }}</div>
+            </div>
+            <div style="background: #fff7f0; padding: 1.5rem; border-radius: 8px; border-left: 4px solid #cc6600;">
+                <div style="font-size: 0.85rem; color: #666; margin-bottom: 0.5rem;">SIM Used/Sold</div>
+                <div style="font-size: 2rem; font-weight: bold; color: #cc6600;">{{ sim_inventory.total_sold }}</div>
+            </div>
+            <div style="background: {% if sim_inventory.get_current_balance > 0 %}#f0f7f0{% else %}#fff7f7{% endif %}; padding: 1.5rem; border-radius: 8px; border-left: 4px solid {% if sim_inventory.get_current_balance > 0 %}#009900{% else %}#cc0000{% endif %};">
+                <div style="font-size: 0.85rem; color: #666; margin-bottom: 0.5rem;">Current Balance</div>
+                <div style="font-size: 2rem; font-weight: bold; color: {% if sim_inventory.get_current_balance > 0 %}#009900{% else %}#cc0000{% endif %};">{{ sim_inventory.get_current_balance }}</div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Forms for Manager -->
+    <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(280px, 1fr)); gap: 1.5rem; margin-bottom: 2rem;">
+        <!-- Set Opening Balance -->
+        <div class="card">
+            <h4 style="margin-top: 0; color: var(--mtn-blue);">📊 Set Opening Balance</h4>
+            <p style="font-size: 0.9rem; color: #666;">Set the initial SIM count for this month</p>
+            <form method="POST" action="{% url 'set_sim_opening_balance' %}">
+                {% csrf_token %}
+                <div style="margin-bottom: 1rem;">
+                    <label style="display: block; font-size: 0.9rem; margin-bottom: 0.5rem; font-weight: 600;">Opening SIM Count:</label>
+                    <input type="number" name="quantity" required min="0" style="width: 100%; padding: 0.7rem; border: 1px solid #ddd; border-radius: 4px;" placeholder="e.g., 100">
+                </div>
+                <button type="submit" class="btn btn-primary" style="width: 100%;">Set Opening Balance</button>
+            </form>
+        </div>
+
+        <!-- Add SIM Received -->
+        <div class="card">
+            <h4 style="margin-top: 0; color: var(--mtn-green);">➕ SIM Received (Stock Out)</h4>
+            <p style="font-size: 0.9rem; color: #666;">Add SIM received during stock outs</p>
+            <form method="POST" action="{% url 'add_sim_received' %}">
+                {% csrf_token %}
+                <div style="margin-bottom: 1rem;">
+                    <label style="display: block; font-size: 0.9rem; margin-bottom: 0.5rem; font-weight: 600;">Quantity Received:</label>
+                    <input type="number" name="quantity" required min="1" style="width: 100%; padding: 0.7rem; border: 1px solid #ddd; border-radius: 4px;" placeholder="e.g., 50">
+                </div>
+                <div style="margin-bottom: 1rem;">
+                    <label style="display: block; font-size: 0.9rem; margin-bottom: 0.5rem; font-weight: 600;">Notes (Optional):</label>
+                    <textarea name="notes" style="width: 100%; padding: 0.7rem; border: 1px solid #ddd; border-radius: 4px; height: 50px;" placeholder="e.g., Restocking from supplier"></textarea>
+                </div>
+                <button type="submit" class="btn btn-success" style="width: 100%;">Add SIM Received</button>
+            </form>
+        </div>
+    </div>
+
+    <!-- Transaction Log -->
+    <div class="card">
+        <h4 style="margin-top: 0;">📋 SIM Inventory Transaction Log</h4>
+        {% if sim_logs %}
+            <table style="width: 100%; border-collapse: collapse; font-size: 0.9rem;">
+                <thead>
+                    <tr style="background: #f8f9fa; border-bottom: 2px solid #ddd;">
+                        <th style="padding: 0.8rem; text-align: left;">Date & Time</th>
+                        <th style="padding: 0.8rem; text-align: left;">Type</th>
+                        <th style="padding: 0.8rem; text-align: center;">Quantity</th>
+                        <th style="padding: 0.8rem; text-align: left;">Description</th>
+                        <th style="padding: 0.8rem; text-align: left;">By</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for log in sim_logs %}
+                        <tr style="border-bottom: 1px solid #eee;">
+                            <td style="padding: 0.8rem;">{{ log.date_created|date:"M d, Y H:i" }}</td>
+                            <td style="padding: 0.8rem;">
+                                {% if log.transaction_type == 'OPENING' %}
+                                    <span style="background: #e3f2fd; color: #0066cc; padding: 0.3rem 0.8rem; border-radius: 4px; font-weight: 600;">Opening</span>
+                                {% elif log.transaction_type == 'RECEIVED' %}
+                                    <span style="background: #e8f5e9; color: #00aa33; padding: 0.3rem 0.8rem; border-radius: 4px; font-weight: 600;">Received</span>
+                                {% elif log.transaction_type == 'SOLD' %}
+                                    <span style="background: #fff3e0; color: #cc6600; padding: 0.3rem 0.8rem; border-radius: 4px; font-weight: 600;">Sold/Used</span>
+                                {% endif %}
+                            </td>
+                            <td style="padding: 0.8rem; text-align: center; font-weight: 600;">{{ log.quantity }}</td>
+                            <td style="padding: 0.8rem; font-size: 0.85rem;">{{ log.description }}</td>
+                            <td style="padding: 0.8rem; font-size: 0.85rem;">{{ log.created_by.username }}</td>
+                        </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        {% else %}
+            <p style="text-align: center; color: #999; padding: 2rem;">No transaction history yet. Set opening balance to get started.</p>
+        {% endif %}
     </div>
 </div>
 

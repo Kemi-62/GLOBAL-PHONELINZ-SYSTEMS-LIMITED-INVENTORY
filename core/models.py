@@ -460,3 +460,42 @@ class Customer(models.Model):
 
     def __str__(self):
         return self.phone_number
+
+
+class SimInventory(models.Model):
+    """Unified SIM inventory tracking for manager"""
+    branch = models.OneToOneField(Branch, on_delete=models.CASCADE, related_name='sim_inventory')
+    opening_balance = models.IntegerField(default=0)  # SIM count at month start
+    current_month = models.IntegerField(default=0)  # Current month (YYYY-MM format helper)
+    current_year = models.IntegerField(default=0)  # Current year
+    
+    # Tracking
+    total_received = models.IntegerField(default=0)  # Total SIM received during month
+    total_sold = models.IntegerField(default=0)  # Total SIM sold/used
+    date_updated = models.DateTimeField(auto_now=True)
+    
+    def get_current_balance(self):
+        """Calculate current balance: opening + received - sold"""
+        return self.opening_balance + self.total_received - self.total_sold
+    
+    def __str__(self):
+        return f"{self.branch.name} SIM Inventory - Balance: {self.get_current_balance()}"
+
+
+class SimInventoryLog(models.Model):
+    """Transaction log for SIM inventory"""
+    TRANSACTION_TYPE = (
+        ('OPENING', 'Opening Balance'),
+        ('RECEIVED', 'SIM Received'),
+        ('SOLD', 'SIM Sold/Used'),
+    )
+    
+    inventory = models.ForeignKey(SimInventory, on_delete=models.CASCADE, related_name='logs')
+    transaction_type = models.CharField(max_length=20, choices=TRANSACTION_TYPE)
+    quantity = models.IntegerField()
+    description = models.TextField(blank=True)  # Details like "SIM Swap: 5", "SIM Registration: 3", etc.
+    date_created = models.DateTimeField(auto_now_add=True)
+    created_by = models.ForeignKey(User, on_delete=models.SET_NULL, null=True, blank=True)
+    
+    def __str__(self):
+        return f"{self.inventory.branch.name} - {self.transaction_type}: {self.quantity} SIMs"
