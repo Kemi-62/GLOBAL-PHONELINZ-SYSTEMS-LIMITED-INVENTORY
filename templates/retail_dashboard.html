@@ -49,29 +49,64 @@
         </div>
 
         <div class="card">
-            <h3>Create New Product (Non-Safe)</h3>
-            <form method="POST" action="{% url 'staff_create_product' %}">
-                {% csrf_token %}
-                <label>Category</label>
-                <select name="category" required>
-                    {% for cat in categories %}<option value="{{ cat.id }}">{{ cat.name }}</option>{% endfor %}
-                </select>
-                <label style="display: block; margin-top: 1rem;">Sub Category</label>
-                <input type="text" name="new_subcategory" required>
-                <label style="display: block; margin-top: 1rem;">Sub Sub Category (Optional)</label>
-                <input type="text" name="new_subsubcategory">
-                <label style="display: block; margin-top: 1rem;">Product Name</label>
-                <input type="text" name="product_name" required>
-                <label style="display: block; margin-top: 1rem;">Model Name</label>
-                <input type="text" name="model_name" required>
-                <label style="display: block; margin-top: 1rem;">Full IMEI / Serial</label>
-                <input type="text" name="imei" placeholder="Full IMEI or Serial Number">
-                <label style="display: block; margin-top: 1rem;">Selling Price</label>
-                <input type="number" step="0.01" name="selling_price" required>
-                <label style="display: block; margin-top: 1rem;">Initial Quantity</label>
-                <input type="number" name="quantity" required>
-                <button type="submit" class="btn btn-primary" style="width: 100%; margin-top: 1.5rem;">Create & Add to Stock</button>
-            </form>
+            <h3>Add New Product (Non-Safe)</h3>
+            <div style="display: flex; gap: 1rem; margin-bottom: 1.5rem; border-bottom: 1px solid #ddd; padding-bottom: 1rem;">
+                <button type="button" class="btn" onclick="toggleTab('single-product')" id="btn-single" style="background: var(--mtn-blue); color: white;">➕ Single Product</button>
+                <button type="button" class="btn" onclick="toggleTab('bulk-csv')" id="btn-bulk" style="background: #ddd;">📤 Bulk Upload (CSV)</button>
+            </div>
+
+            <!-- Single Product Form -->
+            <div id="single-product" style="display: block;">
+                <form method="POST" action="{% url 'staff_create_product' %}">
+                    {% csrf_token %}
+                    <label>Category</label>
+                    <select name="category" required>
+                        {% for cat in categories %}<option value="{{ cat.id }}">{{ cat.name }}</option>{% endfor %}
+                    </select>
+                    <label style="display: block; margin-top: 1rem;">Sub Category</label>
+                    <input type="text" name="new_subcategory" required>
+                    <label style="display: block; margin-top: 1rem;">Sub Sub Category (Optional)</label>
+                    <input type="text" name="new_subsubcategory">
+                    <label style="display: block; margin-top: 1rem;">Product Name</label>
+                    <input type="text" name="product_name" required>
+                    <label style="display: block; margin-top: 1rem;">Model Name</label>
+                    <input type="text" name="model_name" required>
+                    <label style="display: block; margin-top: 1rem;">Full IMEI / Serial</label>
+                    <input type="text" name="imei" placeholder="Full IMEI or Serial Number">
+                    <label style="display: block; margin-top: 1rem;">Selling Price</label>
+                    <input type="number" step="0.01" name="selling_price" required>
+                    <label style="display: block; margin-top: 1rem;">Initial Quantity</label>
+                    <input type="number" name="quantity" required>
+                    <button type="submit" class="btn btn-primary" style="width: 100%; margin-top: 1.5rem;">Create & Add to Stock</button>
+                </form>
+            </div>
+
+            <!-- CSV Bulk Import Form -->
+            <div id="bulk-csv" style="display: none;">
+                <form method="POST" action="{% url 'upload_stock_csv' %}" enctype="multipart/form-data">
+                    {% csrf_token %}
+                    <p style="color: #666; margin-bottom: 1rem;">Upload CSV with product details. Format:</p>
+                    <pre style="background: #f5f5f5; padding: 1rem; border-radius: 4px; overflow-x: auto;">model_name,category_id,quantity,selling_price
+iPhone 15,1,5,850000
+Samsung S24,2,3,750000</pre>
+                    <label style="display: block; margin-top: 1rem;">
+                        <strong>Select CSV File:</strong>
+                        <input type="file" name="csv_file" accept=".csv" required style="margin-top: 0.5rem; padding: 0.5rem;">
+                    </label>
+                    <button type="submit" class="btn btn-success" style="width: 100%; margin-top: 1.5rem;">📤 Upload & Add Products</button>
+                </form>
+            </div>
+
+            <script>
+                function toggleTab(tab) {
+                    document.getElementById('single-product').style.display = (tab === 'single-product') ? 'block' : 'none';
+                    document.getElementById('bulk-csv').style.display = (tab === 'bulk-csv') ? 'block' : 'none';
+                    document.getElementById('btn-single').style.background = (tab === 'single-product') ? 'var(--mtn-blue)' : '#ddd';
+                    document.getElementById('btn-single').style.color = (tab === 'single-product') ? 'white' : 'black';
+                    document.getElementById('btn-bulk').style.background = (tab === 'bulk-csv') ? 'var(--mtn-blue)' : '#ddd';
+                    document.getElementById('btn-bulk').style.color = (tab === 'bulk-csv') ? 'white' : 'black';
+                }
+            </script>
         </div>
     </div>
 

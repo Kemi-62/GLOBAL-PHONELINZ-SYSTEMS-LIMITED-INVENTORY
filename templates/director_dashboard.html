@@ -17,11 +17,6 @@
 <div class="card">
     <h2 style="margin: 0; color: var(--mtn-blue);">Director Dashboard</h2>
     <p style="color: var(--gray-600); margin-top: 0.5rem;">Executive overview and analytics</p>
-    <div class="quick-nav">
-        <a href="{% url 'customer_crm' %}">👥 Customer CRM</a>
-        <a href="{% url 'stock_alerts' %}">⚠️ Stock Alerts</a>
-        <a href="{% url 'upload_stock_csv' %}">📤 Import CSV</a>
-    </div>
     <div style="display: flex; gap: 10px; margin-top: 1.5rem; flex-wrap: wrap;">
         <button onclick="window.print()" class="btn btn-primary">📄 Export to PDF</button>
         <form action="" method="GET" style="display: flex; gap: 10px; align-items: center;">
