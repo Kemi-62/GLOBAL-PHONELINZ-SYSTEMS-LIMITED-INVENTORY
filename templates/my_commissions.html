@@ -25,7 +25,7 @@
         <tbody>
             {% for commission in commissions %}
             <tr>
-                <td><strong>{{ commission.date_paid|date:"M d, Y H:i" }}</strong></td>
+                <td><strong>{{ commission.date_paid|date:"M d, Y" }}</strong></td>
                 <td style="font-weight: bold; color: #28a745;">₦{{ commission.commission_detected|floatformat:2 }}</td>
                 <td>₦{{ commission.previous_balance|floatformat:2 }}</td>
                 <td>₦{{ commission.current_balance|floatformat:2 }}</td>

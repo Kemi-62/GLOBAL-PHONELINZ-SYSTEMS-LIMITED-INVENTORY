@@ -67,7 +67,6 @@ form input, form select {
         <p>Week Starting: {{ weekly_report.week_start_date }}</p>
         <p>Opening Balance: ₦{{ weekly_report.opening_balance }}</p>
         <p>Additional Funds: ₦{{ weekly_report.additional_funds }}</p>
-        
         {% if is_monday and not weekly_report.is_closed %}
         <div style="background: #e3f2fd; padding: 1rem; border-radius: 8px; margin: 1rem 0; border-left: 4px solid #004F9F;">
             <h4 style="margin-top: 0; color: #004F9F;">📊 Monday Balance Check</h4>
@@ -79,7 +78,6 @@ form input, form select {
                 <button type="submit" style="background: #004F9F; margin-left: 0.5rem;">💾 Record Balance</button>
             </form>
         </div>
-        
         {% if balance_history %}
         <div style="margin-top: 1rem; padding: 1rem; background: #f5f5f5; border-radius: 8px;">
             <h4 style="margin-top: 0;">Balance History (This Week)</h4>
@@ -106,7 +104,6 @@ form input, form select {
         </div>
         {% endif %}
         {% endif %}
-        
         {% if not weekly_report.is_closed %}
             {% if is_saturday %}
             <form method="POST" action="{% url 'close_weekly_report' %}">
@@ -147,12 +144,10 @@ form input, form select {
             <strong>Current Account Balance:</strong>
             <input type="number" step="0.01" name="balance" required style="width: 100%; padding: 0.5rem; margin-top: 0.5rem; border: 1px solid #ddd; border-radius: 4px;" placeholder="e.g., 50000.00">
         </label>
-        
         <label style="display: block; margin-bottom: 1rem;">
             <strong>Notes (Optional):</strong>
             <input type="text" name="notes" placeholder="e.g., Commission received" style="width: 100%; padding: 0.5rem; margin-top: 0.5rem; border: 1px solid #ddd; border-radius: 4px;">
         </label>
-        
         <button type="submit" class="btn btn-success" style="width: 100%;">📝 Record Balance & Check Commission</button>
     </form>
     <p style="color: #666; font-size: 0.9rem; margin-top: 1rem;">
@@ -171,17 +166,14 @@ form input, form select {
             <option value="RENEWAL">Renewal</option>
             <option value="UPGRADE">Upgrade</option>
         </select>
-        
         <select name="service_type" id="service_type" onchange="updatePackages()" required style="margin-top: 1rem;">
             <option value="">-- Select Service --</option>
             <option value="DSTV">DSTV</option>
             <option value="GOTV">GOTV</option>
         </select>
-
         <select name="package_type" id="package_type" required disabled>
             <option value="">-- Select Package --</option>
         </select>
-
         <input type="number" step="0.01" name="cost_price" placeholder="Cost Price" required>
         <input type="number" step="0.01" name="amount" placeholder="Amount" required>
         <button type="submit">Save</button>
@@ -193,13 +185,10 @@ const packages = {
     "DSTV": ["Premium", "Compact+", "Compact", "Confam", "Yanga"],
     "GOTV": ["Jinji", "Jolli", "Max", "Supa", "Supa+"]
 };
-
 function updatePackages() {
     const serviceType = document.getElementById('service_type').value;
     const packageSelect = document.getElementById('package_type');
-    
     packageSelect.innerHTML = '<option value="">-- Select Package --</option>';
-    
     if (serviceType && packages[serviceType]) {
         packageSelect.disabled = false;
         packages[serviceType].forEach(pkg => {
@@ -215,9 +204,45 @@ function updatePackages() {
 </script>
 
 <div class="card">
+    <h3>📈 Subscription History</h3>
+    <form method="GET" style="display: grid; grid-template-columns: repeat(auto-fit, minmax(180px, 1fr)); gap: 0.75rem; margin-bottom: 1rem;">
+        <input type="month" name="month" value="{{ selected_month }}">
+        <input type="text" name="search" value="{{ search_query }}" placeholder="Search name, IUC, package, phone">
+        <button type="submit" class="btn btn-primary">Filter</button>
+    </form>
+    <table>
+        <thead>
+            <tr>
+                <th>Date</th>
+                <th>Customer</th>
+                <th>Phone</th>
+                <th>IUC Number</th>
+                <th>Package</th>
+                <th>Type</th>
+                <th>Amount</th>
+            </tr>
+        </thead>
+        <tbody>
+            {% for sale in all_sales %}
+            <tr>
+                <td>{{ sale.date|date:"M d, Y" }}</td>
+                <td>{{ sale.customer_name }}</td>
+                <td>{{ sale.customer_phone|default:"—" }}</td>
+                <td>{{ sale.iuc_number|default:"—" }}</td>
+                <td>{{ sale.package_type }}</td>
+                <td>{{ sale.get_transaction_type_display }}</td>
+                <td>₦{{ sale.amount|floatformat:2 }}</td>
+            </tr>
+            {% empty %}
+            <tr><td colspan="7" style="text-align:center;">No records found.</td></tr>
+            {% endfor %}
+        </tbody>
+    </table>
+</div>
+
+<div class="card">
     <h3>Today's Performance</h3>
     <p>Total Revenue Today: <strong>₦{{ total_today|floatformat:2 }}</strong></p>
-    
     <table>
         <thead>
             <tr>
