@@ -7,7 +7,7 @@ from django.db.models import Sum, F, Q
 from django.utils import timezone
 from decimal import Decimal
 from datetime import timedelta
-from .models import User, Branch, DeviceTag, ServiceTarget, ServiceActivity, BranchSafeStock, StockMovement, Product, StaffStock, RetailSale, RetailCategory, RetailSubCategory, RetailSubSubCategory, MultiChoiceSale, MultiChoiceWeeklyReport, MultiChoiceBalance, Expense, StockRequest, Attendance, DirectorSafeStock, SimInventory, SimInventoryLog, CommissionPayment
+from .models import CommissionPayment, MultiChoiceBalance, MultiChoiceSale, MultiChoiceWeeklyReport
 from .utils.decorators import role_required
 
 def custom_login(request):
@@ -26,17 +26,16 @@ def admin_redirect(request):
     if request.user.is_superuser:
         from django.contrib.admin.sites import site as admin_site
         return admin_site.index(request)
-    if hasattr(request.user, 'role') and request.user.role:
-        if request.user.role == 'DIRECTOR':
-            return redirect('director_dashboard')
-        if request.user.role == 'MANAGER':
-            return redirect('manager_dashboard')
-        if request.user.role == 'RETAIL':
-            return redirect('retail_dashboard')
-        if request.user.role == 'MULTICHOICE':
-            return redirect('multichoice_dashboard')
-        if request.user.role == 'TELECOM':
-            return redirect('staff_dashboard')
+    if hasattr(request.user, 'role') and request.user.role == 'DIRECTOR':
+        return redirect('director_dashboard')
+    if hasattr(request.user, 'role') and request.user.role == 'MANAGER':
+        return redirect('manager_dashboard')
+    if hasattr(request.user, 'role') and request.user.role == 'RETAIL':
+        return redirect('retail_dashboard')
+    if hasattr(request.user, 'role') and request.user.role == 'MULTICHOICE':
+        return redirect('multichoice_dashboard')
+    if hasattr(request.user, 'role') and request.user.role == 'TELECOM':
+        return redirect('staff_dashboard')
     return redirect('login')
 
 def staff_dashboard(request):
@@ -72,6 +71,7 @@ def release_stock(request):
 def record_retail_sale(request):
     return redirect('retail_dashboard')
 
+@role_required('MULTICHOICE')
 def record_multichoice_sale(request):
     if request.method == 'POST':
         customer_name = request.POST.get('customer_name')
@@ -182,6 +182,30 @@ def record_daily_balance(request):
 def commission_tracking(request):
     return HttpResponse('commission tracking')
 
+@login_required
+def multichoice_dashboard(request):
+    if request.user.role != 'MULTICHOICE':
+        return HttpResponseForbidden('Not allowed')
+    today = timezone.now().date()
+    week_start = today - timedelta(days=today.weekday())
+    weekly_report = MultiChoiceWeeklyReport.objects.filter(staff=request.user, week_start_date=week_start).first()
+    today_sales = MultiChoiceSale.objects.filter(staff=request.user, date=today).order_by('-time')
+    search_query = request.GET.get('search', '').strip()
+    selected_month = request.GET.get('month', today.strftime('%Y-%m'))
+    all_sales = MultiChoiceSale.objects.filter(staff=request.user).order_by('-date', '-time')
+    if selected_month:
+        year, month = selected_month.split('-')
+        all_sales = all_sales.filter(date__year=year, date__month=month)
+    if search_query:
+        all_sales = all_sales.filter(Q(customer_name__icontains=search_query) | Q(customer_phone__icontains=search_query) | Q(iuc_number__icontains=search_query) | Q(package_type__icontains=search_query))
+    total_today = today_sales.aggregate(total=Sum('amount'))['total'] or 0
+    categories = []
+    weekly_total_sales = weekly_report.total_subscriptions if weekly_report and weekly_report.is_closed else 0
+    balance_history = weekly_report.balance_history.all() if weekly_report else None
+    check_logs = []
+    return render(request, 'multichoice_dashboard.html', {'today_sales': today_sales, 'all_sales': all_sales, 'total_today': total_today, 'categories': categories, 'weekly_report': weekly_report, 'is_monday': today.weekday() == 0, 'is_saturday': today.weekday() == 5, 'weekly_total_sales': weekly_total_sales, 'balance_history': balance_history, 'check_logs': check_logs, 'search_query': search_query, 'selected_month': selected_month})
+
+@login_required
 def my_commissions(request):
     if request.user.role != 'MULTICHOICE':
         return HttpResponseForbidden('Not allowed')
