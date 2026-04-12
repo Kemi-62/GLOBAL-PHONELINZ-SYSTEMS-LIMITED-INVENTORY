@@ -3,6 +3,7 @@ from django.contrib.auth import authenticate, login
 from django.contrib import messages
 from django.http import HttpResponseForbidden, JsonResponse
 from django.contrib.auth.decorators import login_required
+from django.db import transaction
 from datetime import date, time
 import math
 from django.db.models import Sum, F
@@ -62,8 +63,6 @@ def create_service_target(request):
             return redirect("manager_dashboard")
         messages.error(request, "Fill all required fields.")
     return render(request, "service_target_form.html", {"devices": devices})
-    
-    return redirect("director_dashboard")
 
 def calculate_distance(lat1, lon1, lat2, lon2):
     R = 6371000
@@ -477,33 +476,34 @@ def approve_stock_request(request, request_id):
             messages.warning(request, "This request has already been handled.")
             return redirect("manager_dashboard")
 
-        stock_request.status = "APPROVED"
-        stock_request.save()
+        with transaction.atomic():
+            stock_request.status = "APPROVED"
+            stock_request.save()
 
-        product = Product.objects.filter(model_name=stock_request.product_name).first()
-        if not product:
-            product = Product.objects.create(
-                model_name=stock_request.product_name,
-                product_name=stock_request.product_name,
-                cost_price=0,
-                selling_price=0
+            product = Product.objects.filter(model_name=stock_request.product_name).first()
+            if not product:
+                product = Product.objects.create(
+                    model_name=stock_request.product_name,
+                    product_name=stock_request.product_name,
+                    cost_price=0,
+                    selling_price=0
+                )
+
+            safe_stock, _ = BranchSafeStock.objects.get_or_create(branch=request.user.branch, product=product)
+            safe_stock.quantity = max(safe_stock.quantity - stock_request.quantity, 0)
+            safe_stock.save()
+
+            staff_stock, _ = StaffStock.objects.get_or_create(staff=stock_request.staff, product=product)
+            staff_stock.quantity += stock_request.quantity
+            staff_stock.save()
+
+            StockMovement.objects.create(
+                branch=request.user.branch,
+                product=product,
+                quantity=stock_request.quantity,
+                movement_type="OUT",
+                performed_by=request.user,
             )
-
-        safe_stock, _ = BranchSafeStock.objects.get_or_create(branch=request.user.branch, product=product)
-        safe_stock.quantity = max(safe_stock.quantity - stock_request.quantity, 0)
-        safe_stock.save()
-
-        staff_stock, _ = StaffStock.objects.get_or_create(staff=stock_request.staff, product=product)
-        staff_stock.quantity += stock_request.quantity
-        staff_stock.save()
-
-        StockMovement.objects.create(
-            branch=request.user.branch,
-            product=product,
-            quantity=stock_request.quantity,
-            movement_type="OUT",
-            performed_by=request.user,
-        )
 
         messages.success(request, "Stock request approved and inventory updated.")
     except StockRequest.DoesNotExist:
@@ -532,9 +532,9 @@ def retail_dashboard(request):
         "sales_history": sales_history,
     })
 
-@login_required
+@role_required("RETAIL")
 def record_retail_sale(request):
-    if request.method == "POST" and request.user.role == "RETAIL":
+    if request.method == "POST":
         staff = request.user
         branch = staff.branch
 
@@ -891,9 +891,9 @@ def generate_branch_report_pdf(request, branch_id):
         messages.error(request, f"Error generating PDF: {str(e)}")
         return redirect("director_dashboard")
 
-@login_required
+@role_required("MULTICHOICE")
 def record_multichoice_sale(request):
-    if request.method == "POST" and request.user.role == "MULTICHOICE":
+    if request.method == "POST":
         MultiChoiceSale.objects.create(
             staff=request.user,
             branch=request.user.branch,
@@ -1206,11 +1206,8 @@ def create_director_product(request):
     
     return redirect('director_safe_stock')
 
-@login_required
+@role_required("RETAIL")
 def product_catalog(request):
-    if request.user.role != "RETAIL":
-        return HttpResponseForbidden("Access denied")
-    
     products = Product.objects.all()
     categories = RetailCategory.objects.all()
     
@@ -1220,9 +1217,9 @@ def product_catalog(request):
     }
     return render(request, 'retail_catalog.html', context)
 
-@login_required
+@role_required("MANAGER")
 def add_stock_to_safe(request):
-    if request.method == "POST" and request.user.role == "MANAGER":
+    if request.method == "POST":
         try:
             branch = request.user.branch
             
@@ -1254,23 +1251,24 @@ def add_stock_to_safe(request):
                 product = Product.objects.get(id=product_id)
 
             quantity = int(request.POST.get("quantity"))
-            safe_stock, created = BranchSafeStock.objects.get_or_create(branch=branch, product=product)
-            safe_stock.quantity += quantity
-            safe_stock.save()
+            with transaction.atomic():
+                safe_stock, _ = BranchSafeStock.objects.get_or_create(branch=branch, product=product)
+                safe_stock.quantity += quantity
+                safe_stock.save()
 
-            StockMovement.objects.create(
-                branch=branch, product=product, quantity=quantity,
-                movement_type="IN", performed_by=request.user
-            )
+                StockMovement.objects.create(
+                    branch=branch, product=product, quantity=quantity,
+                    movement_type="IN", performed_by=request.user
+                )
             messages.success(request, f"Added {quantity} of {product.model_name} to safe.")
         except Exception as e:
             messages.error(request, f"Error adding stock: {str(e)}")
 
     return redirect("manager_dashboard")
 
-@login_required
+@role_required("RETAIL")
 def staff_create_product(request):
-    if request.method == "POST" and request.user.role == "RETAIL":
+    if request.method == "POST":
         try:
             cat_id = request.POST.get("category")
             subcat_name = request.POST.get("new_subcategory")
@@ -1306,16 +1304,16 @@ def staff_create_product(request):
 
 @login_required
 def add_category(request):
-    if request.method == "POST" and request.user.role in ["MANAGER", "SUPERADMIN"]:
+    if request.method == "POST" and request.user.role in ["MANAGER", "SUPERADMIN", "DIRECTOR"]:
         name = request.POST.get("name")
         if name:
             RetailCategory.objects.get_or_create(name=name)
             messages.success(request, f"Category '{name}' added.")
     return redirect(request.META.get('HTTP_REFERER', 'manager_dashboard'))
 
-@login_required
+@role_required("MANAGER")
 def release_stock(request):
-    if request.method == "POST" and request.user.role == "MANAGER":
+    if request.method == "POST":
         branch = request.user.branch
         staff_id = request.POST.get("staff")
         product_id = request.POST.get("product")
@@ -1324,42 +1322,32 @@ def release_stock(request):
         product = Product.objects.get(id=product_id)
         staff = User.objects.get(id=staff_id, branch=branch)
 
-        safe_stock = BranchSafeStock.objects.get(
-            branch=branch,
-            product=product
-        )
+        safe_stock = BranchSafeStock.objects.get(branch=branch, product=product)
 
-        # Prevent Over Release
         if quantity > safe_stock.quantity:
             messages.error(request, "Insufficient safe stock.")
             return redirect("manager_dashboard")
 
-        # Reduce Safe Stock
-        safe_stock.quantity -= quantity
-        safe_stock.save()
+        with transaction.atomic():
+            safe_stock.quantity -= quantity
+            safe_stock.save()
 
-        # Increase Staff Stock
-        staff_stock, created = StaffStock.objects.get_or_create(
-            staff=staff,
-            product=product
-        )
+            staff_stock, _ = StaffStock.objects.get_or_create(staff=staff, product=product)
+            staff_stock.quantity += quantity
+            staff_stock.save()
 
-        staff_stock.quantity += quantity
-        staff_stock.save()
+            stock_request = StockRequest.objects.filter(
+                branch=branch, product_name=product.model_name, status="PENDING"
+            ).order_by("-date_requested").first()
+            if stock_request:
+                stock_request.status = "APPROVED"
+                stock_request.save()
 
-        stock_request = StockRequest.objects.filter(branch=branch, product_name=product.model_name, status="PENDING").order_by("-date_requested").first()
-        if stock_request:
-            stock_request.status = "APPROVED"
-            stock_request.save()
+            StockMovement.objects.create(
+                branch=branch, product=product, quantity=quantity,
+                movement_type="OUT", performed_by=request.user
+            )
 
-        # Log Movement
-        StockMovement.objects.create(
-            branch=branch,
-            product=product,
-            quantity=quantity,
-            movement_type="OUT",
-            performed_by=request.user
-        )
         messages.success(request, f"Released {quantity} of {product.model_name} to {staff.username}.")
 
     return redirect("manager_dashboard")
@@ -1531,17 +1519,36 @@ def upload_stock_csv(request):
     if request.method == 'POST' and request.FILES.get('csv_file'):
         csv_file = request.FILES['csv_file']
         import csv
+
+        # Server-side size validation (max 5MB)
+        if csv_file.size > 5 * 1024 * 1024:
+            messages.error(request, 'File too large. Maximum allowed size is 5MB.')
+            return redirect('director_dashboard')
+
         try:
-            decoded = csv_file.read().decode('utf-8-sig').splitlines()
+            raw = csv_file.read()
+            # Try UTF-8 with BOM first, fall back to latin-1 for Windows-exported files
+            try:
+                decoded = raw.decode('utf-8-sig').splitlines()
+            except UnicodeDecodeError:
+                decoded = raw.decode('latin-1').splitlines()
+
             reader = csv.DictReader(decoded)
             count = 0
+            skipped = 0
             for row in reader:
                 product_id = row.get('product_id') or row.get('product')
-                quantity = int(row.get('quantity', 0))
+                try:
+                    quantity = int(row.get('quantity', 0))
+                except (ValueError, TypeError):
+                    skipped += 1
+                    continue
                 if not product_id:
+                    skipped += 1
                     continue
                 product = Product.objects.filter(id=product_id).first()
                 if not product:
+                    skipped += 1
                     continue
                 BranchSafeStock.objects.update_or_create(
                     branch=request.user.branch,
@@ -1549,7 +1556,11 @@ def upload_stock_csv(request):
                     defaults={'quantity': quantity}
                 )
                 count += 1
-            messages.success(request, f"Imported {count} stock items successfully!")
+
+            msg = f"Imported {count} stock item(s) successfully."
+            if skipped:
+                msg += f" {skipped} row(s) skipped (missing product ID or unrecognised product)."
+            messages.success(request, msg)
         except Exception as e:
             messages.error(request, f"CSV error: {str(e)}")
     return redirect('director_dashboard')

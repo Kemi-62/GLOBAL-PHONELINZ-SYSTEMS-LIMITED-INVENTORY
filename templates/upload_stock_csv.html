@@ -18,7 +18,7 @@
     <form method="POST" enctype="multipart/form-data">
         {% csrf_token %}
         <label for="csv_file">Select CSV File:</label>
-        <input type="file" name="csv_file" id="csv_file" accept=".csv" required style="margin-top: 1rem;">
+        <input type="file" name="csv_file" id="csv_file" accept=".csv,.txt,text/csv,text/plain" required style="margin-top: 1rem;">
         <button type="submit" class="btn btn-primary" style="margin-top: 1rem;">📤 Upload Stock</button>
     </form>
 </div>
