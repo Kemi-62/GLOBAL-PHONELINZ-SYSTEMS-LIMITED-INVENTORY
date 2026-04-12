@@ -256,6 +256,7 @@ class MultiChoiceSale(models.Model):
 
     customer_name = models.CharField(max_length=150)
     customer_phone = models.CharField(max_length=20, null=True, blank=True)
+    iuc_number = models.CharField(max_length=100, null=True, blank=True)
     service_type = models.CharField(max_length=20, choices=(("DSTV", "DSTV"), ("GOTV", "GOTV")), default="DSTV")
     package_type = models.CharField(max_length=100)
     transaction_type = models.CharField(
@@ -289,7 +290,6 @@ class MultiChoiceWeeklyReport(models.Model):
 
     def calculate_commission(self):
         if self.closing_balance is not None:
-            # commission = (closing balance + subscription) - (opening balance + Additional funds)
             self.commission = (self.closing_balance + self.total_subscriptions) - (self.opening_balance + self.additional_funds)
             return self.commission
         return 0
@@ -297,6 +297,8 @@ class MultiChoiceWeeklyReport(models.Model):
 class MultiChoiceBalance(models.Model):
     weekly_report = models.ForeignKey(MultiChoiceWeeklyReport, on_delete=models.CASCADE, related_name='balance_history')
     balance_amount = models.DecimalField(max_digits=12, decimal_places=2)
+    balance_after_sale = models.DecimalField(max_digits=12, decimal_places=2, null=True, blank=True)
+    sale_cost_price = models.DecimalField(max_digits=12, decimal_places=2, default=0)
     date = models.DateField(auto_now_add=True)
     time = models.TimeField(auto_now_add=True)
     notes = models.CharField(max_length=200, blank=True, null=True)
@@ -404,7 +406,7 @@ class StockAlert(models.Model):
 class DeviceTagCommission(models.Model):
     branch = models.ForeignKey(Branch, on_delete=models.CASCADE)
     device_tag = models.ForeignKey(DeviceTag, on_delete=models.CASCADE)
-    month_year = models.CharField(max_length=7)  # YYYY-MM format
+    month_year = models.CharField(max_length=7)
     commission_amount = models.DecimalField(max_digits=12, decimal_places=2)
     created_by = models.ForeignKey(User, on_delete=models.SET_NULL, null=True)
     created_at = models.DateTimeField(auto_now_add=True)
@@ -452,39 +454,34 @@ class Attendance(models.Model):
 
 
 class SimInventory(models.Model):
-    """Unified SIM inventory tracking for manager"""
     branch = models.OneToOneField(Branch, on_delete=models.CASCADE, related_name='sim_inventory')
-    opening_balance = models.IntegerField(default=0)  # SIM count at month start
-    current_month = models.IntegerField(default=0)  # Current month (YYYY-MM format helper)
-    current_year = models.IntegerField(default=0)  # Current year
-    
-    # Tracking
-    total_received = models.IntegerField(default=0)  # Total SIM received during month
-    total_sold = models.IntegerField(default=0)  # Total SIM sold/used
+    opening_balance = models.IntegerField(default=0)
+    current_month = models.IntegerField(default=0)
+    current_year = models.IntegerField(default=0)
+    total_received = models.IntegerField(default=0)
+    total_sold = models.IntegerField(default=0)
     date_updated = models.DateTimeField(auto_now=True)
-    
+
     def get_current_balance(self):
-        """Calculate current balance: opening + received - sold"""
         return self.opening_balance + self.total_received - self.total_sold
-    
+
     def __str__(self):
         return f"{self.branch.name} SIM Inventory - Balance: {self.get_current_balance()}"
 
 
 class SimInventoryLog(models.Model):
-    """Transaction log for SIM inventory"""
     TRANSACTION_TYPE = (
         ('OPENING', 'Opening Balance'),
         ('RECEIVED', 'SIM Received'),
         ('SOLD', 'SIM Sold/Used'),
     )
-    
+
     inventory = models.ForeignKey(SimInventory, on_delete=models.CASCADE, related_name='logs')
     transaction_type = models.CharField(max_length=20, choices=TRANSACTION_TYPE)
     quantity = models.IntegerField()
-    description = models.TextField(blank=True)  # Details like "SIM Swap: 5", "SIM Registration: 3", etc.
+    description = models.TextField(blank=True)
     date_created = models.DateTimeField(auto_now_add=True)
     created_by = models.ForeignKey(User, on_delete=models.SET_NULL, null=True, blank=True)
-    
+
     def __str__(self):
         return f"{self.inventory.branch.name} - {self.transaction_type}: {self.quantity} SIMs"
