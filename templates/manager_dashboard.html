@@ -93,6 +93,47 @@ function showSection(id, btn) {
         </div>
     {% endif %}
 
+    <div class="card" style="margin-top: 1rem;">
+        <h3>Set Telecom Targets</h3>
+        <form method="POST" action="{% url 'create_service_target' %}">
+            {% csrf_token %}
+            <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); gap: 1rem;">
+                <select name="service_type" required>
+                    <option value="">Select Service</option>
+                    <option value="SIM_REG">SIM Registration</option>
+                    <option value="SIM_SWAP">SIM Swap</option>
+                    <option value="SIM_UPGRADE">SIM Upgrade</option>
+                </select>
+                <select name="device_tag">
+                    <option value="">All Device Tags</option>
+                    {% for device in device_tags %}
+                    <option value="{{ device.id }}">{{ device.tag_name }}</option>
+                    {% endfor %}
+                </select>
+                <input type="date" name="date" required>
+                <input type="number" name="target_number" min="1" placeholder="Target Quantity" required>
+            </div>
+            <button type="submit" class="btn btn-primary" style="margin-top: 1rem;">Save Target</button>
+        </form>
+        <table style="margin-top: 1rem;">
+            <thead>
+                <tr><th>Service</th><th>Device Tag</th><th>Date</th><th>Target</th></tr>
+            </thead>
+            <tbody>
+                {% for target in service_targets %}
+                <tr>
+                    <td>{{ target.get_service_type_display }}</td>
+                    <td>{{ target.device_tag.tag_name|default:"All" }}</td>
+                    <td>{{ target.date }}</td>
+                    <td>{{ target.target_number }}</td>
+                </tr>
+                {% empty %}
+                <tr><td colspan="4" style="text-align:center;">No targets set yet</td></tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+
     <div class="card">
         <h3>Target Performance (This Month)</h3>
         <table>

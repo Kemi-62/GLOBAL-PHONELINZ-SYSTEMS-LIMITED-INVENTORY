@@ -8,7 +8,7 @@ import math
 from django.db.models import Sum, F
 from django.utils import timezone
 from decimal import Decimal
-from .models import User, Branch, DeviceTag, ServiceTarget, ServiceActivity, BranchSafeStock, StockMovement, Product, StaffStock, RetailSale, RetailCategory, RetailSubCategory, RetailSubSubCategory, MultiChoiceSale, MultiChoiceWeeklyReport, MultiChoiceBalance, Expense, StockRequest, Attendance, DirectorSafeStock
+from .models import User, Branch, DeviceTag, ServiceTarget, ServiceActivity, BranchSafeStock, StockMovement, Product, StaffStock, RetailSale, RetailCategory, RetailSubCategory, RetailSubSubCategory, MultiChoiceSale, MultiChoiceWeeklyReport, MultiChoiceBalance, Expense, StockRequest, Attendance, DirectorSafeStock, SimInventory, SimInventoryLog
 from .utils.decorators import role_required
 
 # -----------------------
@@ -35,6 +35,33 @@ def admin_redirect(request):
             return redirect("multichoice_dashboard")
         elif request.user.role == "TELECOM":
             return redirect("staff_dashboard")
+    return redirect("login")
+
+
+@role_required("MANAGER")
+def create_service_target(request):
+    devices = DeviceTag.objects.filter(branch=request.user.branch)
+    if request.method == "POST":
+        service_type = request.POST.get("service_type")
+        device_tag_id = request.POST.get("device_tag") or None
+        target_number = request.POST.get("target_number")
+        target_date = request.POST.get("date")
+        device_tag = DeviceTag.objects.filter(id=device_tag_id, branch=request.user.branch).first() if device_tag_id else None
+        if service_type and target_number and target_date:
+            ServiceTarget.objects.update_or_create(
+                branch=request.user.branch,
+                service_type=service_type,
+                device_tag=device_tag,
+                date=target_date,
+                defaults={
+                    "target_number": int(target_number),
+                    "created_by": request.user,
+                },
+            )
+            messages.success(request, "Target saved successfully.")
+            return redirect("manager_dashboard")
+        messages.error(request, "Fill all required fields.")
+    return render(request, "service_target_form.html", {"devices": devices})
     
     return redirect("director_dashboard")
 
@@ -400,6 +427,7 @@ def manager_dashboard(request):
     # ---------- SIM INVENTORY ----------
     sim_inventory, created = SimInventory.objects.get_or_create(branch=branch)
     sim_logs = SimInventoryLog.objects.filter(inventory=sim_inventory).order_by('-date_created')[:15]
+    service_targets = ServiceTarget.objects.filter(branch=branch).select_related("device_tag").order_by("-date")
 
     context = {
         'target_data': target_data,
@@ -421,6 +449,7 @@ def manager_dashboard(request):
         "check_logs": check_logs,
         "sim_inventory": sim_inventory,
         "sim_logs": sim_logs,
+        "service_targets": service_targets,
     }
     return render(request, "manager_dashboard.html", context)
 
@@ -451,7 +480,14 @@ def approve_stock_request(request, request_id):
         stock_request.status = "APPROVED"
         stock_request.save()
 
-        product, _ = Product.objects.get_or_create(model_name=stock_request.product_name, defaults={"product_name": stock_request.product_name})
+        product = Product.objects.filter(model_name=stock_request.product_name).first()
+        if not product:
+            product = Product.objects.create(
+                model_name=stock_request.product_name,
+                product_name=stock_request.product_name,
+                cost_price=0,
+                selling_price=0
+            )
 
         safe_stock, _ = BranchSafeStock.objects.get_or_create(branch=request.user.branch, product=product)
         safe_stock.quantity = max(safe_stock.quantity - stock_request.quantity, 0)
@@ -1504,9 +1540,12 @@ def upload_stock_csv(request):
                 quantity = int(row.get('quantity', 0))
                 if not product_id:
                     continue
+                product = Product.objects.filter(id=product_id).first()
+                if not product:
+                    continue
                 BranchSafeStock.objects.update_or_create(
                     branch=request.user.branch,
-                    product_id=product_id,
+                    product=product,
                     defaults={'quantity': quantity}
                 )
                 count += 1

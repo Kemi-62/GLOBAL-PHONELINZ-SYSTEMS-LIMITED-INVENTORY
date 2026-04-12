@@ -7,6 +7,7 @@ urlpatterns = [
     path('staff/', views.staff_dashboard, name='staff_dashboard'),
     path('telecom/', views.staff_dashboard, name='telecom_dashboard'),
     path('manager/', views.manager_dashboard, name='manager_dashboard'),
+    path('manager/create-target/', views.create_service_target, name='create_service_target'),
     path('director/', views.director_dashboard, name='director_dashboard'),
     path('daily-sales-report/', views.daily_sales_report, name='daily_sales_report'),
     path('staff-monthly-activity/', views.staff_monthly_activity, name='staff_monthly_activity'),

@@ -19,7 +19,9 @@ from .models import (
     Expense,
     StockRequest,
     MultiChoiceWeeklyReport,
-    StockMovement
+    StockMovement,
+    SimInventory,
+    SimInventoryLog
 )
 @admin.register(User)
 class CustomUserAdmin(BaseUserAdmin):
@@ -98,3 +100,5 @@ admin.site.register(Expense)
 admin.site.register(StockRequest)
 admin.site.register(MultiChoiceWeeklyReport)
 admin.site.register(StockMovement)
+admin.site.register(SimInventory)
+admin.site.register(SimInventoryLog)
