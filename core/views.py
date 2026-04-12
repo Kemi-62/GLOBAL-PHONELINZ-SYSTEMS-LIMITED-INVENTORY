@@ -437,6 +437,43 @@ def approve_activity(request, activity_id):
         pass
     return redirect('manager_dashboard')
 
+
+@role_required("MANAGER")
+def approve_stock_request(request, request_id):
+    if request.method != "POST":
+        return redirect("manager_dashboard")
+    try:
+        stock_request = StockRequest.objects.get(id=request_id, branch=request.user.branch)
+        if stock_request.status != "PENDING":
+            messages.warning(request, "This request has already been handled.")
+            return redirect("manager_dashboard")
+
+        stock_request.status = "APPROVED"
+        stock_request.save()
+
+        product, _ = Product.objects.get_or_create(model_name=stock_request.product_name, defaults={"product_name": stock_request.product_name})
+
+        safe_stock, _ = BranchSafeStock.objects.get_or_create(branch=request.user.branch, product=product)
+        safe_stock.quantity = max(safe_stock.quantity - stock_request.quantity, 0)
+        safe_stock.save()
+
+        staff_stock, _ = StaffStock.objects.get_or_create(staff=stock_request.staff, product=product)
+        staff_stock.quantity += stock_request.quantity
+        staff_stock.save()
+
+        StockMovement.objects.create(
+            branch=request.user.branch,
+            product=product,
+            quantity=stock_request.quantity,
+            movement_type="OUT",
+            performed_by=request.user,
+        )
+
+        messages.success(request, "Stock request approved and inventory updated.")
+    except StockRequest.DoesNotExist:
+        messages.error(request, "Stock request not found.")
+    return redirect("manager_dashboard")
+
 @role_required("RETAIL")
 def retail_dashboard(request):
     from .models import CheckInOutLog
@@ -644,15 +681,6 @@ def request_stock(request):
         )
         messages.success(request, "Stock request submitted.")
     return redirect("retail_dashboard")
-
-@login_required
-def approve_stock_request(request, request_id):
-    if request.user.role == "MANAGER":
-        stock_req = StockRequest.objects.get(id=request_id, branch=request.user.branch)
-        stock_req.status = "APPROVED"
-        stock_req.save()
-        messages.success(request, "Stock request approved.")
-    return redirect("manager_dashboard")
 
 from django.http import HttpResponse, HttpResponseForbidden
 from reportlab.pdfgen import canvas
@@ -1283,6 +1311,11 @@ def release_stock(request):
         staff_stock.quantity += quantity
         staff_stock.save()
 
+        stock_request = StockRequest.objects.filter(branch=branch, product_name=product.model_name, status="PENDING").order_by("-date_requested").first()
+        if stock_request:
+            stock_request.status = "APPROVED"
+            stock_request.save()
+
         # Log Movement
         StockMovement.objects.create(
             branch=branch,
@@ -1463,14 +1496,18 @@ def upload_stock_csv(request):
         csv_file = request.FILES['csv_file']
         import csv
         try:
-            decoded = csv_file.read().decode('utf-8').splitlines()
+            decoded = csv_file.read().decode('utf-8-sig').splitlines()
             reader = csv.DictReader(decoded)
             count = 0
             for row in reader:
+                product_id = row.get('product_id') or row.get('product')
+                quantity = int(row.get('quantity', 0))
+                if not product_id:
+                    continue
                 BranchSafeStock.objects.update_or_create(
                     branch=request.user.branch,
-                    product_id=row.get('product_id'),
-                    defaults={'quantity': int(row.get('quantity', 0))}
+                    product_id=product_id,
+                    defaults={'quantity': quantity}
                 )
                 count += 1
             messages.success(request, f"Imported {count} stock items successfully!")
@@ -1609,6 +1646,53 @@ def record_daily_balance(request):
             messages.success(request, f"✓ Balance recorded: ₦{balance:,.2f}")
     
     return redirect('multichoice_dashboard')
+
+
+@role_required("DIRECTOR")
+def staff_monthly_activity(request):
+    staff_id = request.GET.get("staff")
+    branch_id = request.GET.get("branch")
+    date_filter = request.GET.get("date")
+    activity_type = request.GET.get("type")
+
+    activities = ServiceActivity.objects.select_related("staff", "branch", "device_tag").all().order_by("-date", "-id")
+    sales = RetailSale.objects.select_related("staff", "branch", "product").all().order_by("-date", "-id")
+    multichoice = MultiChoiceSale.objects.select_related("staff", "branch").all().order_by("-date", "-id")
+
+    if staff_id:
+        activities = activities.filter(staff_id=staff_id)
+        sales = sales.filter(staff_id=staff_id)
+        multichoice = multichoice.filter(staff_id=staff_id)
+    if branch_id:
+        activities = activities.filter(branch_id=branch_id)
+        sales = sales.filter(branch_id=branch_id)
+        multichoice = multichoice.filter(branch_id=branch_id)
+    if date_filter:
+        activities = activities.filter(date=date_filter)
+        sales = sales.filter(date=date_filter)
+        multichoice = multichoice.filter(date=date_filter)
+
+    staff_list = User.objects.filter(branch=request.user.branch).exclude(role="SUPERADMIN")
+    branch_list = Branch.objects.all()
+
+    combined = []
+    for item in activities:
+        combined.append({"date": item.date, "time": item.time if hasattr(item, "time") else None, "type": "Telecom", "staff": item.staff, "branch": item.branch, "label": item.service_type, "quantity": item.quantity})
+    for item in sales:
+        combined.append({"date": item.date, "time": item.time, "type": "Retail", "staff": item.staff, "branch": item.branch, "label": item.product.model_name, "quantity": item.quantity})
+    for item in multichoice:
+        combined.append({"date": item.date, "time": item.time, "type": "MultiChoice", "staff": item.staff, "branch": item.branch, "label": item.package_type, "quantity": 1})
+
+    combined.sort(key=lambda x: (x["date"], x["time"] or ""), reverse=True)
+    return render(request, "staff_monthly_activity.html", {
+        "activities": combined,
+        "staff_list": staff_list,
+        "branch_list": branch_list,
+        "selected_staff": staff_id,
+        "selected_branch": branch_id,
+        "selected_date": date_filter,
+        "selected_type": activity_type,
+    })
 
 # Director - View all commissions paid to staff
 @role_required("DIRECTOR")

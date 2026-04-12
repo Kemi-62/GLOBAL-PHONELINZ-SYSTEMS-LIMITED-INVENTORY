@@ -30,7 +30,7 @@
                 <select name="product" id="product_select" required onchange="updateSellingPrice()">
                     <option value="">-- Select Product --</option>
                     {% for stock in staff_stock %}
-                        <option value="{{ stock.product.id }}" data-price="{{ stock.product.selling_price }}">{{ stock.product.model_name }} ({{ stock.quantity }} avail)</option>
+                        <option value="{{ stock.product.id }}" data-price="{{ stock.product.selling_price }}">{{ stock.product.model_name }} - Qty: {{ stock.quantity }}</option>
                     {% endfor %}
                 </select>
                 <label style="display: block; margin-top: 1rem;">Customer Phone</label>
@@ -193,6 +193,11 @@ Samsung Galaxy,S24,2,Phones,Flagship,987654321,750000,3</pre>
             {% endfor %}
         </tbody>
     </table>
+</div>
+
+<div class="card" style="margin-top: 2rem;">
+    <h3>📋 Monthly Activity Summary</h3>
+    <p>Available in Director dashboard filter view.</p>
 </div>
 
 <div class="card" style="margin-top: 2rem;">

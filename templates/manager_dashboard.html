@@ -56,7 +56,8 @@ function showSection(id, btn) {
     <h2 style="margin: 0;">📊 Manager Dashboard</h2>
     <p style="color: var(--gray-600); margin: 0.5rem 0 0 0;">Branch: <strong>{{ request.user.branch.name }}</strong></p>
 </div>
-    
+
+<div class="card">
     <form method="GET" style="margin-top: 1rem; display: flex; gap: 10px;">
         <input type="text" name="search" placeholder="Search staff..." value="{{ search_query }}" style="margin: 0; flex: 1;">
         <button type="submit" class="btn btn-primary">Search</button>
@@ -523,6 +524,24 @@ Samsung Galaxy,S24,2,Phones,Flagship,987654321,750000,3</pre>
     <div class="card">
         <h3>MultiChoice Branch Summary</h3>
         <p>Total Revenue Today: ₦{{ multichoice_revenue|floatformat:2 }}</p>
+    </div>
+    <div class="card" style="margin-top: 1rem;">
+        <h3>Commission History</h3>
+        <table>
+            <thead><tr><th>Staff</th><th>Balance</th><th>Date</th><th>Notes</th></tr></thead>
+            <tbody>
+                {% for balance in sim_logs %}
+                <tr>
+                    <td>{{ balance.weekly_report.staff.username }}</td>
+                    <td>₦{{ balance.balance_amount|floatformat:2 }}</td>
+                    <td>{{ balance.date|date:"M d, Y" }}</td>
+                    <td>{{ balance.notes|default:"" }}</td>
+                </tr>
+                {% empty %}
+                <tr><td colspan="4" style="text-align:center;">No commission history</td></tr>
+                {% endfor %}
+            </tbody>
+        </table>
     </div>
 </div>
 
