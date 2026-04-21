@@ -4,526 +4,442 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Service Performance Tracking ERP</title>
-    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <title>GPSL ERP</title>
     <style>
         :root {
-            --mtn-yellow: #FFCB05;
-            --mtn-blue: #004F9F;
-            --mtn-black: #000000;
-            --success-color: #10B981;
-            --danger-color: #EF4444;
-            --warning-color: #F59E0B;
+            --blue:    #004F9F;
+            --blue-dk: #003a7a;
+            --yellow:  #FFCB05;
+            --green:   #10B981;
+            --red:     #EF4444;
+            --amber:   #F59E0B;
             --gray-50: #F9FAFB;
-            --gray-100: #F3F4F6;
-            --gray-200: #E5E7EB;
-            --gray-300: #D1D5DB;
-            --gray-600: #4B5563;
-            --gray-700: #374151;
+            --gray-100:#F3F4F6;
+            --gray-200:#E5E7EB;
+            --gray-300:#D1D5DB;
+            --gray-500:#6B7280;
+            --gray-700:#374151;
+            --sidebar-w: 250px;
         }
-        
-        * { margin: 0; padding: 0; box-sizing: border-box; }
-        
-        html, body { 
-            width: 100%; 
-            height: 100%;
-            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
-            background-color: var(--gray-50);
-            color: var(--gray-700);
+        *, *::before, *::after { margin:0; padding:0; box-sizing:border-box; }
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            background: var(--gray-50); color: var(--gray-700);
             -webkit-font-smoothing: antialiased;
-            -moz-osx-font-smoothing: grayscale;
         }
-        
-        .navbar {
-            background: linear-gradient(135deg, var(--mtn-blue) 0%, #003a7a 100%);
-            color: white;
-            padding: 1rem 1.5rem;
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-            box-shadow: 0 10px 30px rgba(0, 79, 159, 0.15);
-            position: sticky;
-            top: 0;
-            z-index: 1001;
+
+        /* ── TOPBAR ── */
+        .topbar {
+            position:fixed; top:0; left:0; right:0; z-index:1000;
+            height:56px;
+            background:linear-gradient(135deg,var(--blue) 0%,var(--blue-dk) 100%);
+            display:flex; align-items:center; justify-content:space-between;
+            padding:0 1.25rem;
+            box-shadow:0 2px 12px rgba(0,0,0,.18);
         }
-        
-        .navbar h1 {
-            font-size: 1.3rem;
-            font-weight: 700;
-            color: var(--mtn-yellow) !important;
-            letter-spacing: 0px;
-            margin: 0;
+        .topbar-left { display:flex; align-items:center; gap:.85rem; }
+        .topbar-logo { font-size:1.1rem; font-weight:800; color:var(--yellow); letter-spacing:.5px; }
+        .topbar-branch { font-size:.75rem; color:rgba(255,255,255,.65); }
+        .topbar-right { display:flex; align-items:center; gap:.6rem; }
+        .topbar-user { font-size:.8rem; color:rgba(255,255,255,.85); }
+        .topbar-role {
+            font-size:.68rem; font-weight:700; background:var(--yellow);
+            color:#000; padding:.15rem .5rem; border-radius:4px;
         }
-        
-        .user-info {
-            font-size: 0.8rem;
-            display: flex;
-            align-items: center;
-            gap: 0.75rem;
-            flex-direction: row;
+        .topbar-logout {
+            font-size:.78rem; color:rgba(255,255,255,.8); text-decoration:none;
+            padding:.3rem .65rem; border-radius:5px; background:rgba(255,255,255,.12);
+            transition:background .2s;
         }
-        
-        .user-info strong {
-            color: white;
-            font-weight: 500;
+        .topbar-logout:hover { background:rgba(255,255,255,.22); color:#fff; }
+        .hamburger {
+            background:none; border:none; color:var(--yellow);
+            font-size:1.4rem; cursor:pointer; padding:.2rem;
+            display:flex; align-items:center;
         }
-        
-        .user-info a {
-            color: white;
-            text-decoration: none;
-            padding: 0.3rem 0.6rem;
-            background: rgba(255,255,255,0.1);
-            border-radius: 4px;
-            transition: all 0.2s;
-            font-size: 0.75rem;
-        }
-        
-        .user-info a:hover {
-            background: rgba(255,255,255,0.2);
-        }
-        
-        .menu-toggle {
-            cursor: pointer;
-            font-size: 1.5rem;
-            color: var(--mtn-yellow);
-            margin-right: 1rem;
-            background: none;
-            border: none;
-            display: block;
-        }
-        
+
+        /* ── SIDEBAR ── */
         .sidebar {
-            width: 260px;
-            background: linear-gradient(180deg, var(--mtn-black) 0%, #1a1a1a 100%);
-            color: white;
-            height: 100vh;
-            position: fixed;
-            left: 0;
-            top: 0;
-            transition: 0.3s;
-            z-index: 1000;
-            padding: 2rem 1rem;
-            box-shadow: 5px 0 25px rgba(0,0,0,0.15);
-            overflow-y: auto;
-            left: -260px;
+            position:fixed; top:56px; left:calc(-1 * var(--sidebar-w)); bottom:0;
+            width:var(--sidebar-w); background:#0d0d0d; z-index:999;
+            overflow-y:auto; transition:left .25s ease;
+            display:flex; flex-direction:column;
         }
-        
-        .sidebar.open {
-            left: 0;
-        }
-        
-        .sidebar-header {
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-            margin-bottom: 2rem;
-            border-bottom: 1px solid rgba(255,255,255,0.1);
-            padding-bottom: 1rem;
-        }
-        
-        .sidebar-header h3 {
-            color: var(--mtn-yellow);
-            font-size: 1rem;
-            font-weight: 700;
-        }
-        
-        .sidebar-header .close-btn {
-            cursor: pointer;
-            font-size: 1.5rem;
-            display: none;
-            background: none;
-            border: none;
-            color: white;
-        }
-        
-        .sidebar-link {
-            display: block;
-            color: rgba(255,255,255,0.7);
-            text-decoration: none;
-            padding: 0.75rem 1rem;
-            border-radius: 8px;
-            margin-bottom: 0.5rem;
-            transition: all 0.2s ease;
-            border-left: 3px solid transparent;
-            font-weight: 500;
-        }
-        
-        .sidebar-link:hover {
-            background: rgba(255,203,5,0.15);
-            border-left-color: var(--mtn-yellow);
-            color: white;
-        }
-        
-        .sidebar-link.active {
-            background: var(--mtn-yellow);
-            color: var(--mtn-black);
-            font-weight: 600;
-            border-left-color: transparent;
-        }
-        
+        .sidebar.open { left:0; }
         .sidebar-overlay {
-            display: none;
-            position: fixed;
-            top: 0;
-            left: 0;
-            width: 100%;
-            height: 100%;
-            background: rgba(0,0,0,0.5);
-            z-index: 999;
+            display:none; position:fixed; inset:0; z-index:998;
+            background:rgba(0,0,0,.45);
         }
-        
-        .sidebar-overlay.show {
-            display: block;
+        .sidebar-overlay.show { display:block; }
+        .sidebar-section { padding:.9rem 1rem .3rem; }
+        .sidebar-section-label {
+            font-size:.65rem; font-weight:700; letter-spacing:.1em;
+            text-transform:uppercase; color:rgba(255,255,255,.35);
+            padding:0 .25rem; margin-bottom:.4rem;
         }
-        
-        .container {
-            max-width: 1400px;
-            margin: 2rem auto;
-            padding: 0 1.5rem;
-            margin-left: 0;
+        .sidebar-link {
+            display:flex; align-items:center; gap:.65rem;
+            padding:.6rem .85rem; border-radius:7px;
+            color:rgba(255,255,255,.72); text-decoration:none;
+            font-size:.85rem; font-weight:500; transition:all .18s;
+            border-left:3px solid transparent; margin-bottom:.15rem;
         }
-        
+        .sidebar-link:hover { background:rgba(255,203,5,.12); border-left-color:var(--yellow); color:#fff; }
+        .sidebar-link.active { background:var(--yellow); color:#000; font-weight:700; border-left-color:transparent; }
+        .sidebar-link .icon { font-size:1rem; flex-shrink:0; }
+        .sidebar-divider { height:1px; background:rgba(255,255,255,.08); margin:.6rem 1rem; }
+        .sidebar-logout {
+            display:flex; align-items:center; gap:.65rem;
+            padding:.6rem .85rem; margin:.5rem 1rem 1rem;
+            border-radius:7px; color:#f08080; text-decoration:none;
+            font-size:.85rem; font-weight:600;
+            background:rgba(239,68,68,.1); transition:background .2s;
+        }
+        .sidebar-logout:hover { background:rgba(239,68,68,.2); }
+
+        /* ── MAIN ── */
+        .main {
+            margin-top:56px; min-height:calc(100vh - 56px);
+            padding:1.5rem; max-width:1400px;
+            margin-left:auto; margin-right:auto;
+        }
+
+        /* ── TOASTS ── */
+        .messages-wrap {
+            position:fixed; top:66px; right:1rem; z-index:1100;
+            display:flex; flex-direction:column; gap:.5rem;
+            max-width:340px; width:90%;
+        }
+        .toast {
+            padding:.85rem 1rem; border-radius:8px; font-size:.85rem;
+            font-weight:500; display:flex; align-items:flex-start; gap:.6rem;
+            box-shadow:0 4px 16px rgba(0,0,0,.15); animation:slideIn .25s ease;
+        }
+        .toast-success { background:#d1fae5; color:#065f46; border-left:4px solid #10b981; }
+        .toast-error   { background:#fee2e2; color:#991b1b; border-left:4px solid #ef4444; }
+        .toast-warning { background:#fef3c7; color:#92400e; border-left:4px solid #f59e0b; }
+        .toast-info    { background:#dbeafe; color:#1e40af; border-left:4px solid #3b82f6; }
+        .toast-close { margin-left:auto; background:none; border:none; cursor:pointer; font-size:1rem; opacity:.6; flex-shrink:0; }
+        @keyframes slideIn { from{transform:translateX(110%);opacity:0} to{transform:translateX(0);opacity:1} }
+
+        /* ── GLOBAL STYLES ── */
         .card {
-            background: white;
-            padding: 2rem;
-            margin-bottom: 2rem;
-            border-radius: 12px;
-            box-shadow: 0 1px 3px rgba(0,0,0,0.08);
-            border: 1px solid var(--gray-200);
-            transition: all 0.3s ease;
+            background:#fff; border:1px solid var(--gray-200);
+            border-radius:10px; padding:1.25rem 1.4rem;
+            margin-bottom:1.2rem; box-shadow:0 1px 4px rgba(0,0,0,.05);
         }
-        
-        .card:hover {
-            box-shadow: 0 10px 30px rgba(0,0,0,0.12);
-        }
-        
-        .card h2, .card h3 {
-            color: var(--mtn-blue);
-            margin-bottom: 1rem;
-            font-weight: 700;
-        }
-        
-        .card p {
-            color: var(--gray-600);
-            line-height: 1.6;
-        }
-        
-        table {
-            width: 100%;
-            border-collapse: collapse;
-            margin: 1.5rem 0;
-            font-size: 0.95rem;
-        }
-        
-        th {
-            background-color: var(--gray-100);
-            color: var(--mtn-blue);
-            padding: 1rem;
-            font-weight: 600;
-            text-align: left;
-            border-bottom: 2px solid var(--gray-200);
-        }
-        
-        td {
-            padding: 1rem;
-            border-bottom: 1px solid var(--gray-200);
-            color: var(--gray-700);
-        }
-        
-        tr:hover {
-            background-color: var(--gray-50);
-        }
-        
-        .btn {
-            display: inline-block;
-            padding: 0.75rem 1.5rem;
-            border-radius: 8px;
-            text-decoration: none;
-            font-weight: 600;
-            transition: all 0.2s ease;
-            border: none;
-            cursor: pointer;
-            font-size: 0.95rem;
-        }
-        
-        .btn-primary {
-            background: linear-gradient(135deg, var(--mtn-blue) 0%, #003a7a 100%);
-            color: white;
-        }
-        
-        .btn-primary:hover {
-            transform: translateY(-2px);
-            box-shadow: 0 8px 20px rgba(0, 79, 159, 0.3);
-        }
-        
-        .btn-success {
-            background: linear-gradient(135deg, var(--success-color) 0%, #059669 100%);
-            color: white;
-        }
-        
-        .btn-success:hover {
-            transform: translateY(-2px);
-            box-shadow: 0 8px 20px rgba(16, 185, 129, 0.3);
-        }
-        
-        .btn-danger {
-            background: linear-gradient(135deg, var(--danger-color) 0%, #dc2626 100%);
-            color: white;
-        }
-        
-        .btn-danger:hover {
-            transform: translateY(-2px);
-            box-shadow: 0 8px 20px rgba(239, 68, 68, 0.3);
-        }
-        
-        .btn-warning {
-            background: linear-gradient(135deg, var(--warning-color) 0%, #d97706 100%);
-            color: white;
-        }
-        
-        .badge {
-            display: inline-block;
-            padding: 0.4rem 0.8rem;
-            border-radius: 6px;
-            font-size: 0.85rem;
-            font-weight: 600;
-        }
-        
-        .badge-success {
-            background: #DCFCE7;
-            color: #166534;
-        }
-        
-        .badge-danger {
-            background: #FEE2E2;
-            color: #991b1b;
-        }
-        
-        .badge-warning {
-            background: #FEF3C7;
-            color: #92400e;
-        }
-        
+        .card:hover { box-shadow:0 4px 16px rgba(0,0,0,.08); }
+        table { width:100%; border-collapse:collapse; font-size:.88rem; }
+        th { background:var(--gray-100); color:var(--blue); padding:.7rem 1rem; font-weight:600; text-align:left; border-bottom:2px solid var(--gray-200); }
+        td { padding:.7rem 1rem; border-bottom:1px solid var(--gray-100); }
+        tr:hover td { background:var(--gray-50); }
+        .btn { display:inline-block; padding:.6rem 1.2rem; border-radius:7px; font-weight:600; font-size:.88rem; border:none; cursor:pointer; text-decoration:none; transition:all .18s; }
+        .btn-primary { background:var(--blue); color:#fff; }
+        .btn-primary:hover { background:var(--blue-dk); }
+        .btn-success { background:var(--green); color:#fff; }
+        .btn-danger  { background:var(--red); color:#fff; }
+        .btn-warning { background:var(--amber); color:#fff; }
+        .btn-outline { background:transparent; border:1px solid var(--gray-300); color:var(--gray-700); }
+        .btn-outline:hover { background:var(--gray-100); }
+        .btn-sm { padding:.4rem .85rem; font-size:.8rem; }
         input, select, textarea {
-            width: 100%;
-            padding: 0.8rem;
-            border: 1px solid var(--gray-200);
-            border-radius: 8px;
-            font-family: inherit;
-            font-size: 0.95rem;
-            margin-top: 0.5rem;
-            transition: all 0.2s;
+            width:100%; padding:.55rem .8rem; border:1px solid var(--gray-200);
+            border-radius:7px; font-family:inherit; font-size:.88rem;
+            transition:border-color .2s,box-shadow .2s; background:#fff; color:var(--gray-700);
         }
-        
         input:focus, select:focus, textarea:focus {
-            outline: none;
-            border-color: var(--mtn-blue);
-            box-shadow: 0 0 0 3px rgba(0, 79, 159, 0.1);
+            outline:none; border-color:var(--blue); box-shadow:0 0 0 3px rgba(0,79,159,.1);
         }
-        
-        label {
-            font-weight: 600;
-            color: var(--gray-700);
-            display: block;
-            margin-bottom: 0.5rem;
-        }
-        
-        .footer {
-            background: linear-gradient(135deg, var(--mtn-blue) 0%, #003a7a 100%);
-            color: white;
-            text-align: center;
-            padding: 2rem;
-            margin-top: 4rem;
-            font-size: 0.85rem;
-            width: 100%;
-            box-sizing: border-box;
-        }
-        
-        .grid {
-            display: grid;
-            gap: 2rem;
-            margin-bottom: 2rem;
-        }
-        
-        .grid-2 {
-            grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
-        }
-        
-        .grid-3 {
-            grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
-        }
-        
-        .stat-card {
-            background: white;
-            padding: 1.5rem;
-            border-radius: 12px;
-            border: 1px solid var(--gray-200);
-            text-align: center;
-        }
-        
-        .stat-card .value {
-            font-size: 2rem;
-            font-weight: 700;
-            color: var(--mtn-blue);
-            margin-top: 0.5rem;
-        }
-        
-        .stat-card .label {
-            font-size: 0.85rem;
-            color: var(--gray-600);
-            margin-top: 0.5rem;
-        }
-        
-        @media (max-width: 768px) {
-            .navbar h1 {
-                font-size: 1rem;
-            }
-            
-            .user-info {
-                flex-direction: row;
-                gap: 0.5rem;
-                font-size: 0.7rem;
-            }
-            
-            .container {
-                padding: 0 1rem;
-            }
-            
-            .footer {
-                padding: 2rem 1rem;
-            }
-            
-            .grid-2, .grid-3 {
-                grid-template-columns: 1fr;
-            }
-            
-            .card {
-                padding: 1.5rem;
-            }
-            
-            table {
-                font-size: 0.85rem;
-            }
-            
-            th, td {
-                padding: 0.75rem;
-            }
-            
-            .btn {
-                padding: 0.6rem 1.2rem;
-                font-size: 0.85rem;
-            }
-        }
-        
-        @media print {
-            .navbar, .sidebar, .sidebar-overlay, .menu-toggle, .btn, form { 
-                display: none !important; 
-            }
-        }
+        label { font-weight:600; color:var(--gray-700); font-size:.82rem; display:block; margin-bottom:.3rem; }
+        .badge { display:inline-block; padding:.2rem .55rem; border-radius:999px; font-size:.72rem; font-weight:700; }
+        .badge-success { background:#d1fae5; color:#065f46; }
+        .badge-danger  { background:#fee2e2; color:#991b1b; }
+        .badge-warning { background:#fef3c7; color:#92400e; }
+        .badge-info    { background:#dbeafe; color:#1e40af; }
+        .badge-purple  { background:#ede9fe; color:#5b21b6; }
+        .grid-2 { display:grid; grid-template-columns:repeat(auto-fit,minmax(300px,1fr)); gap:1.2rem; }
+        .grid-3 { display:grid; grid-template-columns:repeat(auto-fit,minmax(220px,1fr)); gap:1rem; }
+        .grid-4 { display:grid; grid-template-columns:repeat(auto-fit,minmax(160px,1fr)); gap:1rem; }
+        .stat-card { background:#fff; border:1px solid var(--gray-200); border-radius:10px; padding:1.1rem 1.2rem; box-shadow:0 1px 4px rgba(0,0,0,.05); }
+        .stat-card .label { font-size:.72rem; text-transform:uppercase; letter-spacing:.05em; color:var(--gray-500); margin-bottom:.3rem; }
+        .stat-card .value { font-size:1.6rem; font-weight:700; color:var(--gray-700); }
+        .stat-card .sub   { font-size:.75rem; color:var(--gray-500); margin-top:.2rem; }
+        .stat-card.blue   { border-left:4px solid var(--blue); }
+        .stat-card.green  { border-left:4px solid var(--green); }
+        .stat-card.amber  { border-left:4px solid var(--amber); }
+        .stat-card.red    { border-left:4px solid var(--red); }
+        .stat-card.purple { border-left:4px solid #8b5cf6; }
+        .footer { background:linear-gradient(135deg,var(--blue) 0%,var(--blue-dk) 100%); color:rgba(255,255,255,.7); text-align:center; padding:1.2rem; font-size:.78rem; margin-top:3rem; }
+        @media print { .topbar,.sidebar,.sidebar-overlay,.hamburger,form,.btn{display:none!important} .main{margin:0;padding:0} }
+        @media (max-width:768px) { .main{padding:1rem} .topbar-branch{display:none} .grid-2,.grid-3,.grid-4{grid-template-columns:1fr} }
     </style>
 </head>
 <body>
-<div id="sidebar" class="sidebar">
-    <div class="sidebar-header">
-        <h3>Menu</h3>
-        <button class="close-btn" onclick="toggleSidebar()">×</button>
+
+<div id="overlay" class="sidebar-overlay" onclick="closeSidebar()"></div>
+
+<!-- ═══════ SIDEBAR ═══════ -->
+<nav id="sidebar" class="sidebar">
+
+    {% if user.is_authenticated %}
+
+    {% if user.role == "DIRECTOR" or user.is_superuser %}
+    <div class="sidebar-section">
+        <div class="sidebar-section-label">Overview</div>
+        <a href="{% url 'director_dashboard' %}" class="sidebar-link">
+            <span class="icon">📊</span> Dashboard
+        </a>
+        <a href="{% url 'daily_sales_report' %}" class="sidebar-link">
+            <span class="icon">📈</span> Daily Sales Report
+        </a>
+        <a href="{% url 'director_all_activities' %}" class="sidebar-link">
+            <span class="icon">🏪</span> All Branch Activities
+        </a>
     </div>
-    
-    {% if user.role == "MANAGER" %}<a href="{% url 'manager_dashboard' %}" class="sidebar-link">📊 Dashboard</a>{% endif %}
-    {% if user.role == "DIRECTOR" %}<a href="{% url 'director_dashboard' %}" class="sidebar-link">👔 Executive</a>{% endif %}
-    {% if user.role == "RETAIL" %}<a href="{% url 'retail_dashboard' %}" class="sidebar-link">🛍️ Retail</a>{% endif %}
-    {% if user.role == "MULTICHOICE" %}<a href="{% url 'multichoice_dashboard' %}" class="sidebar-link">📱 MultiChoice</a>{% endif %}
-    {% if user.role == "TELECOM" %}<a href="{% url 'staff_dashboard' %}" class="sidebar-link">📞 Telecom</a>{% endif %}
-    
-    <!-- DIRECTOR QUICK ACTIONS -->
-    {% if user.role == "DIRECTOR" %}
-    <div style="margin-top: 2rem; padding-top: 1rem; border-top: 1px solid rgba(255,255,255,0.1);">
-        <h4 style="color: rgba(255,255,255,0.5); font-size: 0.8rem; text-transform: uppercase; letter-spacing: 1px; margin-bottom: 1rem;">Quick Actions</h4>
-        <a href="{% url 'daily_sales_report' %}" class="sidebar-link">📊 Daily Sales</a>
-        <a href="{% url 'director_attendance_dashboard' %}" class="sidebar-link">📈 View Attendance</a>
-        <a href="{% url 'manage_branch_locations' %}" class="sidebar-link">📍 Configure Branches</a>
-        <a href="{% url 'director_safe_stock' %}" class="sidebar-link">📦 Director Safe</a>
-        <a href="{% url 'export_monthly_attendance_pdf' %}" class="sidebar-link">📥 Download Report</a>
+    <div class="sidebar-divider"></div>
+    <div class="sidebar-section">
+        <div class="sidebar-section-label">Inventory</div>
+        <a href="{% url 'director_safe_stock' %}" class="sidebar-link">
+            <span class="icon">🏦</span> Director Safe
+        </a>
+        <a href="{% url 'director_all_branch_stock' %}" class="sidebar-link">
+            <span class="icon">📦</span> All Branch Stock
+        </a>
+        <a href="{% url 'stock_alerts' %}" class="sidebar-link">
+            <span class="icon">⚠️</span> Stock Alerts
+        </a>
     </div>
-    
+    <div class="sidebar-divider"></div>
+    <div class="sidebar-section">
+        <div class="sidebar-section-label">People & Reports</div>
+        <a href="{% url 'director_attendance_dashboard' %}" class="sidebar-link">
+            <span class="icon">📅</span> Staff Attendance
+        </a>
+        <a href="{% url 'customer_crm' %}" class="sidebar-link">
+            <span class="icon">👥</span> Customer CRM
+        </a>
+        <a href="{% url 'commission_tracking' %}" class="sidebar-link">
+            <span class="icon">💰</span> Commission Tracking
+        </a>
+        <a href="{% url 'manage_branch_locations' %}" class="sidebar-link">
+            <span class="icon">📍</span> Branch Locations
+        </a>
+        <a href="{% url 'export_monthly_attendance_pdf' %}" class="sidebar-link">
+            <span class="icon">📥</span> Download Attendance
+        </a>
+    </div>
+
+    {% elif user.role == "MANAGER" %}
+    <div class="sidebar-section">
+        <div class="sidebar-section-label">Overview</div>
+        <a href="{% url 'manager_dashboard' %}" class="sidebar-link">
+            <span class="icon">📊</span> Dashboard
+        </a>
+        <a href="{% url 'stock_movement_log' %}" class="sidebar-link">
+            <span class="icon">📋</span> Stock Movement Log
+        </a>
+        <a href="{% url 'stock_alerts' %}" class="sidebar-link">
+            <span class="icon">⚠️</span> Stock Alerts
+        </a>
+    </div>
+    <div class="sidebar-divider"></div>
+    <div class="sidebar-section">
+        <div class="sidebar-section-label">Telecom</div>
+        <a href="{% url 'manager_dashboard' %}" class="sidebar-link">
+            <span class="icon">📡</span> Targets & Activities
+        </a>
+        <a href="{% url 'add_device_commission' %}" class="sidebar-link">
+            <span class="icon">💰</span> Device Commission
+        </a>
+    </div>
+    <div class="sidebar-divider"></div>
+    <div class="sidebar-section">
+        <div class="sidebar-section-label">Stock</div>
+        <a href="{% url 'manager_dashboard' %}" class="sidebar-link">
+            <span class="icon">📦</span> Safe Stock & Releases
+        </a>
+        <a href="{% url 'upload_manager_csv' %}" class="sidebar-link">
+            <span class="icon">📤</span> Bulk Upload Stock
+        </a>
+    </div>
+    <div class="sidebar-divider"></div>
+    <div class="sidebar-section">
+        <div class="sidebar-section-label">Attendance</div>
+        <a href="{% url 'check_in' %}" class="sidebar-link">
+            <span class="icon">🌅</span> Check In
+        </a>
+        <a href="{% url 'check_out' %}" class="sidebar-link">
+            <span class="icon">🌆</span> Check Out
+        </a>
+        <a href="{% url 'attendance_history' %}" class="sidebar-link">
+            <span class="icon">📅</span> My Attendance
+        </a>
+    </div>
+
+    {% elif user.role == "RETAIL" %}
+    <div class="sidebar-section">
+        <div class="sidebar-section-label">Sales</div>
+        <a href="{% url 'retail_dashboard' %}" class="sidebar-link">
+            <span class="icon">🛍️</span> Dashboard
+        </a>
+        <a href="{% url 'retail_dashboard' %}" class="sidebar-link">
+            <span class="icon">📦</span> My Catalog & Stock
+        </a>
+        <a href="{% url 'retail_dashboard' %}" class="sidebar-link">
+            <span class="icon">📋</span> Sales History
+        </a>
+    </div>
+    <div class="sidebar-divider"></div>
+    <div class="sidebar-section">
+        <div class="sidebar-section-label">Stock</div>
+        <a href="{% url 'staff_create_product' %}" class="sidebar-link">
+            <span class="icon">➕</span> Add Single Product
+        </a>
+        <a href="{% url 'upload_retail_csv' %}" class="sidebar-link">
+            <span class="icon">📤</span> Bulk Upload Products
+        </a>
+        <a href="{% url 'request_stock' %}" class="sidebar-link">
+            <span class="icon">📬</span> Request Stock
+        </a>
+    </div>
+    <div class="sidebar-divider"></div>
+    <div class="sidebar-section">
+        <div class="sidebar-section-label">Attendance</div>
+        <a href="{% url 'check_in' %}" class="sidebar-link">
+            <span class="icon">🌅</span> Check In
+        </a>
+        <a href="{% url 'check_out' %}" class="sidebar-link">
+            <span class="icon">🌆</span> Check Out
+        </a>
+        <a href="{% url 'attendance_history' %}" class="sidebar-link">
+            <span class="icon">📅</span> My Attendance
+        </a>
+    </div>
+
+    {% elif user.role == "MULTICHOICE" %}
+    <div class="sidebar-section">
+        <div class="sidebar-section-label">MultiChoice</div>
+        <a href="{% url 'multichoice_dashboard' %}" class="sidebar-link">
+            <span class="icon">📺</span> Dashboard
+        </a>
+        <a href="{% url 'record_multichoice_sale' %}" class="sidebar-link">
+            <span class="icon">➕</span> Record Subscription
+        </a>
+        <a href="{% url 'multichoice_dashboard' %}" class="sidebar-link">
+            <span class="icon">📋</span> Subscription History
+        </a>
+        <a href="{% url 'record_balance' %}" class="sidebar-link">
+            <span class="icon">💳</span> Record Balance
+        </a>
+    </div>
+    <div class="sidebar-divider"></div>
+    <div class="sidebar-section">
+        <div class="sidebar-section-label">Earnings</div>
+        <a href="{% url 'my_commissions' %}" class="sidebar-link">
+            <span class="icon">💰</span> My Commissions
+        </a>
+        <a href="{% url 'start_weekly_report' %}" class="sidebar-link">
+            <span class="icon">📊</span> Weekly Report
+        </a>
+    </div>
+    <div class="sidebar-divider"></div>
+    <div class="sidebar-section">
+        <div class="sidebar-section-label">Attendance</div>
+        <a href="{% url 'check_in' %}" class="sidebar-link">
+            <span class="icon">🌅</span> Check In
+        </a>
+        <a href="{% url 'check_out' %}" class="sidebar-link">
+            <span class="icon">🌆</span> Check Out
+        </a>
+        <a href="{% url 'attendance_history' %}" class="sidebar-link">
+            <span class="icon">📅</span> My Attendance
+        </a>
+    </div>
+
+    {% elif user.role == "TELECOM" %}
+    <div class="sidebar-section">
+        <div class="sidebar-section-label">Telecom</div>
+        <a href="{% url 'staff_dashboard' %}" class="sidebar-link">
+            <span class="icon">📡</span> Dashboard
+        </a>
+        <a href="{% url 'record_physical_product' %}" class="sidebar-link">
+            <span class="icon">📝</span> Record Activity
+        </a>
+        <a href="{% url 'staff_monthly_activity' %}" class="sidebar-link">
+            <span class="icon">📊</span> Monthly Summary
+        </a>
+    </div>
+    <div class="sidebar-divider"></div>
+    <div class="sidebar-section">
+        <div class="sidebar-section-label">Attendance</div>
+        <a href="{% url 'check_in' %}" class="sidebar-link">
+            <span class="icon">🌅</span> Check In
+        </a>
+        <a href="{% url 'check_out' %}" class="sidebar-link">
+            <span class="icon">🌆</span> Check Out
+        </a>
+        <a href="{% url 'attendance_history' %}" class="sidebar-link">
+            <span class="icon">📅</span> My Attendance
+        </a>
+    </div>
     {% endif %}
-    
-    <!-- MANAGER QUICK ACTIONS -->
-    {% if user.role == "MANAGER" %}
-    <div style="margin-top: 2rem; padding-top: 1rem; border-top: 1px solid rgba(255,255,255,0.1);">
-        <h4 style="color: rgba(255,255,255,0.5); font-size: 0.8rem; text-transform: uppercase; letter-spacing: 1px; margin-bottom: 1rem;">Quick Actions</h4>
-        <a href="{% url 'add_stock_to_safe' %}" class="sidebar-link">📦 Add Stock</a>
-        <a href="{% url 'release_stock' %}" class="sidebar-link">📤 Release Stock</a>
-        <a href="{% url 'check_in' %}" class="sidebar-link">📍 Check In</a>
-        <a href="{% url 'attendance_history' %}" class="sidebar-link">📋 Attendance</a>
-    </div>
-    
-    <div style="margin-top: 1rem; padding-top: 1rem; border-top: 1px solid rgba(255,255,255,0.1);">
-        <h4 style="color: rgba(255,255,255,0.5); font-size: 0.8rem; text-transform: uppercase; letter-spacing: 1px; margin-bottom: 1rem;">Staff & Commissions</h4>
-        <a href="{% url 'stock_alerts' %}" class="sidebar-link">⚠️ Stock Alerts</a>
-        <a href="{% url 'add_device_commission' %}" class="sidebar-link">💰 Device Commission</a>
-    </div>
+
+
+        <a href="/notifications/" class="sidebar-link">
+            <span class="icon">🔔</span> Notifications
+        </a>
+    <div class="sidebar-divider"></div>
+    <a href="{% url 'logout' %}" class="sidebar-logout">
+        <span>🚪</span> Sign Out
+    </a>
+
     {% endif %}
-    
-    <!-- TELECOM QUICK ACTIONS -->
-    {% if user.role == "TELECOM" %}
-    <div style="margin-top: 2rem; padding-top: 1rem; border-top: 1px solid rgba(255,255,255,0.1);">
-        <h4 style="color: rgba(255,255,255,0.5); font-size: 0.8rem; text-transform: uppercase; letter-spacing: 1px; margin-bottom: 1rem;">Quick Actions</h4>
-        <a href="{% url 'check_in' %}" class="sidebar-link">📍 Check In</a>
-        <a href="{% url 'attendance_history' %}" class="sidebar-link">📋 Attendance</a>
+</nav>
+
+<!-- ═══════ TOPBAR ═══════ -->
+<header class="topbar">
+    <div class="topbar-left">
+        <button class="hamburger" onclick="toggleSidebar()">☰</button>
+        <div>
+            <div class="topbar-logo">GPSL ERP</div>
+            {% if user.is_authenticated and user.branch %}
+            <div class="topbar-branch">{{ user.branch.name }}</div>
+            {% endif %}
+        </div>
     </div>
-    {% endif %}
-    
-    <!-- RETAIL QUICK ACTIONS -->
-    {% if user.role == "RETAIL" %}
-    <div style="margin-top: 2rem; padding-top: 1rem; border-top: 1px solid rgba(255,255,255,0.1);">
-        <h4 style="color: rgba(255,255,255,0.5); font-size: 0.8rem; text-transform: uppercase; letter-spacing: 1px; margin-bottom: 1rem;">Quick Actions</h4>
-        <a href="{% url 'product_catalog' %}" class="sidebar-link">📂 Product Catalog</a>
-        <a href="{% url 'check_in' %}" class="sidebar-link">📍 Check In</a>
-        <a href="{% url 'attendance_history' %}" class="sidebar-link">📋 Attendance</a>
+    <div class="topbar-right">
+        {% if user.is_authenticated %}
+        <span class="topbar-role">{{ user.role }}</span>
+        <span class="topbar-user">{{ user.username }}</span>
+        <a href="/notifications/" style="position:relative;color:rgba(255,255,255,.8);text-decoration:none;padding:.3rem .5rem;font-size:1.1rem;" title="Notifications">
+  🔔
+  <span id="notif-badge" style="display:none;position:absolute;top:-2px;right:-2px;background:#ef4444;color:#fff;border-radius:50%;width:16px;height:16px;font-size:.6rem;font-weight:700;align-items:center;justify-content:center;">0</span>
+        </a>
+        <a href="{% url 'logout' %}" class="topbar-logout">Logout</a>
+        {% endif %}
     </div>
-    {% endif %}
-    
-    <!-- MULTICHOICE QUICK ACTIONS -->
-    {% if user.role == "MULTICHOICE" %}
-    <div style="margin-top: 2rem; padding-top: 1rem; border-top: 1px solid rgba(255,255,255,0.1);">
-        <h4 style="color: rgba(255,255,255,0.5); font-size: 0.8rem; text-transform: uppercase; letter-spacing: 1px; margin-bottom: 1rem;">Quick Actions</h4>
-        <a href="{% url 'check_in' %}" class="sidebar-link">📍 Check In</a>
-        <a href="{% url 'attendance_history' %}" class="sidebar-link">📋 Attendance</a>
-        <a href="{% url 'my_commissions' %}" class="sidebar-link">💰 My Commissions</a>
+</header>
+
+<!-- ═══════ TOAST MESSAGES ═══════ -->
+{% if messages %}
+<div class="messages-wrap" id="toastWrap">
+    {% for message in messages %}
+    <div class="toast toast-{% if message.tags == 'error' %}error{% elif message.tags == 'warning' %}warning{% elif message.tags == 'info' %}info{% else %}success{% endif %}" id="toast-{{ forloop.counter }}">
+        <span>{% if message.tags == 'error' %}❌{% elif message.tags == 'warning' %}⚠️{% else %}✅{% endif %}</span>
+        <span>{{ message }}</span>
+        <button class="toast-close" onclick="closeToast('toast-{{ forloop.counter }}')">✕</button>
     </div>
-    {% endif %}
-    
-    <div style="margin-top: 2rem; padding-top: 1rem; border-top: 1px solid rgba(255,255,255,0.1);"></div>
-    <a href="{% url 'logout' %}" class="sidebar-link" style="color: #f08080;">🚪 Logout</a>
+    {% endfor %}
 </div>
+{% endif %}
 
-<div id="overlay" class="sidebar-overlay" onclick="toggleSidebar()"></div>
-
-<div class="navbar">
-    <div style="display: flex; align-items: center; gap: 1rem;">
-        <button class="menu-toggle" onclick="toggleSidebar()">☰</button>
-        <h1>GPSL AUTOMATION</h1>
-    </div>
-    <div class="user-info">
-        <span><strong>{{ user.get_role_display }}</strong></span>
-        <a href="{% url 'logout' %}">Logout</a>
-    </div>
-</div>
-
-<div class="container">
-    {% if messages %}
-        {% for message in messages %}
-            <div class="card" style="background: {% if message.tags == 'error' %}#FEE2E2{% else %}#DCFCE7{% endif %}; border-left: 4px solid {% if message.tags == 'error' %}var(--danger-color){% else %}var(--success-color){% endif %};">
-                <strong>{{ message }}</strong>
-            </div>
-        {% endfor %}
-    {% endif %}
+<!-- ═══════ MAIN CONTENT ═══════ -->
+<main class="main">
     {% block content %}{% endblock %}
-</div>
+</main>
 
 <footer class="footer">
-    <p>© {% now "Y" %} GPSL Automation Solutions | All Rights Reserved</p>
+    © {% now "Y" %} Global Phonelinz Systems Ltd &nbsp;·&nbsp; All Rights Reserved
 </footer>
 
 <script>
@@ -531,15 +447,52 @@ function toggleSidebar() {
     document.getElementById('sidebar').classList.toggle('open');
     document.getElementById('overlay').classList.toggle('show');
 }
-
-// Auto-hide on mobile after nav
-if (window.innerWidth <= 768) {
-    document.querySelectorAll('.sidebar-link').forEach(link => {
-        link.addEventListener('click', () => {
-            if (window.innerWidth <= 768) toggleSidebar();
-        });
-    });
+function closeSidebar() {
+    document.getElementById('sidebar').classList.remove('open');
+    document.getElementById('overlay').classList.remove('show');
 }
+function closeToast(id) {
+    var el = document.getElementById(id);
+    if (el) el.style.display = 'none';
+}
+document.addEventListener('DOMContentLoaded', function() {
+    // Auto-close toasts after 6 seconds
+    document.querySelectorAll('.toast').forEach(function(t) {
+        setTimeout(function() { t.style.display = 'none'; }, 6000);
+    });
+    // Close sidebar on mobile after clicking a link
+    if (window.innerWidth <= 768) {
+        document.querySelectorAll('.sidebar-link, .sidebar-logout').forEach(function(l) {
+            l.addEventListener('click', closeSidebar);
+        });
+    }
+    // Highlight the active sidebar link
+    var path = window.location.pathname;
+    document.querySelectorAll('.sidebar-link').forEach(function(l) {
+        var href = l.getAttribute('href');
+        if (href && href === path) {
+            l.classList.add('active');
+        }
+    });
+});
 </script>
+    <script>
+// Poll notification count every 60 seconds
+function refreshNotifCount() {
+  fetch('/notifications/count/')
+    .then(r => r.json())
+    .then(data => {
+      const badge = document.getElementById('notif-badge');
+      if (data.count > 0) {
+        badge.textContent = data.count > 99 ? '99+' : data.count;
+        badge.style.display = 'flex';
+      } else {
+        badge.style.display = 'none';
+      }
+    }).catch(() => {});
+}
+refreshNotifCount();
+setInterval(refreshNotifCount, 60000);
+    </script>
 </body>
 </html>

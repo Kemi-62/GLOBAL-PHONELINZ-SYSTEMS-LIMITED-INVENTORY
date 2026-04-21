@@ -1,0 +1,46 @@
+{% extends "base.html" %}
+{% block content %}
+<style>
+.page-title{font-size:1.3rem;font-weight:700;color:#004F9F;margin:0 0 1.5rem}
+.card{background:#fff;border:1px solid #e5e7eb;border-radius:10px;padding:1.2rem 1.4rem;margin-bottom:1.2rem}
+.notif-item{display:flex;gap:1rem;padding:1rem 0;border-bottom:.5px solid #f3f4f6;align-items:flex-start}
+.notif-item:last-child{border-bottom:none}
+.notif-icon{width:40px;height:40px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:1.1rem;flex-shrink:0}
+.icon-stock{background:#dbeafe}.icon-low{background:#fee2e2}.icon-approval{background:#fef3c7}
+.icon-void{background:#ede9fe}.icon-general{background:#f3f4f6}
+.notif-title{font-size:.9rem;font-weight:600;color:#111827;margin:0 0 .2rem}
+.notif-msg{font-size:.83rem;color:#6b7280;margin:0 0 .3rem;line-height:1.5}
+.notif-time{font-size:.75rem;color:#9ca3af}
+.unread{background:#eff6ff}
+.btn-sm{padding:.4rem .9rem;font-size:.8rem;border-radius:6px;border:none;cursor:pointer;font-weight:600;text-decoration:none;display:inline-block}
+.btn-outline{background:transparent;border:1px solid #d1d5db;color:#374151}
+</style>
+
+<div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:1.5rem;flex-wrap:wrap;gap:.8rem;">
+  <h1 class="page-title" style="margin:0;">🔔 Notifications</h1>
+  <a href="javascript:history.back()" class="btn-sm btn-outline">← Back</a>
+</div>
+
+<div class="card">
+  {% if notifications %}
+  {% for n in notifications %}
+  <div class="notif-item {% if not n.is_read %}unread{% endif %}">
+    <div class="notif-icon {% if n.notif_type == 'STOCK_REQUEST' %}icon-stock{% elif n.notif_type == 'LOW_STOCK' %}icon-low{% elif n.notif_type == 'APPROVAL' %}icon-approval{% elif n.notif_type == 'VOID' %}icon-void{% else %}icon-general{% endif %}">
+      {% if n.notif_type == 'STOCK_REQUEST' %}📦
+      {% elif n.notif_type == 'LOW_STOCK' %}⚠️
+      {% elif n.notif_type == 'APPROVAL' %}✅
+      {% elif n.notif_type == 'VOID' %}🚫
+      {% else %}🔔{% endif %}
+    </div>
+    <div style="flex:1;">
+      <p class="notif-title">{{ n.title }}</p>
+      <p class="notif-msg">{{ n.message }}</p>
+      <p class="notif-time">{{ n.created_at|timesince }} ago</p>
+    </div>
+  </div>
+  {% endfor %}
+  {% else %}
+  <p style="text-align:center;color:#9ca3af;padding:2rem 0;">No notifications yet.</p>
+  {% endif %}
+</div>
+{% endblock %}

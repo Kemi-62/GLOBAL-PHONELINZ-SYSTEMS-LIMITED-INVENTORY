@@ -131,3 +131,7 @@ EMAIL_HOST_PASSWORD = config('EMAIL_HOST_PASSWORD', default='')
 
 DEFAULT_AUTO_FIELD = 'django.db.models.BigAutoField'
 CONN_MAX_AGE = 60
+
+# WhatsApp
+CALLMEBOT_API_KEY = config("CALLMEBOT_API_KEY", default="")
+DIRECTOR_WHATSAPP = config("DIRECTOR_WHATSAPP", default="")

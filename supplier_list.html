@@ -1,0 +1,58 @@
+--- FILE: templates/suppliers/supplier_list.html ---
+
+{% extends "base.html" %}
+{% block content %}
+<style>
+.page-title{font-size:1.3rem;font-weight:700;color:#004F9F;margin:0 0 1.5rem}
+.card{background:#fff;border:1px solid #e5e7eb;border-radius:10px;padding:1.2rem 1.4rem;margin-bottom:1.2rem}
+.data-table{width:100%;border-collapse:collapse;font-size:.85rem}
+.data-table th{background:#f9fafb;color:#374151;font-weight:600;padding:.65rem .9rem;text-align:left;border-bottom:1px solid #e5e7eb}
+.data-table td{padding:.6rem .9rem;border-bottom:1px solid #f3f4f6;color:#374151}
+.data-table tr:hover td{background:#fafafa}
+.btn-sm{padding:.45rem .9rem;font-size:.82rem;border-radius:6px;border:none;cursor:pointer;font-weight:600;text-decoration:none;display:inline-block}
+.btn-primary{background:#004F9F;color:#fff}.btn-success{background:#10b981;color:#fff}.btn-outline{background:transparent;border:1px solid #d1d5db;color:#374151}
+.form-group{margin-bottom:.8rem}
+.form-group label{font-size:.78rem;font-weight:600;color:#374151;display:block;margin-bottom:.3rem}
+.form-group input,.form-group select,.form-group textarea{width:100%;padding:.5rem .75rem;border:1px solid #d1d5db;border-radius:6px;font-size:.88rem;box-sizing:border-box}
+</style>
+
+<div style="display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:.8rem;margin-bottom:1.5rem;">
+  <h1 class="page-title" style="margin:0;">🏭 Suppliers</h1>
+  <a href="{% url 'supplier_create' %}" class="btn-sm btn-primary">+ Add Supplier</a>
+</div>
+
+<div class="card">
+  <div style="overflow-x:auto;">
+    <table class="data-table">
+      <thead><tr><th>Name</th><th>Phone</th><th>Email</th><th>Actions</th></tr></thead>
+      <tbody>
+        {% for s in suppliers %}
+        <tr>
+          <td><strong>{{ s.name }}</strong></td>
+          <td>{{ s.phone|default:"—" }}</td>
+          <td>{{ s.email|default:"—" }}</td>
+          <td><a href="{% url 'purchase_order_create' %}" class="btn-sm btn-success" style="font-size:.75rem;">+ Create PO</a></td>
+        </tr>
+        {% empty %}
+        <tr><td colspan="4" style="text-align:center;color:#9ca3af;padding:2rem 0;">No suppliers yet. Add one above.</td></tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+</div>
+
+<div class="card">
+  <p style="font-size:1rem;font-weight:700;color:#111827;margin:0 0 1rem;">Add New Supplier</p>
+  <form method="POST" action="{% url 'supplier_create' %}">
+    {% csrf_token %}
+    <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(180px,1fr));gap:.8rem;">
+      <div class="form-group"><label>Supplier Name *</label><input type="text" name="name" required></div>
+      <div class="form-group"><label>Phone</label><input type="tel" name="phone"></div>
+      <div class="form-group"><label>Email</label><input type="email" name="email"></div>
+    </div>
+    <div class="form-group"><label>Address</label><textarea name="address" rows="2"></textarea></div>
+    <div class="form-group"><label>Notes</label><textarea name="notes" rows="2"></textarea></div>
+    <button type="submit" class="btn-sm btn-primary">Save Supplier</button>
+  </form>
+</div>
+{% endblock %}

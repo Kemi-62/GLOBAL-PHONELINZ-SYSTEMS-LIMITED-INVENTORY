@@ -1,228 +1,480 @@
 {% extends "base.html" %}
 {% block content %}
-<div class="card">
-    <h2>🛍️ Retail Staff Dashboard</h2>
-    <p style="color: var(--gray-600);">Manage sales and inventory</p>
+<style>
+.dash-header{display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:1rem;margin-bottom:1.5rem}
+.dash-title{font-size:1.4rem;font-weight:700;color:#004F9F;margin:0}
+.dash-sub{font-size:.85rem;color:#6b7280;margin:.2rem 0 0}
+.kpi-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(140px,1fr));gap:1rem;margin-bottom:1.5rem}
+.kpi{background:#fff;border-radius:10px;border:1px solid #e5e7eb;padding:1rem 1.2rem}
+.kpi-label{font-size:.72rem;text-transform:uppercase;letter-spacing:.05em;color:#6b7280;margin:0 0 .3rem}
+.kpi-value{font-size:1.4rem;font-weight:700;color:#111827;margin:0}
+.kpi-sub{font-size:.75rem;color:#9ca3af;margin:.2rem 0 0}
+.kpi.green{border-left:4px solid #10b981}.kpi.blue{border-left:4px solid #3b82f6}
+.kpi.amber{border-left:4px solid #f59e0b}.kpi.red{border-left:4px solid #ef4444}
+.tab-bar{display:flex;gap:.4rem;overflow-x:auto;padding:.4rem 0;margin-bottom:1.5rem;border-bottom:2px solid #e5e7eb}
+.tab-btn{flex-shrink:0;padding:.55rem 1.1rem;border:none;border-radius:8px 8px 0 0;background:transparent;color:#6b7280;font-size:.85rem;font-weight:600;cursor:pointer;white-space:nowrap;border-bottom:3px solid transparent;margin-bottom:-2px}
+.tab-btn:hover{background:#f3f4f6;color:#111}
+.tab-btn.active{color:#004F9F;border-bottom-color:#004F9F;background:#eff6ff}
+.tab-panel{display:none}.tab-panel.active{display:block}
+.card{background:#fff;border:1px solid #e5e7eb;border-radius:10px;padding:1.2rem 1.4rem;margin-bottom:1.2rem}
+.card-title{font-size:1rem;font-weight:700;color:#111827;margin:0 0 1rem}
+.badge{display:inline-block;padding:.2rem .55rem;border-radius:999px;font-size:.72rem;font-weight:700}
+.badge-green{background:#d1fae5;color:#065f46}.badge-red{background:#fee2e2;color:#991b1b}
+.badge-amber{background:#fef3c7;color:#92400e}.badge-blue{background:#dbeafe;color:#1e40af}
+.data-table{width:100%;border-collapse:collapse;font-size:.85rem}
+.data-table th{background:#f9fafb;color:#374151;font-weight:600;padding:.65rem .9rem;text-align:left;border-bottom:1px solid #e5e7eb}
+.data-table td{padding:.6rem .9rem;border-bottom:1px solid #f3f4f6;color:#374151}
+.data-table tr:last-child td{border-bottom:none}
+.data-table tr:hover td{background:#fafafa}
+.form-group{margin-bottom:.8rem}
+.form-group label{font-size:.78rem;font-weight:600;color:#374151;display:block;margin-bottom:.3rem}
+.form-group input,.form-group select,.form-group textarea{width:100%;padding:.5rem .75rem;border:1px solid #d1d5db;border-radius:6px;font-size:.88rem;color:#111;background:#fff;box-sizing:border-box}
+.form-group input:focus,.form-group select:focus{outline:none;border-color:#004F9F;box-shadow:0 0 0 2px rgba(0,79,159,.12)}
+.form-row{display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:.8rem}
+.btn-sm{padding:.5rem 1rem;font-size:.85rem;border-radius:6px;border:none;cursor:pointer;font-weight:600;display:inline-block}
+.btn-primary{background:#004F9F;color:#fff}.btn-success{background:#10b981;color:#fff}
+.btn-danger{background:#ef4444;color:#fff}.btn-outline{background:transparent;border:1px solid #d1d5db;color:#374151}
+.btn-sm:hover{opacity:.88}
+.two-col{display:grid;grid-template-columns:1fr 1fr;gap:1.2rem}
+@media(max-width:700px){.two-col{grid-template-columns:1fr}}
+.stock-card{background:#fff;border:1px solid #e5e7eb;border-radius:10px;padding:1rem;display:flex;flex-direction:column;gap:.4rem}
+.stock-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(160px,1fr));gap:.8rem}
+.stock-name{font-weight:700;font-size:.9rem;color:#111}
+.stock-cat{font-size:.75rem;color:#9ca3af}
+.stock-price{font-size:1rem;font-weight:700;color:#004F9F}
+.stock-qty{font-size:.8rem}
+.checkinout-btn{padding:.7rem 1.2rem;border:none;border-radius:8px;font-weight:700;font-size:.9rem;cursor:pointer;width:100%;margin-bottom:.6rem}
+.btn-checkin{background:#10b981;color:#fff}
+.btn-checkout{background:#ef4444;color:#fff}
+pre{background:#f5f5f5;padding:.8rem;border-radius:6px;font-size:.75rem;overflow-x:auto;line-height:1.5}
+</style>
+
+<!-- HEADER -->
+<div class="dash-header">
+  <div>
+    <h1 class="dash-title">Retail Dashboard</h1>
+    <p class="dash-sub">{{ request.user.username }} &nbsp;·&nbsp; {{ request.user.branch.name }} &nbsp;·&nbsp; {% now "D, d M Y" %}</p>
+  </div>
 </div>
 
-<div class="card" style="margin-bottom: 2rem; border-left: 5px solid var(--mtn-yellow);">
-    <h3 style="margin: 0; color: var(--mtn-blue); display: flex; align-items: center; gap: 10px;">
-        <span>📁</span> Available Categories
-    </h3>
-    <div style="display: flex; gap: 10px; flex-wrap: wrap; margin-top: 1rem;">
-        {% for cat in categories %}
-            <span class="badge" style="background: white; color: var(--mtn-black); border: 1px solid #ddd; padding: 8px 15px; font-size: 0.9rem;">
-                {{ cat.name }}
-            </span>
+<!-- KPI CARDS -->
+<div class="kpi-grid">
+  <div class="kpi green">
+    <p class="kpi-label">Products in Stock</p>
+    <p class="kpi-value">{{ staff_stock|length }}</p>
+    <p class="kpi-sub">Items in your catalog</p>
+  </div>
+  <div class="kpi blue">
+    <p class="kpi-label">Total Units</p>
+    <p class="kpi-value">{% for s in staff_stock %}{% if forloop.first %}0{% endif %}{% endfor %}{{ staff_stock|length }}</p>
+    <p class="kpi-sub">Across all products</p>
+  </div>
+  <div class="kpi amber">
+    <p class="kpi-label">Sales History</p>
+    <p class="kpi-value">{{ sales_history|length }}</p>
+    <p class="kpi-sub">Total transactions</p>
+  </div>
+</div>
+
+<!-- TAB BAR -->
+<div class="tab-bar">
+  <button class="tab-btn active" onclick="switchTab('sales',this)">🛍️ Record Sale</button>
+  <button class="tab-btn" onclick="switchTab('catalog',this)">📦 My Catalog</button>
+  <button class="tab-btn" onclick="switchTab('add',this)">➕ Add Products</button>
+  <button class="tab-btn" onclick="switchTab('history',this)">📋 Sales History</button>
+  <button class="tab-btn" onclick="switchTab('attendance',this)">📍 Attendance</button>
+  <button class="tab-btn" onclick="switchTab('requests',this)">📬 Stock Requests</button>
+</div>
+
+<!-- ══════════ TAB: RECORD SALE ══════════ -->
+<div id="tab-sales" class="tab-panel active">
+  <div class="card">
+    <p class="card-title">🛍️ Record a Sale</p>
+    <form method="POST" action="{% url 'record_retail_sale' %}">
+      {% csrf_token %}
+      <div class="form-group">
+        <label>Product *</label>
+        <select name="product" id="product_select" required onchange="updatePrice()">
+          <option value="">— Select Product —</option>
+          {% for stock in staff_stock %}
+          <option value="{{ stock.product.id }}" data-price="{{ stock.product.selling_price }}" data-qty="{{ stock.quantity }}">
+            {{ stock.product.model_name }} — {{ stock.quantity }} available
+          </option>
+          {% endfor %}
+        </select>
+      </div>
+      <div id="stock-info" style="display:none;background:#f0fdf4;padding:.6rem .9rem;border-radius:6px;font-size:.83rem;color:#065f46;margin-bottom:.8rem;"></div>
+      <div class="form-row">
+        <div class="form-group">
+          <label>Customer Phone</label>
+          <input type="tel" name="customer_phone" placeholder="080xxxxxxxx">
+        </div>
+        <div class="form-group">
+          <label>Quantity *</label>
+          <input type="number" name="quantity" min="1" required id="qty_input">
+        </div>
+      </div>
+      <div class="form-row">
+        <div class="form-group">
+          <label>Selling Price (₦) *</label>
+          <input type="number" step="0.01" name="selling_price" id="selling_price_input" required>
+        </div>
+        <div class="form-group">
+          <label>Payment Method *</label>
+          <select name="payment_method" required>
+            <option value="CASH">Cash</option>
+            <option value="TRANSFER">Transfer</option>
+            <option value="POS">POS</option>
+          </select>
+        </div>
+      </div>
+      <button type="submit" class="btn-sm btn-success" style="width:100%;margin-top:.5rem;">✔ Record Sale</button>
+    </form>
+  </div>
+</div>
+
+<!-- ══════════ TAB: MY CATALOG ══════════ -->
+<div id="tab-catalog" class="tab-panel">
+  <div class="card">
+    <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:1rem;flex-wrap:wrap;gap:.5rem;">
+      <p class="card-title" style="margin:0;">📦 Your Product Catalog</p>
+      <input type="text" id="catalog-search" placeholder="Search products…" onkeyup="filterCatalog()" style="padding:.4rem .7rem;border:1px solid #d1d5db;border-radius:6px;font-size:.82rem;width:200px;">
+    </div>
+    {% if staff_stock %}
+    <div class="stock-grid" id="catalog-grid">
+      {% for stock in staff_stock %}
+      <div class="stock-card catalog-item" data-name="{{ stock.product.model_name|lower }}">
+        <div class="stock-name">{{ stock.product.model_name }}</div>
+        <div class="stock-cat">{{ stock.product.subcategory.category.name|default:"—" }} › {{ stock.product.subcategory.name }}</div>
+        <div class="stock-price">₦{{ stock.product.selling_price|floatformat:0 }}</div>
+        <div class="stock-qty">
+          <span class="badge {% if stock.quantity == 0 %}badge-red{% elif stock.quantity <= 2 %}badge-amber{% else %}badge-green{% endif %}">
+            {{ stock.quantity }} in stock
+          </span>
+        </div>
+        {% if stock.product.imei_serial %}
+        <div style="font-size:.72rem;color:#9ca3af;">IMEI: {{ stock.product.imei_serial }}</div>
+        {% endif %}
+        <div style="display:flex;gap:.4rem;margin-top:.4rem;flex-wrap:wrap;">
+          <button onclick="editPrice({{ stock.id }}, {{ stock.product.selling_price }})" class="btn-sm btn-outline" style="font-size:.75rem;padding:.3rem .6rem;">Edit Price</button>
+        </div>
+      </div>
+      {% endfor %}
+    </div>
+
+    <!-- Also show as table -->
+    <div style="overflow-x:auto;margin-top:1.5rem;">
+      <p style="font-size:.82rem;font-weight:600;color:#374151;margin-bottom:.5rem;">Table View</p>
+      <table class="data-table">
+        <thead>
+          <tr>
+            <th>Product</th>
+            <th>Category</th>
+            <th style="text-align:center;">Qty in Stock</th>
+            <th style="text-align:right;">Selling Price</th>
+            <th>Cost Price</th>
+            <th>IMEI/Serial</th>
+            <th>Action</th>
+          </tr>
+        </thead>
+        <tbody>
+          {% for stock in staff_stock %}
+          <tr>
+            <td><strong>{{ stock.product.model_name }}</strong></td>
+            <td style="color:#9ca3af;">{{ stock.product.subcategory.name }}</td>
+            <td style="text-align:center;">
+              <span class="badge {% if stock.quantity == 0 %}badge-red{% elif stock.quantity <= 2 %}badge-amber{% else %}badge-green{% endif %}">
+                {{ stock.quantity }}
+              </span>
+            </td>
+            <td style="text-align:right;">₦{{ stock.product.selling_price|floatformat:0 }}</td>
+            <td style="color:#9ca3af;">₦{{ stock.product.cost_price|floatformat:0 }}</td>
+            <td style="font-size:.75rem;color:#9ca3af;">{{ stock.product.imei_serial|default:"—" }}</td>
+            <td>
+              <button onclick="editPrice({{ stock.id }}, {{ stock.product.selling_price }})" class="btn-sm btn-outline" style="font-size:.75rem;padding:.3rem .6rem;">Edit Price</button>
+            </td>
+          </tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+    {% else %}
+    <p style="text-align:center;color:#9ca3af;padding:2rem 0;">No products in your catalog yet. Add some in the Add Products tab.</p>
+    {% endif %}
+  </div>
+</div>
+
+<!-- ══════════ TAB: ADD PRODUCTS ══════════ -->
+<div id="tab-add" class="tab-panel">
+  <div class="two-col">
+    <!-- Single product -->
+    <div class="card">
+      <p class="card-title">➕ Add Single Product</p>
+      <form method="POST" action="{% url 'staff_create_product' %}">
+        {% csrf_token %}
+        <div class="form-group">
+          <label>Category *</label>
+          <select name="category" required>
+            {% for cat in categories %}<option value="{{ cat.id }}">{{ cat.name }}</option>{% endfor %}
+          </select>
+        </div>
+        <div class="form-group">
+          <label>Sub Category *</label>
+          <input type="text" name="new_subcategory" placeholder="e.g. Phones" required>
+        </div>
+        <div class="form-group">
+          <label>Sub Sub Category (Optional)</label>
+          <input type="text" name="new_subsubcategory" placeholder="e.g. Android">
+        </div>
+        <div class="form-group">
+          <label>Product Name</label>
+          <input type="text" name="product_name" placeholder="e.g. Apple iPhone">
+        </div>
+        <div class="form-group">
+          <label>Model Name *</label>
+          <input type="text" name="model_name" placeholder="e.g. iPhone 15 Pro" required>
+        </div>
+        <div class="form-group">
+          <label>IMEI / Serial (Optional)</label>
+          <input type="text" name="imei" placeholder="Full IMEI or Serial Number">
+        </div>
+        <div class="form-row">
+          <div class="form-group">
+            <label>Selling Price (₦) *</label>
+            <input type="number" step="0.01" name="selling_price" required>
+          </div>
+          <div class="form-group">
+            <label>Quantity *</label>
+            <input type="number" name="quantity" min="1" required>
+          </div>
+        </div>
+        <button type="submit" class="btn-sm btn-primary" style="width:100%;">Create & Add to Catalog</button>
+      </form>
+    </div>
+
+    <!-- Bulk CSV -->
+    <div class="card">
+      <p class="card-title">📤 Bulk Upload via CSV</p>
+      <p style="font-size:.83rem;color:#6b7280;margin-bottom:.8rem;">Upload multiple products at once. Each row adds to your catalog and stock quantity.</p>
+      <form method="POST" action="{% url 'upload_retail_csv' %}" enctype="multipart/form-data">
+        {% csrf_token %}
+        <div class="form-group">
+          <label>Select CSV File *</label>
+          <input type="file" name="csv_file" accept=".csv" required>
+        </div>
+        <button type="submit" class="btn-sm btn-success" style="width:100%;margin-bottom:1rem;">📤 Upload Products</button>
+      </form>
+      <div>
+        <p style="font-size:.78rem;font-weight:600;color:#374151;margin-bottom:.4rem;">CSV Format (columns):</p>
+        <pre>product_name,model_name,category,subcategory,selling_price,quantity,imei_serial
+Apple iPhone,iPhone 15,Phones,Smartphones,850000,2,
+Samsung,S24 Ultra,Phones,Android,700000,1,356938035643809
+Generic Cable,Type-C Cable,Accessories,Cables,2500,10,</pre>
+        <p style="font-size:.75rem;color:#9ca3af;margin-top:.4rem;">
+          • <strong>model_name</strong> is required for every row<br>
+          • If the product already exists, quantity is added to existing stock<br>
+          • imei_serial is optional — leave blank for accessories
+        </p>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ══════════ TAB: SALES HISTORY ══════════ -->
+<div id="tab-history" class="tab-panel">
+  <div class="card">
+    <p class="card-title">📋 Sales History</p>
+    {% if sales_history %}
+    <div style="overflow-x:auto;">
+      <table class="data-table">
+        <thead>
+          <tr>
+            <th>Date</th>
+            <th>Product</th>
+            <th style="text-align:center;">Qty</th>
+            <th style="text-align:right;">Price</th>
+            <th style="text-align:right;">Total</th>
+            <th>Payment</th>
+          </tr>
+        </thead>
+        <tbody>
+          {% for sale in sales_history %}
+          <tr>
+            <td style="color:#9ca3af;white-space:nowrap;">{{ sale.date|date:"d M Y" }}</td>
+            <td><strong>{{ sale.product.model_name }}</strong></td>
+            <td style="text-align:center;">{{ sale.quantity }}</td>
+            <td style="text-align:right;">₦{{ sale.selling_price|floatformat:0 }}</td>
+            <td style="text-align:right;">₦{{ sale.total_revenue|floatformat:0 }}</td>
+            <td><span class="badge badge-blue">{{ sale.payment_method }}</span></td>
+          </tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+    <!-- Pagination -->
+    {% if sales_history.has_other_pages %}
+    <div style="display:flex;justify-content:center;gap:.5rem;margin-top:1rem;">
+      {% if sales_history.has_previous %}
+      <a href="?page={{ sales_history.previous_page_number }}#history" class="btn-sm btn-outline">← Prev</a>
+      {% endif %}
+      <span style="padding:.5rem 1rem;font-size:.85rem;color:#6b7280;">Page {{ sales_history.number }} of {{ sales_history.paginator.num_pages }}</span>
+      {% if sales_history.has_next %}
+      <a href="?page={{ sales_history.next_page_number }}#history" class="btn-sm btn-outline">Next →</a>
+      {% endif %}
+    </div>
+    {% endif %}
+    {% else %}
+    <p style="text-align:center;color:#9ca3af;padding:2rem 0;">No sales recorded yet.</p>
+    {% endif %}
+  </div>
+</div>
+
+<!-- ══════════ TAB: ATTENDANCE ══════════ -->
+<div id="tab-attendance" class="tab-panel">
+  <div class="two-col">
+    <!-- Check In -->
+    <div class="card">
+      <p class="card-title">🌅 Morning Check-In</p>
+      <button class="checkinout-btn btn-checkin" onclick="startAttendance('in')">📍 Check In Now</button>
+      <div id="checkin-form" style="display:none;">
+        <form method="POST" action="{% url 'check_in' %}" enctype="multipart/form-data" id="checkin-form-el">
+          {% csrf_token %}
+          <input type="hidden" name="latitude" id="ci-lat">
+          <input type="hidden" name="longitude" id="ci-lon">
+          <div class="form-group" style="margin-top:.8rem;">
+            <label>Selfie Photo *</label>
+            <input type="file" name="selfie" accept="image/*" capture="user" required>
+          </div>
+          <button type="submit" class="btn-sm btn-success" style="width:100%;">Submit Check-In</button>
+        </form>
+      </div>
+      <p style="font-size:.78rem;color:#9ca3af;margin-top:.5rem;">Must be within {{ request.user.branch.allowed_radius|default:"100" }}m of your branch.</p>
+    </div>
+
+    <!-- Check Out -->
+    <div class="card">
+      <p class="card-title">🌆 Evening Check-Out</p>
+      <button class="checkinout-btn btn-checkout" onclick="startAttendance('out')">📍 Check Out Now</button>
+      <div id="checkout-form" style="display:none;">
+        <form method="POST" action="{% url 'check_out' %}" enctype="multipart/form-data" id="checkout-form-el">
+          {% csrf_token %}
+          <input type="hidden" name="latitude" id="co-lat">
+          <input type="hidden" name="longitude" id="co-lon">
+          <div class="form-group" style="margin-top:.8rem;">
+            <label>Selfie Photo *</label>
+            <input type="file" name="selfie" accept="image/*" capture="user" required>
+          </div>
+          <button type="submit" class="btn-sm btn-danger" style="width:100%;">Submit Check-Out</button>
+        </form>
+      </div>
+      <p style="font-size:.78rem;color:#9ca3af;margin-top:.5rem;">Check out at the end of your shift.</p>
+    </div>
+  </div>
+
+  <!-- Attendance log -->
+  <div class="card">
+    <p class="card-title">📋 Recent Attendance Log</p>
+    <table class="data-table">
+      <thead><tr><th>Date</th><th>Check In</th><th>Check Out</th><th>Status</th></tr></thead>
+      <tbody>
+        {% for log in check_logs %}
+        <tr>
+          <td>{{ log.date|date:"d M Y" }}</td>
+          <td>{{ log.check_in_time|time:"H:i"|default:"—" }}</td>
+          <td>{{ log.check_out_time|time:"H:i"|default:"—" }}</td>
+          <td>
+            {% if log.is_absent %}<span class="badge badge-red">Absent</span>
+            {% elif log.is_late %}<span class="badge badge-amber">Late</span>
+            {% else %}<span class="badge badge-green">On Time</span>{% endif %}
+          </td>
+        </tr>
         {% empty %}
-            <p style="color: #666; font-style: italic;">No categories available.</p>
+        <tr><td colspan="4" style="text-align:center;color:#9ca3af;">No attendance records yet.</td></tr>
         {% endfor %}
-    </div>
-</div>
-
-<div class="row" style="display: flex; gap: 2rem; flex-wrap: wrap;">
-    <div style="flex: 1; min-width: 400px;">
-        <div class="card">
-            <h3>Record Sale</h3>
-            <form method="POST" action="{% url 'record_retail_sale' %}">
-                {% csrf_token %}
-                <label>Product</label>
-                <select name="product" id="product_select" required onchange="updateSellingPrice()">
-                    <option value="">-- Select Product --</option>
-                    {% for stock in staff_stock %}
-                        <option value="{{ stock.product.id }}" data-price="{{ stock.product.selling_price }}">{{ stock.product.model_name }} - Qty: {{ stock.quantity }}</option>
-                    {% endfor %}
-                </select>
-                <label style="display: block; margin-top: 1rem;">Customer Phone</label>
-                <input type="tel" name="customer_phone" placeholder="e.g., 08012345678" style="display: block; margin-top: 0.5rem;">
-                <label style="display: block; margin-top: 1rem;">Quantity Sold</label>
-                <input type="number" name="quantity" required>
-                <label style="display: block; margin-top: 1rem;">Selling Price</label>
-                <input type="number" step="0.01" name="selling_price" id="selling_price_input" required>
-                <label style="display: block; margin-top: 1rem;">Payment Method</label>
-                <select name="payment_method" required>
-                    <option value="CASH">Cash</option>
-                    <option value="TRANSFER">Transfer</option>
-                    <option value="POS">POS</option>
-                </select>
-                <button type="submit" class="btn btn-success" style="width: 100%; margin-top: 1.5rem;">Record Sale</button>
-            </form>
-        </div>
-
-        <div class="card">
-            <h3>Add New Product</h3>
-            <div style="display: flex; gap: 1rem; margin-bottom: 1.5rem; border-bottom: 1px solid #ddd; padding-bottom: 1rem;">
-                <button type="button" class="btn" onclick="toggleTab('single-product')" id="btn-single" style="background: var(--mtn-blue); color: white;">➕ Single Product</button>
-                <button type="button" class="btn" onclick="toggleTab('bulk-csv')" id="btn-bulk" style="background: #ddd; color: #333;">📤 Bulk Upload (CSV)</button>
-            </div>
-
-            <!-- Single Product Form -->
-            <div id="single-product" style="display: block;">
-                <form method="POST" action="{% url 'staff_create_product' %}">
-                    {% csrf_token %}
-                    <label>Category</label>
-                    <select name="category" required>
-                        {% for cat in categories %}<option value="{{ cat.id }}">{{ cat.name }}</option>{% endfor %}
-                    </select>
-                    <label style="display: block; margin-top: 1rem;">Sub Category</label>
-                    <input type="text" name="new_subcategory" required>
-                    <label style="display: block; margin-top: 1rem;">Sub Sub Category (Optional)</label>
-                    <input type="text" name="new_subsubcategory">
-                    <label style="display: block; margin-top: 1rem;">Product Name</label>
-                    <input type="text" name="product_name" required>
-                    <label style="display: block; margin-top: 1rem;">Model Name</label>
-                    <input type="text" name="model_name" required>
-                    <label style="display: block; margin-top: 1rem;">Full IMEI / Serial</label>
-                    <input type="text" name="imei" placeholder="Full IMEI or Serial Number">
-                    <label style="display: block; margin-top: 1rem;">Selling Price</label>
-                    <input type="number" step="0.01" name="selling_price" required>
-                    <label style="display: block; margin-top: 1rem;">Initial Quantity</label>
-                    <input type="number" name="quantity" required>
-                    <button type="submit" class="btn btn-primary" style="width: 100%; margin-top: 1.5rem;">Create & Add to Stock</button>
-                </form>
-            </div>
-
-            <!-- CSV Bulk Import Form -->
-            <div id="bulk-csv" style="display: none;">
-                <form method="POST" action="{% url 'upload_stock_csv' %}" enctype="multipart/form-data">
-                    {% csrf_token %}
-                    <p style="color: #666; margin-bottom: 1rem;">Upload CSV with multiple products. Use same fields as single product form.</p>
-                    <p style="font-weight: 600; margin-bottom: 0.5rem;">CSV Format:</p>
-                    <pre style="background: #f5f5f5; padding: 1rem; border-radius: 4px; overflow-x: auto; font-size: 0.8rem;">product_name,model_name,category_id,new_subcategory,new_subsubcategory,imei_serial,selling_price,quantity
-Apple iPhone,iPhone 15,1,Phones,Premium,123456789,850000,5
-Samsung Galaxy,S24,2,Phones,Flagship,987654321,750000,3</pre>
-                    <label style="display: block; margin-top: 1rem;">
-                        <strong>Select CSV File:</strong>
-                        <input type="file" name="csv_file" accept=".csv" required style="margin-top: 0.5rem; padding: 0.5rem;">
-                    </label>
-                    <button type="submit" class="btn btn-success" style="width: 100%; margin-top: 1.5rem;">📤 Upload & Add Products</button>
-                </form>
-            </div>
-
-            <script>
-                function toggleTab(tab) {
-                    document.getElementById('single-product').style.display = (tab === 'single-product') ? 'block' : 'none';
-                    document.getElementById('bulk-csv').style.display = (tab === 'bulk-csv') ? 'block' : 'none';
-                    document.getElementById('btn-single').style.background = (tab === 'single-product') ? 'var(--mtn-blue)' : '#ddd';
-                    document.getElementById('btn-single').style.color = (tab === 'single-product') ? 'white' : 'black';
-                    document.getElementById('btn-bulk').style.background = (tab === 'bulk-csv') ? 'var(--mtn-blue)' : '#ddd';
-                    document.getElementById('btn-bulk').style.color = (tab === 'bulk-csv') ? 'white' : 'black';
-                }
-                function toggleCatalogView(view) {
-                    document.getElementById('grid-view').style.display = (view === 'grid-view') ? 'block' : 'none';
-                    document.getElementById('list-view').style.display = (view === 'list-view') ? 'block' : 'none';
-                    document.getElementById('btn-grid').style.background = (view === 'grid-view') ? 'var(--mtn-blue)' : '#ddd';
-                    document.getElementById('btn-grid').style.color = (view === 'grid-view') ? 'white' : 'black';
-                    document.getElementById('btn-list').style.background = (view === 'list-view') ? 'var(--mtn-blue)' : '#ddd';
-                    document.getElementById('btn-list').style.color = (view === 'list-view') ? 'white' : 'black';
-                }
-                function editPrice(stockId, currentPrice) {
-                    const newPrice = prompt(`Edit selling price (current: ₦${currentPrice.toFixed(2)}):`, currentPrice);
-                    if (newPrice !== null && newPrice !== '') {
-                        window.location.href = `/edit-staff-stock-price/${stockId}/?price=${parseFloat(newPrice)}`;
-                    }
-                }
-                function updateSellingPrice() {
-                    const select = document.getElementById('product_select');
-                    const priceInput = document.getElementById('selling_price_input');
-                    const selectedOption = select.options[select.selectedIndex];
-                    const price = selectedOption.getAttribute('data-price');
-                    if (price) {
-                        priceInput.value = price;
-                    }
-                }
-            </script>
-        </div>
-    </div>
-
-    <div style="flex: 1; min-width: 300px;">
-        <div class="card">
-            <h3>Your Stock</h3>
-            <table>
-                <thead><tr><th>Product</th><th>Qty</th></tr></thead>
-                <tbody>
-                    {% for stock in staff_stock %}
-                    <tr><td>{{ stock.product.model_name }}</td><td>{{ stock.quantity }}</td></tr>
-                    {% empty %}<tr><td colspan="2">No stock.</td></tr>
-                    {% endfor %}
-                </tbody>
-            </table>
-        </div>
-
-        <div class="card">
-            <h3>Request Stock from Manager</h3>
-            <form method="POST" action="{% url 'request_stock' %}">
-                {% csrf_token %}
-                <input type="text" name="product_name" placeholder="Product Name/Model" required>
-                <input type="number" name="quantity" placeholder="Quantity Needed" required>
-                <button type="submit" class="btn btn-warning" style="width: 100%; margin-top: 1rem;">Submit Request</button>
-            </form>
-        </div>
-    </div>
-</div>
-
-<div class="card" style="margin-top: 2rem;">
-    <h3>💰 My Sales History</h3>
-    <table style="width: 100%; border-collapse: collapse; font-size: 0.9rem;">
-        <thead>
-            <tr style="background: #f8f9fa; border-bottom: 2px solid #ddd;">
-                <th style="padding: 0.8rem; text-align: left; color: #333;">Date</th>
-                <th style="padding: 0.8rem; text-align: left; color: #333;">Product</th>
-                <th style="padding: 0.8rem; text-align: center; color: #333;">Qty</th>
-                <th style="padding: 0.8rem; text-align: right; color: #333;">Price/Unit</th>
-                <th style="padding: 0.8rem; text-align: right; color: #333;">Total</th>
-                <th style="padding: 0.8rem; text-align: center; color: #333;">Customer Phone</th>
-                <th style="padding: 0.8rem; text-align: center; color: #333;">Payment</th>
-            </tr>
-        </thead>
-        <tbody>
-            {% for sale in sales_history %}
-            <tr style="border-bottom: 1px solid #eee;">
-                <td style="padding: 0.8rem;">{{ sale.date|date:"M d, Y" }}</td>
-                <td style="padding: 0.8rem;">{{ sale.product.model_name }}</td>
-                <td style="padding: 0.8rem; text-align: center;">{{ sale.quantity }}</td>
-                <td style="padding: 0.8rem; text-align: right; color: var(--mtn-green); font-weight: 600;">₦{{ sale.selling_price|floatformat:2 }}</td>
-                <td style="padding: 0.8rem; text-align: right; color: var(--mtn-green); font-weight: 600;">₦{{ sale.total_revenue|floatformat:2 }}</td>
-                <td style="padding: 0.8rem; text-align: center; font-size: 0.85rem;">{{ sale.customer_phone|default:"—" }}</td>
-                <td style="padding: 0.8rem; text-align: center; font-size: 0.85rem;">{{ sale.payment_method }}</td>
-            </tr>
-            {% empty %}
-            <tr style="border-bottom: 1px solid #eee;">
-                <td colspan="7" style="padding: 1rem; text-align: center; color: #999;">No sales recorded yet.</td>
-            </tr>
-            {% endfor %}
-        </tbody>
+      </tbody>
     </table>
+  </div>
 </div>
 
-<div class="card" style="margin-top: 2rem;">
-    <h3>📋 Monthly Activity Summary</h3>
-    <p>Available in Director dashboard filter view.</p>
+<!-- ══════════ TAB: STOCK REQUESTS ══════════ -->
+<div id="tab-requests" class="tab-panel">
+  <div class="card">
+    <p class="card-title">📬 Request Stock from Manager</p>
+    <form method="POST" action="{% url 'request_stock' %}">
+      {% csrf_token %}
+      <div class="form-row">
+        <div class="form-group">
+          <label>Product Name *</label>
+          <input type="text" name="product_name" placeholder="e.g. iPhone 15 Pro" required>
+        </div>
+        <div class="form-group">
+          <label>Quantity Needed *</label>
+          <input type="number" name="quantity" min="1" required>
+        </div>
+      </div>
+      <button type="submit" class="btn-sm btn-primary" style="margin-top:.5rem;">Send Request</button>
+    </form>
+  </div>
 </div>
 
-<div class="card" style="margin-top: 2rem;">
-    <h3>📍 My Check In/Out Logs</h3>
-    <table>
-        <thead>
-            <tr>
-                <th>Date</th>
-                <th>Check In</th>
-                <th>Check Out</th>
-                <th>Purpose</th>
-            </tr>
-        </thead>
-        <tbody>
-            {% for log in check_logs %}
-            <tr>
-                <td>{{ log.date|date:"M d, Y" }}</td>
-                <td>{{ log.check_in_time|date:"H:i" }}</td>
-                <td>{{ log.check_out_time|date:"H:i"|default:"—" }}</td>
-                <td>{{ log.purpose|default:"Outing" }}</td>
-            </tr>
-            {% empty %}
-            <tr><td colspan="4" style="text-align:center;">No outings logged</td></tr>
-            {% endfor %}
-        </tbody>
-    </table>
-</div>
+<script>
+function switchTab(name, btn) {
+  document.querySelectorAll('.tab-panel').forEach(p => p.classList.remove('active'));
+  document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
+  document.getElementById('tab-' + name).classList.add('active');
+  btn.classList.add('active');
+  history.replaceState(null, '', '#' + name);
+}
+document.addEventListener('DOMContentLoaded', function() {
+  const hash = location.hash.replace('#','');
+  if (hash) {
+    const btn = document.querySelector('[onclick*="switchTab(\'' + hash + '\'"]');
+    if (btn) switchTab(hash, btn);
+  }
+});
+
+function updatePrice() {
+  const sel = document.getElementById('product_select');
+  const opt = sel.options[sel.selectedIndex];
+  const price = opt.dataset.price;
+  const qty = opt.dataset.qty;
+  if (price) {
+    document.getElementById('selling_price_input').value = price;
+    const info = document.getElementById('stock-info');
+    info.style.display = 'block';
+    info.textContent = `✓ ${qty} unit(s) available · Default price ₦${parseFloat(price).toLocaleString()}`;
+  }
+}
+
+function startAttendance(type) {
+  const formId = type === 'in' ? 'checkin-form' : 'checkout-form';
+  const latId = type === 'in' ? 'ci-lat' : 'co-lat';
+  const lonId = type === 'in' ? 'ci-lon' : 'co-lon';
+  document.getElementById(formId).style.display = 'block';
+  if (navigator.geolocation) {
+    navigator.geolocation.getCurrentPosition(function(pos) {
+      document.getElementById(latId).value = pos.coords.latitude;
+      document.getElementById(lonId).value = pos.coords.longitude;
+    }, function() {
+      alert('Could not get your location. Please enable GPS and try again.');
+    });
+  } else {
+    alert('Geolocation is not supported by your browser.');
+  }
+}
+
+function editPrice(stockId, currentPrice) {
+  const newPrice = prompt('Enter new selling price (current: ₦' + parseFloat(currentPrice).toLocaleString() + '):', currentPrice);
+  if (newPrice && !isNaN(newPrice)) {
+    window.location.href = `/edit-staff-stock-price/${stockId}/?price=${newPrice}`;
+  }
+}
+
+function filterCatalog() {
+  const q = document.getElementById('catalog-search').value.toLowerCase();
+  document.querySelectorAll('.catalog-item').forEach(el => {
+    el.style.display = el.dataset.name.includes(q) ? '' : 'none';
+  });
+}
+</script>
 {% endblock %}

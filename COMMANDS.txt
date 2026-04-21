@@ -1,0 +1,86 @@
+=========================================
+STEP BY STEP SHELL COMMANDS
+Run each block one at a time. Wait for
+"Done" or success message before next.
+=========================================
+
+
+--- COMMAND 1: Install requests library ---
+pip install requests --break-system-packages
+
+
+--- COMMAND 2: Add CALLMEBOT settings to .env ---
+(Open your .env file in Replit and add these two lines:)
+
+CALLMEBOT_API_KEY=your_api_key_here
+DIRECTOR_WHATSAPP=2348012345678
+
+(Replace with real values. Get API key free at callmebot.com/blog/free-api-whatsapp-messages/)
+
+
+--- COMMAND 3: Add CALLMEBOT settings to settings.py ---
+python -c "
+code = open('/home/runner/workspace/django_project/settings.py').read()
+if 'CALLMEBOT_API_KEY' not in code:
+    addon = \"\"\"\n# WhatsApp Notifications\nCALLMEBOT_API_KEY = config('CALLMEBOT_API_KEY', default='')\nDIRECTOR_WHATSAPP = config('DIRECTOR_WHATSAPP', default='')\n\"\"\"
+    open('/home/runner/workspace/django_project/settings.py','a').write(addon)
+    print('Added')
+else:
+    print('Already there')
+"
+
+
+--- COMMAND 4: Create template folders ---
+mkdir -p /home/runner/workspace/templates/manager
+mkdir -p /home/runner/workspace/templates/director
+
+
+--- COMMAND 5: Copy templates to correct locations ---
+cp /home/runner/workspace/stock_log.html /home/runner/workspace/templates/manager/stock_log.html
+cp /home/runner/workspace/all_branch_stock.html /home/runner/workspace/templates/director/all_branch_stock.html
+cp /home/runner/workspace/all_activities.html /home/runner/workspace/templates/director/all_activities.html
+
+
+--- COMMAND 6: Append new views ---
+cat /home/runner/workspace/new_features_views.py >> /home/runner/workspace/core/views.py && echo "Done"
+
+
+--- COMMAND 7: Add new URL routes ---
+python -c "
+code = open('/home/runner/workspace/core/urls.py').read()
+routes = [
+    \"    path('stock-log/', views.stock_movement_log, name='stock_movement_log'),\",
+    \"    path('director/all-stock/', views.director_all_branch_stock, name='director_all_branch_stock'),\",
+    \"    path('director/all-activities/', views.director_all_activities, name='director_all_activities'),\",
+    \"    path('send-daily-report/', views.send_daily_report_whatsapp, name='send_daily_report_whatsapp'),\",
+    \"    path('send-stock-request/', views.send_stock_request_whatsapp, name='send_stock_request_whatsapp'),\",
+]
+for r in routes:
+    name = r.split(\"name='\")[1].rstrip(\"'),\").strip()
+    if name not in code:
+        code = code.rstrip().rstrip(']').rstrip() + '\n' + r + '\n]\n'
+        print('Added:', name)
+    else:
+        print('Already exists:', name)
+open('/home/runner/workspace/core/urls.py','w').write(code)
+print('Done')
+"
+
+
+--- COMMAND 8: Fix director login ---
+python -c "
+code = open('/home/runner/workspace/django_project/urls.py').read()
+if 'account_login' not in code:
+    code = code.replace(
+        \"path('admin/', admin.site.urls),\",
+        \"path('admin/', admin.site.urls),\n    path('accounts/login/', __import__('core').views.custom_login, name='account_login'),\"
+    )
+    open('/home/runner/workspace/django_project/urls.py','w').write(code)
+    print('Fixed director login')
+else:
+    print('Already fixed')
+"
+
+
+--- COMMAND 9: Start server ---
+python manage.py runserver 0.0.0.0:8000

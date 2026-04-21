@@ -1,0 +1,78 @@
+{% extends "base.html" %}
+{% comment %}THIS IS audit_log.html{% endcomment %}
+{% block content %}
+<style>
+.page-title{font-size:1.3rem;font-weight:700;color:#004F9F;margin:0 0 1.5rem}
+.card{background:#fff;border:1px solid #e5e7eb;border-radius:10px;padding:1.2rem 1.4rem;margin-bottom:1.2rem}
+.badge{display:inline-block;padding:.2rem .55rem;border-radius:999px;font-size:.72rem;font-weight:700}
+.badge-green{background:#d1fae5;color:#065f46}.badge-red{background:#fee2e2;color:#991b1b}
+.badge-amber{background:#fef3c7;color:#92400e}.badge-blue{background:#dbeafe;color:#1e40af}
+.badge-purple{background:#ede9fe;color:#5b21b6}
+.data-table{width:100%;border-collapse:collapse;font-size:.85rem}
+.data-table th{background:#f9fafb;color:#374151;font-weight:600;padding:.65rem .9rem;text-align:left;border-bottom:1px solid #e5e7eb}
+.data-table td{padding:.6rem .9rem;border-bottom:1px solid #f3f4f6;color:#374151;vertical-align:top}
+.data-table tr:hover td{background:#fafafa}
+.filter-bar{display:flex;gap:.6rem;flex-wrap:wrap;align-items:flex-end;margin-bottom:1.2rem}
+.filter-bar select,.filter-bar input{padding:.45rem .7rem;border:1px solid #d1d5db;border-radius:6px;font-size:.83rem}
+.btn-sm{padding:.45rem .9rem;font-size:.82rem;border-radius:6px;border:none;cursor:pointer;font-weight:600;text-decoration:none;display:inline-block}
+.btn-primary{background:#004F9F;color:#fff}.btn-outline{background:transparent;border:1px solid #d1d5db;color:#374151}
+</style>
+
+<div style="display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:.8rem;margin-bottom:1.5rem;">
+  <h1 class="page-title" style="margin:0;">🔍 Audit Log</h1>
+  <a href="{% url 'director_dashboard' %}" class="btn-sm btn-outline">← Dashboard</a>
+</div>
+
+<div class="card">
+  <form method="GET" class="filter-bar">
+    <div>
+      <label style="font-size:.75rem;font-weight:600;color:#374151;display:block;margin-bottom:.2rem;">Action</label>
+      <select name="action">
+        <option value="">All Actions</option>
+        <option value="CREATE" {% if action_filter == "CREATE" %}selected{% endif %}>Created</option>
+        <option value="UPDATE" {% if action_filter == "UPDATE" %}selected{% endif %}>Updated</option>
+        <option value="DELETE" {% if action_filter == "DELETE" %}selected{% endif %}>Deleted</option>
+        <option value="VOID"   {% if action_filter == "VOID"   %}selected{% endif %}>Voided</option>
+        <option value="LOGIN"  {% if action_filter == "LOGIN"  %}selected{% endif %}>Login</option>
+      </select>
+    </div>
+    <div>
+      <label style="font-size:.75rem;font-weight:600;color:#374151;display:block;margin-bottom:.2rem;">Model</label>
+      <input type="text" name="model" value="{{ model_filter }}" placeholder="e.g. RetailSale">
+    </div>
+    <button type="submit" class="btn-sm btn-primary" style="align-self:flex-end;">Filter</button>
+    <a href="{% url 'audit_log_view' %}" class="btn-sm btn-outline" style="align-self:flex-end;">Clear</a>
+  </form>
+
+  <div style="overflow-x:auto;">
+    <table class="data-table">
+      <thead><tr><th>When</th><th>Who</th><th>Action</th><th>What</th><th>Details</th></tr></thead>
+      <tbody>
+        {% for log in logs %}
+        <tr>
+          <td style="white-space:nowrap;color:#9ca3af;">{{ log.timestamp|date:"d M Y H:i" }}</td>
+          <td><strong>{{ log.user.username|default:"System" }}</strong></td>
+          <td>
+            <span class="badge {% if log.action == 'CREATE' %}badge-green{% elif log.action == 'DELETE' or log.action == 'VOID' %}badge-red{% elif log.action == 'UPDATE' %}badge-blue{% else %}badge-amber{% endif %}">
+              {{ log.action }}
+            </span>
+          </td>
+          <td>{{ log.model_name }} {% if log.object_id %}#{{ log.object_id }}{% endif %}</td>
+          <td style="max-width:300px;font-size:.8rem;color:#6b7280;">{{ log.description }}</td>
+        </tr>
+        {% empty %}
+        <tr><td colspan="5" style="text-align:center;color:#9ca3af;padding:2rem 0;">No audit records found.</td></tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+
+  {% if logs.has_other_pages %}
+  <div style="display:flex;justify-content:center;gap:.5rem;margin-top:1rem;">
+    {% if logs.has_previous %}<a href="?page={{ logs.previous_page_number }}&action={{ action_filter }}&model={{ model_filter }}" class="btn-sm btn-outline">← Prev</a>{% endif %}
+    <span style="padding:.5rem 1rem;font-size:.85rem;color:#6b7280;">Page {{ logs.number }} of {{ logs.paginator.num_pages }}</span>
+    {% if logs.has_next %}<a href="?page={{ logs.next_page_number }}&action={{ action_filter }}&model={{ model_filter }}" class="btn-sm btn-outline">Next →</a>{% endif %}
+  </div>
+  {% endif %}
+</div>
+{% endblock %}

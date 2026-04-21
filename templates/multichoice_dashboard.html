@@ -1,57 +1,437 @@
 {% extends "base.html" %}
 {% block content %}
-<div class="card">
-    <h2 style="margin:0;margin-bottom:5px;">📱 MultiChoice Staff Dashboard</h2>
-    <p style="color: var(--gray-600); margin: 0.5rem 0 0 0;">Record subscriptions, track commissions, and manage weekly reports</p>
-    <div style="display: flex; gap: 1rem; margin-top: 1rem; flex-wrap: wrap;">
-        <a href="{% url 'my_commissions' %}" class="btn btn-primary" style="flex: 1; min-width: 180px;">💰 My Commissions</a>
-    </div>
+<style>
+.dash-header { display:flex; align-items:center; justify-content:space-between; flex-wrap:wrap; gap:1rem; margin-bottom:1.5rem; }
+.dash-title  { font-size:1.4rem; font-weight:700; color:#004F9F; margin:0; }
+.dash-sub    { font-size:.85rem; color:#6b7280; margin:.2rem 0 0; }
+
+.kpi-grid { display:grid; grid-template-columns:repeat(auto-fit,minmax(150px,1fr)); gap:1rem; margin-bottom:1.5rem; }
+.kpi { background:#fff; border-radius:10px; border:1px solid #e5e7eb; padding:1rem 1.2rem; }
+.kpi-label { font-size:.72rem; text-transform:uppercase; letter-spacing:.05em; color:#6b7280; margin:0 0 .3rem; }
+.kpi-value { font-size:1.5rem; font-weight:700; color:#111827; margin:0; }
+.kpi-sub   { font-size:.75rem; color:#9ca3af; margin:.2rem 0 0; }
+.kpi.green  { border-left:4px solid #10b981; }
+.kpi.blue   { border-left:4px solid #3b82f6; }
+.kpi.amber  { border-left:4px solid #f59e0b; }
+.kpi.purple { border-left:4px solid #8b5cf6; }
+
+.tab-bar { display:flex; gap:.4rem; overflow-x:auto; padding:.4rem 0; margin-bottom:1.5rem; border-bottom:2px solid #e5e7eb; }
+.tab-btn { flex-shrink:0; padding:.55rem 1.1rem; border:none; border-radius:8px 8px 0 0; background:transparent; color:#6b7280; font-size:.85rem; font-weight:600; cursor:pointer; white-space:nowrap; transition:all .15s; border-bottom:3px solid transparent; margin-bottom:-2px; }
+.tab-btn:hover  { background:#f3f4f6; color:#111; }
+.tab-btn.active { color:#004F9F; border-bottom-color:#004F9F; background:#eff6ff; }
+
+.tab-panel { display:none; }
+.tab-panel.active { display:block; }
+
+.card { background:#fff; border:1px solid #e5e7eb; border-radius:10px; padding:1.2rem 1.4rem; margin-bottom:1.2rem; }
+.card-title { font-size:1rem; font-weight:700; color:#111827; margin:0 0 1rem; }
+
+.badge { display:inline-block; padding:.2rem .55rem; border-radius:999px; font-size:.72rem; font-weight:700; }
+.badge-green  { background:#d1fae5; color:#065f46; }
+.badge-red    { background:#fee2e2; color:#991b1b; }
+.badge-amber  { background:#fef3c7; color:#92400e; }
+.badge-blue   { background:#dbeafe; color:#1e40af; }
+.badge-purple { background:#ede9fe; color:#5b21b6; }
+
+.data-table { width:100%; border-collapse:collapse; font-size:.85rem; }
+.data-table th { background:#f9fafb; color:#374151; font-weight:600; padding:.65rem .9rem; text-align:left; border-bottom:1px solid #e5e7eb; }
+.data-table td { padding:.6rem .9rem; border-bottom:1px solid #f3f4f6; color:#374151; }
+.data-table tr:last-child td { border-bottom:none; }
+.data-table tr:hover td { background:#fafafa; }
+
+.form-group { margin-bottom:.8rem; }
+.form-group label { font-size:.78rem; font-weight:600; color:#374151; display:block; margin-bottom:.3rem; }
+.form-group input, .form-group select, .form-group textarea {
+  width:100%; padding:.5rem .75rem; border:1px solid #d1d5db; border-radius:6px;
+  font-size:.88rem; color:#111; background:#fff; box-sizing:border-box; }
+.form-group input:focus, .form-group select:focus { outline:none; border-color:#004F9F; box-shadow:0 0 0 2px rgba(0,79,159,.12); }
+
+.form-row { display:grid; grid-template-columns:repeat(auto-fit,minmax(150px,1fr)); gap:.8rem; }
+
+.btn-sm { padding:.5rem 1rem; font-size:.85rem; border-radius:6px; border:none; cursor:pointer; font-weight:600; display:inline-block; text-align:center; }
+.btn-primary { background:#004F9F; color:#fff; }
+.btn-success { background:#10b981; color:#fff; }
+.btn-danger  { background:#ef4444; color:#fff; }
+.btn-purple  { background:#8b5cf6; color:#fff; }
+.btn-outline { background:transparent; border:1px solid #d1d5db; color:#374151; }
+.btn-sm:hover { opacity:.88; }
+
+.alert { padding:.9rem 1rem; border-radius:8px; font-size:.85rem; margin-bottom:1rem; }
+.alert-green  { background:#d1fae5; border:1px solid #6ee7b7; color:#065f46; }
+.alert-amber  { background:#fef3c7; border:1px solid #fcd34d; color:#92400e; }
+.alert-blue   { background:#dbeafe; border:1px solid #93c5fd; color:#1e40af; }
+
+.two-col { display:grid; grid-template-columns:1fr 1fr; gap:1.2rem; }
+@media(max-width:700px){ .two-col { grid-template-columns:1fr; } }
+
+.week-status { padding:1rem; border-radius:8px; margin-bottom:1rem; }
+.week-open   { background:#d1fae5; border:1px solid #6ee7b7; }
+.week-closed { background:#f3f4f6; border:1px solid #e5e7eb; }
+.week-none   { background:#fef3c7; border:1px solid #fcd34d; }
+</style>
+
+<!-- HEADER -->
+<div class="dash-header">
+  <div>
+    <h1 class="dash-title">MultiChoice Dashboard</h1>
+    <p class="dash-sub">{{ request.user.username }} &nbsp;·&nbsp; {{ request.user.branch.name }} &nbsp;·&nbsp; {% now "D, d M Y" %}</p>
+  </div>
+  <div style="display:flex;gap:.6rem;flex-wrap:wrap;">
+    {% include "partials/attendance_widget.html" %}
+  </div>
 </div>
 
-<div class="card">
-    <h3>📈 Subscription History</h3>
-    <form method="GET" style="display: grid; grid-template-columns: repeat(auto-fit, minmax(180px, 1fr)); gap: 0.75rem; margin-bottom: 1rem;">
-        <input type="month" name="month" value="{{ selected_month }}">
-        <input type="text" name="search" value="{{ search_query }}" placeholder="Search name, IUC, package, phone">
-        <button type="submit" class="btn btn-primary">Filter</button>
+<!-- KPI CARDS -->
+<div class="kpi-grid">
+  <div class="kpi green">
+    <p class="kpi-label">Today's Revenue</p>
+    <p class="kpi-value">₦{{ total_today|floatformat:0 }}</p>
+    <p class="kpi-sub">{{ today_sales|length }} subscription(s)</p>
+  </div>
+  <div class="kpi blue">
+    <p class="kpi-label">Weekly Report</p>
+    <p class="kpi-value">{% if weekly_report %}{% if weekly_report.is_closed %}Closed{% else %}Open{% endif %}{% else %}Not Started{% endif %}</p>
+    <p class="kpi-sub">Week started {{ weekly_report.week_start_date|date:"d M" |default:"—" }}</p>
+  </div>
+  <div class="kpi amber">
+    <p class="kpi-label">Weekly Subscriptions</p>
+    <p class="kpi-value">₦{{ weekly_total_sales|floatformat:0 }}</p>
+    <p class="kpi-sub">This week total</p>
+  </div>
+  <div class="kpi purple">
+    <p class="kpi-label">Commission</p>
+    <p class="kpi-value">₦{% if weekly_report %}{{ weekly_report.commission|floatformat:0 }}{% else %}0{% endif %}</p>
+    <p class="kpi-sub">This week</p>
+  </div>
+</div>
+
+<!-- WEEKLY REPORT STATUS -->
+{% if not weekly_report %}
+<div class="week-status week-none">
+  <strong>⚠️ No active weekly report.</strong> You need to start one before recording subscriptions.
+  {% if is_monday %}
+  <form method="POST" action="{% url 'start_weekly_report' %}" style="margin-top:.8rem;">
+    {% csrf_token %}
+    <div class="form-row">
+      <div class="form-group">
+        <label>Opening Balance (₦)</label>
+        <input type="number" name="opening_balance" step="0.01" min="0" placeholder="0.00" required>
+      </div>
+      <div class="form-group">
+        <label>Additional Funds (₦)</label>
+        <input type="number" name="additional_funds" step="0.01" min="0" placeholder="0.00">
+      </div>
+    </div>
+    <button type="submit" class="btn-sm btn-success">▶ Start This Week's Report</button>
+  </form>
+  {% else %}
+  <p style="margin:.5rem 0 0;font-size:.83rem;">Weekly reports can only be started on Monday. Today is {{ today_sales.0.date|date:"l"|default:"not Monday" }}.</p>
+  {% endif %}
+</div>
+{% elif weekly_report.is_closed %}
+<div class="week-status week-closed">
+  <strong>✅ This week's report is closed.</strong> Commission: <strong>₦{{ weekly_report.commission|floatformat:2 }}</strong>
+</div>
+{% else %}
+<div class="week-status week-open">
+  <strong>📋 Weekly report is open.</strong> Opening balance: ₦{{ weekly_report.opening_balance|floatformat:2 }}
+  {% if is_saturday %}
+  &nbsp;—&nbsp;
+  <button onclick="document.getElementById('close-week-form').style.display='block';this.style.display='none'" class="btn-sm btn-danger" style="font-size:.78rem;">Close This Week</button>
+  <form id="close-week-form" method="POST" action="{% url 'close_weekly_report' %}" style="display:none;margin-top:.8rem;">
+    {% csrf_token %}
+    <div class="form-group">
+      <label>Closing Balance (₦)</label>
+      <input type="number" name="closing_balance" step="0.01" min="0" required>
+    </div>
+    <button type="submit" class="btn-sm btn-danger">Confirm Close Week</button>
+  </form>
+  {% endif %}
+</div>
+{% endif %}
+
+<!-- TAB BAR -->
+<div class="tab-bar">
+  <button class="tab-btn active" onclick="switchTab('record',this)">➕ Record Subscription</button>
+  <button class="tab-btn" onclick="switchTab('today',this)">📅 Today's Sales</button>
+  <button class="tab-btn" onclick="switchTab('history',this)">📋 History</button>
+  <button class="tab-btn" onclick="switchTab('balance',this)">💰 Balance</button>
+</div>
+
+<!-- ══════════ TAB: RECORD SUBSCRIPTION ══════════ -->
+<div id="tab-record" class="tab-panel active">
+  {% if weekly_report and not weekly_report.is_closed %}
+  <div class="card">
+    <p class="card-title">📺 Record New Subscription</p>
+    <form method="POST" action="{% url 'record_multichoice_sale' %}">
+      {% csrf_token %}
+      <div class="form-row">
+        <div class="form-group">
+          <label>Customer Name *</label>
+          <input type="text" name="customer_name" placeholder="Full name" required>
+        </div>
+        <div class="form-group">
+          <label>Customer Phone</label>
+          <input type="tel" name="customer_phone" placeholder="080xxxxxxxx">
+        </div>
+      </div>
+      <div class="form-row">
+        <div class="form-group">
+          <label>Service Type *</label>
+          <select name="service_type" required>
+            <option value="DSTV">DSTV</option>
+            <option value="GOTV">GOTV</option>
+          </select>
+        </div>
+        <div class="form-group">
+          <label>Transaction Type *</label>
+          <select name="transaction_type" required>
+            <option value="NEW">New Subscription</option>
+            <option value="RENEWAL">Renewal</option>
+            <option value="UPGRADE">Upgrade</option>
+          </select>
+        </div>
+      </div>
+      <div class="form-row">
+        <div class="form-group">
+          <label>Package *</label>
+          <select name="package_type" required>
+            <optgroup label="DSTV">
+              <option value="DSTV Padi">DSTV Padi</option>
+              <option value="DSTV Yanga">DSTV Yanga</option>
+              <option value="DSTV Confam">DSTV Confam</option>
+              <option value="DSTV Compact">DSTV Compact</option>
+              <option value="DSTV Compact Plus">DSTV Compact Plus</option>
+              <option value="DSTV Premium">DSTV Premium</option>
+            </optgroup>
+            <optgroup label="GOTV">
+              <option value="GOTV Smallie">GOTV Smallie</option>
+              <option value="GOTV Jinja">GOTV Jinja</option>
+              <option value="GOTV Jolli">GOTV Jolli</option>
+              <option value="GOTV Max">GOTV Max</option>
+              <option value="GOTV Supa">GOTV Supa</option>
+              <option value="GOTV Supa Plus">GOTV Supa Plus</option>
+            </optgroup>
+          </select>
+        </div>
+        <div class="form-group">
+          <label>Amount Collected (₦) *</label>
+          <input type="number" name="amount" step="0.01" min="0" placeholder="e.g. 4900" required>
+        </div>
+      </div>
+      <div class="form-row">
+        <div class="form-group">
+          <label>Cost Price / Amount Paid to MultiChoice (₦) *</label>
+          <input type="number" name="cost_price" step="0.01" min="0" placeholder="e.g. 4500" required>
+        </div>
+      </div>
+      <button type="submit" class="btn-sm btn-success" style="margin-top:.5rem;">✔ Record Subscription</button>
     </form>
-    <table>
+  </div>
+  {% else %}
+  <div class="alert alert-amber">
+    {% if not weekly_report %}
+    ⚠️ You need to start a weekly report before recording subscriptions.
+    {% else %}
+    ✅ This week is closed. Start next week's report on Monday to record new subscriptions.
+    {% endif %}
+  </div>
+  {% endif %}
+
+  <!-- Record Balance -->
+  {% if weekly_report and not weekly_report.is_closed %}
+  <div class="card">
+    <p class="card-title">💳 Record Current Balance</p>
+    <p style="font-size:.83rem;color:#6b7280;margin-bottom:.8rem;">Record your current cash/account balance to track commission detection.</p>
+    <form method="POST" action="{% url 'record_daily_balance' %}">
+      {% csrf_token %}
+      <div class="form-row">
+        <div class="form-group">
+          <label>Current Balance (₦) *</label>
+          <input type="number" name="balance" step="0.01" min="0" required>
+        </div>
+        <div class="form-group">
+          <label>Notes</label>
+          <input type="text" name="notes" placeholder="Optional note">
+        </div>
+      </div>
+      <button type="submit" class="btn-sm btn-primary">Record Balance</button>
+    </form>
+  </div>
+  {% endif %}
+</div>
+
+<!-- ══════════ TAB: TODAY'S SALES ══════════ -->
+<div id="tab-today" class="tab-panel">
+  <div class="card">
+    <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:1rem;flex-wrap:wrap;gap:.5rem;">
+      <p class="card-title" style="margin:0;">📅 Today's Subscriptions</p>
+      <span class="badge badge-green">Total: ₦{{ total_today|floatformat:0 }}</span>
+    </div>
+    {% if today_sales %}
+    <div style="overflow-x:auto;">
+      <table class="data-table">
         <thead>
-            <tr>
-                <th>Date</th>
-                <th>Customer</th>
-                <th>Phone</th>
-                <th>IUC Number</th>
-                <th>Package</th>
-                <th>Type</th>
-                <th>Amount</th>
-                <th>Cost Price</th>
-                <th>Balance After</th>
-            </tr>
+          <tr>
+            <th>Time</th>
+            <th>Customer</th>
+            <th>Phone</th>
+            <th>Service</th>
+            <th>Package</th>
+            <th>Type</th>
+            <th>Amount</th>
+            <th>Cost</th>
+          </tr>
         </thead>
         <tbody>
-            {% for sale in all_sales %}
-            <tr>
-                <td>{{ sale.date|date:"M d, Y" }}</td>
-                <td>{{ sale.customer_name }}</td>
-                <td>{{ sale.customer_phone|default:"—" }}</td>
-                <td>{{ sale.iuc_number|default:"—" }}</td>
-                <td>{{ sale.package_type }}</td>
-                <td>{{ sale.get_transaction_type_display }}</td>
-                <td>₦{{ sale.amount|floatformat:2 }}</td>
-                <td>₦{{ sale.cost_price|floatformat:2 }}</td>
-                <td>
-                    {% if sale.balance_after_sale %}
-                        ₦{{ sale.balance_after_sale|floatformat:2 }}
-                    {% else %}
-                        —
-                    {% endif %}
-                </td>
-            </tr>
-            {% empty %}
-            <tr><td colspan="9" style="text-align:center;">No records found.</td></tr>
-            {% endfor %}
+          {% for sale in today_sales %}
+          <tr>
+            <td style="color:#9ca3af;">{{ sale.time|time:"H:i" }}</td>
+            <td><strong>{{ sale.customer_name }}</strong></td>
+            <td>{{ sale.customer_phone|default:"—" }}</td>
+            <td><span class="badge {% if sale.service_type == 'DSTV' %}badge-blue{% else %}badge-green{% endif %}">{{ sale.service_type }}</span></td>
+            <td>{{ sale.package_type }}</td>
+            <td>{{ sale.get_transaction_type_display }}</td>
+            <td>₦{{ sale.amount|floatformat:2 }}</td>
+            <td>₦{{ sale.cost_price|floatformat:2 }}</td>
+          </tr>
+          {% endfor %}
         </tbody>
-    </table>
+      </table>
+    </div>
+    {% else %}
+    <p style="text-align:center;color:#9ca3af;padding:1.5rem 0;">No subscriptions recorded today yet.</p>
+    {% endif %}
+  </div>
 </div>
+
+<!-- ══════════ TAB: HISTORY ══════════ -->
+<div id="tab-history" class="tab-panel">
+  <div class="card">
+    <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:1rem;flex-wrap:wrap;gap:.5rem;">
+      <p class="card-title" style="margin:0;">📋 Subscription History</p>
+    </div>
+
+    <!-- Search and filter -->
+    <form method="GET" style="display:flex;gap:.5rem;flex-wrap:wrap;margin-bottom:1rem;">
+      <input type="hidden" name="tab" value="history">
+      <input type="text" name="search" placeholder="Search customer name, phone, package…" value="{{ search_query }}" style="flex:1;min-width:180px;padding:.45rem .75rem;border:1px solid #d1d5db;border-radius:6px;font-size:.83rem;">
+      <input type="month" name="month" value="{{ selected_month }}" style="padding:.45rem .75rem;border:1px solid #d1d5db;border-radius:6px;font-size:.83rem;">
+      <button type="submit" class="btn-sm btn-primary">Filter</button>
+    </form>
+
+    {% if all_sales %}
+    <div style="overflow-x:auto;">
+      <table class="data-table">
+        <thead>
+          <tr>
+            <th>Date</th>
+            <th>Customer</th>
+            <th>Phone</th>
+            <th>Service</th>
+            <th>Package</th>
+            <th>Type</th>
+            <th>Amount</th>
+            <th>Cost Price</th>
+          </tr>
+        </thead>
+        <tbody>
+          {% for sale in all_sales %}
+          <tr>
+            <td style="color:#9ca3af;white-space:nowrap;">{{ sale.date|date:"d M Y" }}</td>
+            <td><strong>{{ sale.customer_name }}</strong></td>
+            <td>{{ sale.customer_phone|default:"—" }}</td>
+            <td><span class="badge {% if sale.service_type == 'DSTV' %}badge-blue{% else %}badge-green{% endif %}">{{ sale.service_type }}</span></td>
+            <td>{{ sale.package_type }}</td>
+            <td>{{ sale.get_transaction_type_display }}</td>
+            <td>₦{{ sale.amount|floatformat:2 }}</td>
+            <td>₦{{ sale.cost_price|floatformat:2 }}</td>
+          </tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+    {% else %}
+    <p style="text-align:center;color:#9ca3af;padding:1.5rem 0;">No subscriptions found for this period.</p>
+    {% endif %}
+  </div>
+</div>
+
+<!-- ══════════ TAB: BALANCE ══════════ -->
+<div id="tab-balance" class="tab-panel">
+  {% if weekly_report %}
+  <div class="card">
+    <p class="card-title">📊 Weekly Report Summary</p>
+    <table class="data-table">
+      <tbody>
+        <tr><td>Week Start</td><td><strong>{{ weekly_report.week_start_date|date:"d M Y" }}</strong></td></tr>
+        <tr><td>Opening Balance</td><td><strong>₦{{ weekly_report.opening_balance|floatformat:2 }}</strong></td></tr>
+        <tr><td>Additional Funds</td><td><strong>₦{{ weekly_report.additional_funds|floatformat:2 }}</strong></td></tr>
+        <tr><td>Total Subscriptions</td><td><strong>₦{{ weekly_report.total_subscriptions|floatformat:2 }}</strong></td></tr>
+        {% if weekly_report.is_closed %}
+        <tr><td>Closing Balance</td><td><strong>₦{{ weekly_report.closing_balance|floatformat:2 }}</strong></td></tr>
+        <tr style="background:#d1fae5;"><td><strong>Commission Earned</strong></td><td><strong style="color:#065f46;font-size:1.1rem;">₦{{ weekly_report.commission|floatformat:2 }}</strong></td></tr>
+        {% else %}
+        <tr><td>Status</td><td><span class="badge badge-green">Open</span></td></tr>
+        {% endif %}
+      </tbody>
+    </table>
+  </div>
+
+  <div class="card">
+    <p class="card-title">💳 Balance History This Week</p>
+    {% if balance_history %}
+    <div style="overflow-x:auto;">
+      <table class="data-table">
+        <thead>
+          <tr>
+            <th>Date</th>
+            <th>Time</th>
+            <th>Balance</th>
+            <th>Notes</th>
+            <th>Commission?</th>
+          </tr>
+        </thead>
+        <tbody>
+          {% for b in balance_history %}
+          <tr>
+            <td>{{ b.date|date:"d M Y" }}</td>
+            <td style="color:#9ca3af;">{{ b.time|time:"H:i" }}</td>
+            <td>₦{{ b.balance_amount|floatformat:2 }}</td>
+            <td>{{ b.notes|default:"—" }}</td>
+            <td>
+              {% if b.is_commission_payment %}
+              <span class="badge badge-purple">✓ Commission</span>
+              {% else %}—{% endif %}
+            </td>
+          </tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+    {% else %}
+    <p style="text-align:center;color:#9ca3af;padding:1.5rem 0;">No balance records this week yet.</p>
+    {% endif %}
+  </div>
+  {% else %}
+  <div class="alert alert-amber">No weekly report active. Start one on Monday to track balances.</div>
+  {% endif %}
+</div>
+
+<script>
+function switchTab(name, btn) {
+  document.querySelectorAll('.tab-panel').forEach(p => p.classList.remove('active'));
+  document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
+  document.getElementById('tab-' + name).classList.add('active');
+  btn.classList.add('active');
+  history.replaceState(null, '', '#' + name);
+}
+document.addEventListener('DOMContentLoaded', function() {
+  const hash = location.hash.replace('#','');
+  if (hash) {
+    const btn = document.querySelector('[onclick*="switchTab(\'' + hash + '\'"]');
+    if (btn) switchTab(hash, btn);
+  }
+});
+</script>
 {% endblock %}

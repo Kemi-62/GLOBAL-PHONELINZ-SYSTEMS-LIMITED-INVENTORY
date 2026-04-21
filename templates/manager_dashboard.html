@@ -2,633 +2,586 @@
 {% load static %}
 
 {% block content %}
-<div class="card">
-    <h2 style="margin-top:0;">Attendance</h2>
-    <a href="{% url 'check_in' %}" class="btn btn-success" style="margin-right:10px;">📍 Check In (Attendance)</a>
-    <a href="{% url 'attendance_history' %}" class="btn btn-primary">📋 Attendance History</a>
-</div>
-
 <style>
-    .section { display: none; transition: opacity 0.3s ease; }
-    .active { display: block; }
-    .nav-tabs { 
-        display: flex; 
-        gap: 10px; 
-        margin-bottom: 2rem; 
-        border-bottom: 1px solid #dee2e6; 
-        padding-bottom: 10px;
-        overflow-x: auto;
-    }
-    .nav-btn {
-        padding: 0.8rem 1.2rem;
-        border: none;
-        background: none;
-        color: #333;
-        font-weight: 600;
-        cursor: pointer;
-        border-radius: 6px;
-        white-space: nowrap;
-    }
-    .nav-btn:hover { background: #eee; color: #333; }
-    .nav-btn.active-tab { background: var(--accent-color); color: white; }
-    table { color: #333; }
-    table th { color: #333; background: #f8f9fa; }
-    table td { color: #333; }
-    
-    .grid-summary {
-        display: grid;
-        grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
-        gap: 1.5rem;
-        margin-bottom: 2rem;
-    }
+/* ── page layout ── */
+.dash-header { display:flex; align-items:center; justify-content:space-between; flex-wrap:wrap; gap:1rem; margin-bottom:1.5rem; }
+.dash-title  { font-size:1.4rem; font-weight:700; color:#004F9F; margin:0; }
+.dash-sub    { font-size:.85rem; color:#6b7280; margin:.2rem 0 0; }
+
+/* ── summary cards ── */
+.kpi-grid { display:grid; grid-template-columns:repeat(auto-fit,minmax(160px,1fr)); gap:1rem; margin-bottom:1.5rem; }
+.kpi { background:#fff; border-radius:10px; border:1px solid #e5e7eb; padding:1rem 1.2rem; }
+.kpi-label { font-size:.72rem; text-transform:uppercase; letter-spacing:.05em; color:#6b7280; margin:0 0 .3rem; }
+.kpi-value { font-size:1.5rem; font-weight:700; color:#111827; margin:0; }
+.kpi-sub   { font-size:.75rem; color:#9ca3af; margin:.2rem 0 0; }
+.kpi.blue  { border-left:4px solid #3b82f6; }
+.kpi.green { border-left:4px solid #10b981; }
+.kpi.amber { border-left:4px solid #f59e0b; }
+.kpi.red   { border-left:4px solid #ef4444; }
+
+/* ── tab bar ── */
+.tab-bar { display:flex; gap:.4rem; overflow-x:auto; padding:.4rem 0; margin-bottom:1.5rem; border-bottom:2px solid #e5e7eb; }
+.tab-btn { flex-shrink:0; padding:.55rem 1.1rem; border:none; border-radius:8px 8px 0 0; background:transparent; color:#6b7280; font-size:.85rem; font-weight:600; cursor:pointer; white-space:nowrap; transition:all .15s; border-bottom:3px solid transparent; margin-bottom:-2px; }
+.tab-btn:hover  { background:#f3f4f6; color:#111; }
+.tab-btn.active { color:#004F9F; border-bottom-color:#004F9F; background:#eff6ff; }
+
+/* ── tab panels ── */
+.tab-panel { display:none; }
+.tab-panel.active { display:block; }
+
+/* ── card ── */
+.card { background:#fff; border:1px solid #e5e7eb; border-radius:10px; padding:1.2rem 1.4rem; margin-bottom:1.2rem; }
+.card-title { font-size:1rem; font-weight:700; color:#111827; margin:0 0 1rem; display:flex; align-items:center; gap:.5rem; }
+
+/* ── badge ── */
+.badge { display:inline-block; padding:.2rem .55rem; border-radius:999px; font-size:.72rem; font-weight:700; }
+.badge-red  { background:#fee2e2; color:#991b1b; }
+.badge-amber{ background:#fef3c7; color:#92400e; }
+.badge-green{ background:#d1fae5; color:#065f46; }
+.badge-blue { background:#dbeafe; color:#1e40af; }
+
+/* ── table ── */
+.data-table { width:100%; border-collapse:collapse; font-size:.85rem; }
+.data-table th { background:#f9fafb; color:#374151; font-weight:600; padding:.65rem .9rem; text-align:left; border-bottom:1px solid #e5e7eb; }
+.data-table td { padding:.6rem .9rem; border-bottom:1px solid #f3f4f6; color:#374151; }
+.data-table tr:last-child td { border-bottom:none; }
+.data-table tr:hover td { background:#fafafa; }
+
+/* ── progress bar ── */
+.prog-wrap { height:8px; background:#e5e7eb; border-radius:4px; overflow:hidden; }
+.prog-fill  { height:8px; border-radius:4px; background:#3b82f6; transition:width .4s; }
+.prog-fill.over { background:#10b981; }
+.prog-fill.warn { background:#f59e0b; }
+
+/* ── form row ── */
+.form-row { display:grid; grid-template-columns:repeat(auto-fit,minmax(160px,1fr)); gap:.8rem; }
+.form-group label { font-size:.78rem; font-weight:600; color:#374151; display:block; margin-bottom:.3rem; }
+.form-group input, .form-group select, .form-group textarea {
+  width:100%; padding:.5rem .75rem; border:1px solid #d1d5db; border-radius:6px;
+  font-size:.88rem; color:#111; background:#fff; }
+.form-group input:focus, .form-group select:focus { outline:none; border-color:#004F9F; box-shadow:0 0 0 2px rgba(0,79,159,.12); }
+
+/* ── btn ── */
+.btn-sm { padding:.4rem .9rem; font-size:.8rem; border-radius:6px; border:none; cursor:pointer; font-weight:600; }
+.btn-primary { background:#004F9F; color:#fff; }
+.btn-success { background:#10b981; color:#fff; }
+.btn-danger  { background:#ef4444; color:#fff; }
+.btn-outline { background:transparent; border:1px solid #d1d5db; color:#374151; }
+.btn-sm:hover { opacity:.88; }
+
+/* ── alert ── */
+.alert { padding:.8rem 1rem; border-radius:8px; font-size:.85rem; margin-bottom:1rem; display:flex; align-items:flex-start; gap:.6rem; }
+.alert-warn { background:#fffbeb; border:1px solid #fcd34d; color:#92400e; }
+.alert-info { background:#eff6ff; border:1px solid #93c5fd; color:#1e40af; }
+
+/* ── two-col ── */
+.two-col { display:grid; grid-template-columns:1fr 1fr; gap:1.2rem; }
+@media(max-width:700px){ .two-col { grid-template-columns:1fr; } }
 </style>
 
-<script>
-function showSection(id, btn) {
-    document.querySelectorAll('.section').forEach(s => s.classList.remove('active'));
-    document.getElementById(id).classList.add('active');
-    document.querySelectorAll('.nav-btn').forEach(b => b.classList.remove('active-tab'));
-    btn.classList.add('active-tab');
-}
-</script>
-
-<div class="card">
-    <h2 style="margin: 0;">📊 Manager Dashboard</h2>
-    <p style="color: var(--gray-600); margin: 0.5rem 0 0 0;">Branch: <strong>{{ request.user.branch.name }}</strong></p>
+<!-- ───────── PAGE HEADER ───────── -->
+<div class="dash-header">
+  <div>
+    <h1 class="dash-title">Manager Dashboard</h1>
+    <p class="dash-sub">Branch: <strong>{{ request.user.branch.name }}</strong> &nbsp;·&nbsp; {% now "D, d M Y" %}</p>
+  </div>
+  <div style="display:flex;gap:.6rem;flex-wrap:wrap;">
+    {% include "partials/attendance_widget.html" %}
+  </div>
 </div>
 
-<div class="card">
-    <form method="GET" style="margin-top: 1rem; display: flex; gap: 10px;">
-        <input type="text" name="search" placeholder="Search staff..." value="{{ search_query }}" style="margin: 0; flex: 1;">
-        <button type="submit" class="btn btn-primary">Search</button>
-    </form>
+<!-- ───────── KPI CARDS ───────── -->
+<div class="kpi-grid">
+  <div class="kpi green">
+    <p class="kpi-label">Retail Revenue Today</p>
+    <p class="kpi-value">₦{{ total_retail_revenue|floatformat:0 }}</p>
+    <p class="kpi-sub">{{ total_retail_quantity }} item(s) sold</p>
+  </div>
+  <div class="kpi blue">
+    <p class="kpi-label">MultiChoice Revenue</p>
+    <p class="kpi-value">₦{{ multichoice_revenue|floatformat:0 }}</p>
+    <p class="kpi-sub">Today</p>
+  </div>
+  <div class="kpi amber">
+    <p class="kpi-label">Stock Released Today</p>
+    <p class="kpi-value">{{ total_stock_out }}</p>
+    <p class="kpi-sub">Units out of safe</p>
+  </div>
+  <div class="kpi red">
+    <p class="kpi-label">Pending Approvals</p>
+    <p class="kpi-value">{{ pending_approvals|length }}</p>
+    <p class="kpi-sub">SIM activities</p>
+  </div>
+  <div class="kpi blue">
+    <p class="kpi-label">SIM Balance</p>
+    <p class="kpi-value">{{ sim_inventory.get_current_balance }}</p>
+    <p class="kpi-sub">{{ sim_inventory.total_sold }} sold · {{ sim_inventory.total_received }} received</p>
+  </div>
+  <div class="kpi amber">
+    <p class="kpi-label">Stock Requests</p>
+    <p class="kpi-value">{{ pending_stock_requests|length }}</p>
+    <p class="kpi-sub">Pending from staff</p>
+  </div>
 </div>
 
-<div class="nav-tabs">
-    <button class="nav-btn active-tab" onclick="showSection('telecom', this)">Telecom Reports</button>
-    <button class="nav-btn" onclick="showSection('sim_inventory', this)">🔄 SIM Inventory</button>
-    <button class="nav-btn" onclick="showSection('retail', this)">Retail Inventory</button>
-    <button class="nav-btn" onclick="showSection('expenses', this)">Expenses</button>
-    <button class="nav-btn" onclick="showSection('multichoice', this)">MultiChoice</button>
-    <button class="nav-btn" onclick="showSection('summary', this)">Daily Summary</button>
+<!-- ───────── TAB BAR ───────── -->
+<div class="tab-bar">
+  <button class="tab-btn active" onclick="switchTab('telecom',this)">📡 Telecom</button>
+  <button class="tab-btn" onclick="switchTab('retail',this)">🛍️ Retail & Stock</button>
+  <button class="tab-btn" onclick="switchTab('sim',this)">🔄 SIM Inventory</button>
+  <button class="tab-btn" onclick="switchTab('multichoice',this)">📺 MultiChoice</button>
+  <button class="tab-btn" onclick="switchTab('expenses',this)">💸 Expenses</button>
+  <button class="tab-btn" onclick="switchTab('bulk',this)">📂 Bulk Upload</button>
+  <button class="tab-btn" onclick="switchTab('staff',this)">👥 Staff Actions</button>
 </div>
 
-<!-- TELECOM SECTION -->
-<div id="telecom" class="section active">
-    {% if pending_approvals %}
-        <div class="card" style="background: #fffcf0; border-left: 5px solid var(--warning-color);">
-            <h3 style="margin-top: 0; color: var(--warning-color);">⚠ Pending Approvals (Target Exceeded)</h3>
-            <div style="display: grid; gap: 10px;">
-                {% for activity in pending_approvals %}
-                    <div style="display: flex; justify-content: space-between; align-items: center; padding: 10px; background: white; border-radius: 6px; border: 1px solid #ffeeba;">
-                        <span>
-                            <strong>{{ activity.staff.username }}</strong> | 
-                            {{ activity.device_tag.tag_name|default:"Generic" }} | 
-                            Qty: {{ activity.quantity }}
-                        </span>
-                        <a href="{% url 'approve_activity' activity.id %}" class="btn btn-success" style="padding: 5px 15px; font-size: 0.9rem;">Approve</a>
-                    </div>
-                {% endfor %}
-            </div>
-        </div>
-    {% endif %}
+<!-- ══════════ TAB: TELECOM ══════════ -->
+<div id="tab-telecom" class="tab-panel active">
 
-    <div class="card" style="margin-top: 1rem;">
-        <h3>Set Telecom Targets</h3>
-        <form method="POST" action="{% url 'create_service_target' %}">
-            {% csrf_token %}
-            <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); gap: 1rem;">
-                <select name="service_type" required>
-                    <option value="">Select Service</option>
-                    <option value="SIM_REG">SIM Registration</option>
-                    <option value="SIM_SWAP">SIM Swap</option>
-                    <option value="SIM_UPGRADE">SIM Upgrade</option>
-                </select>
-                <select name="device_tag">
-                    <option value="">All Device Tags</option>
-                    {% for device in device_tags %}
-                    <option value="{{ device.id }}">{{ device.tag_name }}</option>
-                    {% endfor %}
-                </select>
-                <input type="date" name="date" required>
-                <input type="number" name="target_number" min="1" placeholder="Target Quantity" required>
-            </div>
-            <button type="submit" class="btn btn-primary" style="margin-top: 1rem;">Save Target</button>
-        </form>
-        <table style="margin-top: 1rem;">
-            <thead>
-                <tr><th>Service</th><th>Device Tag</th><th>Date</th><th>Target</th></tr>
-            </thead>
-            <tbody>
-                {% for target in service_targets %}
-                <tr>
-                    <td>{{ target.get_service_type_display }}</td>
-                    <td>{{ target.device_tag.tag_name|default:"All" }}</td>
-                    <td>{{ target.date }}</td>
-                    <td>{{ target.target_number }}</td>
-                </tr>
-                {% empty %}
-                <tr><td colspan="4" style="text-align:center;">No targets set yet</td></tr>
-                {% endfor %}
-            </tbody>
-        </table>
+  {% if pending_approvals %}
+  <div class="alert alert-warn">
+    ⚠️ <strong>{{ pending_approvals|length }} activit{{ pending_approvals|length|pluralize:"y,ies" }} need approval</strong> — targets exceeded.
+  </div>
+  {% for act in pending_approvals %}
+  <div class="card" style="border-left:4px solid #f59e0b;padding:.9rem 1.2rem;margin-bottom:.6rem;">
+    <div style="display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:.6rem;">
+      <div>
+        <strong>{{ act.staff.username }}</strong> — {{ act.service_type }}
+        <span class="badge badge-amber">{{ act.quantity }} units</span>
+      </div>
+      <a href="{% url 'approve_activity' act.id %}" class="btn-sm btn-success">✔ Approve</a>
     </div>
+  </div>
+  {% endfor %}
+  {% endif %}
 
-    <div class="card">
-        <h3>Target Performance (This Month)</h3>
-        <table>
-            <thead>
-                <tr>
-                    <th>Service Type</th>
-                    <th style="text-align: right;">Target</th>
-                    <th style="text-align: right;">Achieved</th>
-                    <th style="text-align: right;">Remaining</th>
-                    <th style="text-align: right;">Progress</th>
-                </tr>
-            </thead>
-            <tbody>
-                {% for item in target_data %}
-                <tr>
-                    <td>{{ item.service_type|title }}</td>
-                    <td style="text-align: right;">{{ item.target_number }}</td>
-                    <td style="text-align: right; color: var(--success-color); font-weight: 600;">{{ item.achieved }}</td>
-                    <td style="text-align: right;">{{ item.remaining }}</td>
-                    <td style="text-align: right;">
-                        <span class="badge {% if item.percentage >= 100 %}badge-success{% elif item.percentage > 0 %}badge-warning{% else %}badge-danger{% endif %}">
-                            {{ item.percentage }}%
-                        </span>
-                    </td>
-                </tr>
-                {% endfor %}
-            </tbody>
-        </table>
+  <div class="card">
+    <p class="card-title">📊 Monthly Target Progress</p>
+    {% for t in target_data %}
+    <div style="margin-bottom:1.1rem;">
+      <div style="display:flex;justify-content:space-between;font-size:.82rem;color:#374151;margin-bottom:.3rem;">
+        <span><strong>{{ t.service_type }}</strong></span>
+        <span>{{ t.achieved }} / {{ t.target_number }} &nbsp;
+          <span class="badge {% if t.percentage >= 100 %}badge-green{% elif t.percentage >= 60 %}badge-amber{% else %}badge-red{% endif %}">
+            {{ t.percentage }}%
+          </span>
+        </span>
+      </div>
+      <div class="prog-wrap">
+        <div class="prog-fill {% if t.percentage >= 100 %}over{% elif t.percentage < 40 %}warn{% endif %}"
+             style="width:{% if t.percentage > 100 %}100{% else %}{{ t.percentage }}{% endif %}%"></div>
+      </div>
+      <p style="font-size:.75rem;color:#9ca3af;margin:.2rem 0 0;">{{ t.remaining }} remaining</p>
     </div>
+    {% empty %}
+    <p style="color:#9ca3af;font-size:.85rem;">No targets set for this month.</p>
+    {% endfor %}
+  </div>
 
-    <div class="card">
-        <h3>Recent Service Activities</h3>
-        <table>
-            <thead>
-                <tr>
-                    <th>Staff</th>
-                    <th>Service</th>
-                    <th style="text-align: right;">Qty</th>
-                    <th>Device</th>
-                    <th>Date</th>
-                </tr>
-            </thead>
-            <tbody>
-                {% for activity in activities|slice:":10" %}
-                <tr>
-                    <td>{{ activity.staff.username }}</td>
-                    <td>{{ activity.service_type|title }}</td>
-                    <td style="text-align: right;">{{ activity.quantity }}</td>
-                    <td>{{ activity.device_tag.tag_name|default:"-" }}</td>
-                    <td>{{ activity.date|date:"M d, Y" }}</td>
-                </tr>
-                {% endfor %}
-            </tbody>
-        </table>
+  <div class="card">
+    <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:.8rem;flex-wrap:wrap;gap:.5rem;">
+      <p class="card-title" style="margin:0;">📋 Staff Activity Log</p>
+      <form method="GET" style="display:flex;gap:.5rem;">
+        <input type="text" name="search" placeholder="Search staff…" value="{{ search_query }}" style="padding:.4rem .7rem;border:1px solid #d1d5db;border-radius:6px;font-size:.82rem;">
+        <button type="submit" class="btn-sm btn-primary">Search</button>
+      </form>
     </div>
-</div>
-
-<!-- SIM INVENTORY SECTION -->
-<div id="sim_inventory" class="section">
-    <div class="card" style="margin-bottom: 2rem; background: linear-gradient(135deg, #1e3a8a 0%, #3b82f6 100%); color: white; border-left: 5px solid var(--mtn-yellow);">
-        <h3 style="margin-top: 0; display: flex; align-items: center; gap: 10px; color: white;">
-            <span>📱</span> SIM Inventory Management
-        </h3>
-        <p style="margin: 0; font-size: 0.9rem; color: rgba(255,255,255,0.9);">Unified SIM inventory tracking for all SIM-related services and products</p>
-    </div>
-
-    <!-- Current Inventory Status -->
-    <div class="card">
-        <h4 style="margin-top: 0;">Current Inventory Status</h4>
-        <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 1.5rem; margin-bottom: 2rem;">
-            <div style="background: #f0f7ff; padding: 1.5rem; border-radius: 8px; border-left: 4px solid #0066cc;">
-                <div style="font-size: 0.85rem; color: #666; margin-bottom: 0.5rem;">Opening Balance</div>
-                <div style="font-size: 2rem; font-weight: bold; color: #0066cc;">{{ sim_inventory.opening_balance }}</div>
-            </div>
-            <div style="background: #f0fff7; padding: 1.5rem; border-radius: 8px; border-left: 4px solid #00aa33;">
-                <div style="font-size: 0.85rem; color: #666; margin-bottom: 0.5rem;">SIM Received</div>
-                <div style="font-size: 2rem; font-weight: bold; color: #00aa33;">{{ sim_inventory.total_received }}</div>
-            </div>
-            <div style="background: #fff7f0; padding: 1.5rem; border-radius: 8px; border-left: 4px solid #cc6600;">
-                <div style="font-size: 0.85rem; color: #666; margin-bottom: 0.5rem;">SIM Used/Sold</div>
-                <div style="font-size: 2rem; font-weight: bold; color: #cc6600;">{{ sim_inventory.total_sold }}</div>
-            </div>
-            <div style="background: {% if sim_inventory.get_current_balance > 0 %}#f0f7f0{% else %}#fff7f7{% endif %}; padding: 1.5rem; border-radius: 8px; border-left: 4px solid {% if sim_inventory.get_current_balance > 0 %}#009900{% else %}#cc0000{% endif %};">
-                <div style="font-size: 0.85rem; color: #666; margin-bottom: 0.5rem;">Current Balance</div>
-                <div style="font-size: 2rem; font-weight: bold; color: {% if sim_inventory.get_current_balance > 0 %}#009900{% else %}#cc0000{% endif %};">{{ sim_inventory.get_current_balance }}</div>
-            </div>
-        </div>
-    </div>
-
-    <!-- Forms for Manager -->
-    <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(280px, 1fr)); gap: 1.5rem; margin-bottom: 2rem;">
-        <!-- Set Opening Balance -->
-        <div class="card">
-            <h4 style="margin-top: 0; color: var(--mtn-blue);">📊 Set Opening Balance</h4>
-            <p style="font-size: 0.9rem; color: #666;">Set the initial SIM count for this month</p>
-            <form method="POST" action="{% url 'set_sim_opening_balance' %}">
-                {% csrf_token %}
-                <div style="margin-bottom: 1rem;">
-                    <label style="display: block; font-size: 0.9rem; margin-bottom: 0.5rem; font-weight: 600;">Opening SIM Count:</label>
-                    <input type="number" name="quantity" required min="0" style="width: 100%; padding: 0.7rem; border: 1px solid #ddd; border-radius: 4px;" placeholder="e.g., 100">
-                </div>
-                <button type="submit" class="btn btn-primary" style="width: 100%;">Set Opening Balance</button>
-            </form>
-        </div>
-
-        <!-- Add SIM Received -->
-        <div class="card">
-            <h4 style="margin-top: 0; color: var(--mtn-green);">➕ SIM Received (Stock Out)</h4>
-            <p style="font-size: 0.9rem; color: #666;">Add SIM received during stock outs</p>
-            <form method="POST" action="{% url 'add_sim_received' %}">
-                {% csrf_token %}
-                <div style="margin-bottom: 1rem;">
-                    <label style="display: block; font-size: 0.9rem; margin-bottom: 0.5rem; font-weight: 600;">Quantity Received:</label>
-                    <input type="number" name="quantity" required min="1" style="width: 100%; padding: 0.7rem; border: 1px solid #ddd; border-radius: 4px;" placeholder="e.g., 50">
-                </div>
-                <div style="margin-bottom: 1rem;">
-                    <label style="display: block; font-size: 0.9rem; margin-bottom: 0.5rem; font-weight: 600;">Notes (Optional):</label>
-                    <textarea name="notes" style="width: 100%; padding: 0.7rem; border: 1px solid #ddd; border-radius: 4px; height: 50px;" placeholder="e.g., Restocking from supplier"></textarea>
-                </div>
-                <button type="submit" class="btn btn-success" style="width: 100%;">Add SIM Received</button>
-            </form>
-        </div>
-    </div>
-
-    <!-- Transaction Log -->
-    <div class="card">
-        <h4 style="margin-top: 0;">📋 SIM Inventory Transaction Log</h4>
-        {% if sim_logs %}
-            <table style="width: 100%; border-collapse: collapse; font-size: 0.9rem;">
-                <thead>
-                    <tr style="background: #f8f9fa; border-bottom: 2px solid #ddd;">
-                        <th style="padding: 0.8rem; text-align: left;">Date & Time</th>
-                        <th style="padding: 0.8rem; text-align: left;">Type</th>
-                        <th style="padding: 0.8rem; text-align: center;">Quantity</th>
-                        <th style="padding: 0.8rem; text-align: left;">Description</th>
-                        <th style="padding: 0.8rem; text-align: left;">By</th>
-                    </tr>
-                </thead>
-                <tbody>
-                    {% for log in sim_logs %}
-                        <tr style="border-bottom: 1px solid #eee;">
-                            <td style="padding: 0.8rem;">{{ log.date_created|date:"M d, Y H:i" }}</td>
-                            <td style="padding: 0.8rem;">
-                                {% if log.transaction_type == 'OPENING' %}
-                                    <span style="background: #e3f2fd; color: #0066cc; padding: 0.3rem 0.8rem; border-radius: 4px; font-weight: 600;">Opening</span>
-                                {% elif log.transaction_type == 'RECEIVED' %}
-                                    <span style="background: #e8f5e9; color: #00aa33; padding: 0.3rem 0.8rem; border-radius: 4px; font-weight: 600;">Received</span>
-                                {% elif log.transaction_type == 'SOLD' %}
-                                    <span style="background: #fff3e0; color: #cc6600; padding: 0.3rem 0.8rem; border-radius: 4px; font-weight: 600;">Sold/Used</span>
-                                {% endif %}
-                            </td>
-                            <td style="padding: 0.8rem; text-align: center; font-weight: 600;">{{ log.quantity }}</td>
-                            <td style="padding: 0.8rem; font-size: 0.85rem;">{{ log.description }}</td>
-                            <td style="padding: 0.8rem; font-size: 0.85rem;">{{ log.created_by.username }}</td>
-                        </tr>
-                    {% endfor %}
-                </tbody>
-            </table>
-        {% else %}
-            <p style="text-align: center; color: #999; padding: 2rem;">No transaction history yet. Set opening balance to get started.</p>
-        {% endif %}
-    </div>
-</div>
-
-<!-- RETAIL INVENTORY SECTION -->
-<div id="retail" class="section">
-    <div class="card" style="margin-bottom: 2rem; border-left: 5px solid var(--mtn-yellow);">
-        <h3 style="margin-top: 0; color: var(--mtn-blue); display: flex; align-items: center; gap: 10px;">
-            <span>📁</span> Retail Categories
-        </h3>
-        <div style="display: flex; gap: 10px; flex-wrap: wrap; margin-bottom: 0;">
-            {% for cat in categories %}
-                <span class="badge" style="background: white; color: var(--mtn-black); border: 1px solid #ddd; padding: 8px 15px; font-size: 0.9rem; box-shadow: 0 2px 4px rgba(0,0,0,0.05);">
-                    {{ cat.name }}
-                </span>
-            {% empty %}
-                <p style="color: #666; font-style: italic;">No categories created yet. Use the "Quick Actions" form below to add one.</p>
-            {% endfor %}
-        </div>
-    </div>
-
-    <div class="row" style="display: flex; gap: 2rem; flex-wrap: wrap; margin-bottom: 2rem;">
-        <div class="card" style="flex: 1; min-width: 300px;">
-            <h3>Filter Retail Sales</h3>
-            <form method="GET">
-                <input type="hidden" name="section" value="retail">
-                <label>Product</label>
-                <select name="product">
-                    <option value="">All Products</option>
-                    {% for stock in safe_stocks %}
-                    <option value="{{ stock.product.id }}" {% if request.GET.product == stock.product.id|stringformat:"s" %}selected{% endif %}>{{ stock.product.model_name }}</option>
-                    {% endfor %}
-                </select>
-                <label style="display: block; margin-top: 1rem;">Staff</label>
-                <select name="staff">
-                    <option value="">All Staff</option>
-                    {% for staff in retail_staff %}
-                    <option value="{{ staff.id }}" {% if request.GET.staff == staff.id|stringformat:"s" %}selected{% endif %}>{{ staff.username }}</option>
-                    {% endfor %}
-                </select>
-                <button type="submit" class="btn btn-primary" style="width: 100%; margin-top: 1rem;">Filter</button>
-            </form>
-        </div>
-        <div class="card" style="flex: 1; min-width: 200px; text-align: center; border-left: 5px solid #17a2b8;">
-            <div class="stat-label">Filtered Quantity</div>
-            <div class="stat-value">{{ total_retail_quantity }}</div>
-        </div>
-        <div class="card" style="flex: 1; min-width: 200px; text-align: center; border-left: 5px solid var(--success-color);">
-            <div class="stat-label">Filtered Revenue</div>
-            <p class="stat-value">₦{{ total_retail_revenue|floatformat:2 }}</p>
-        </div>
-    </div>
-
-    <div class="row" style="display: flex; gap: 2rem; flex-wrap: wrap; margin-bottom: 2rem;">
-        <div class="card" style="flex: 1; min-width: 300px;">
-            <h3>Add Stock to Safe</h3>
-            <div style="display: flex; gap: 1rem; margin-bottom: 1.5rem; border-bottom: 1px solid #ddd; padding-bottom: 1rem;">
-                <button type="button" class="btn" onclick="toggleMgrTab('single-stock')" id="btn-single-mgr" style="background: var(--mtn-blue); color: white;">➕ Single Product</button>
-                <button type="button" class="btn" onclick="toggleMgrTab('bulk-stock')" id="btn-bulk-mgr" style="background: #ddd; color: #333;">📤 Bulk Upload (CSV)</button>
-            </div>
-
-            <!-- Single Product Form -->
-            <div id="single-stock" style="display: block;">
-                <form method="POST" action="{% url 'add_stock_to_safe' %}">
-                    {% csrf_token %}
-                    <div id="product_select_area">
-                        <label>Existing Product</label>
-                        <select name="product" id="existing_product_select">
-                            <option value="">-- Or Create New Below --</option>
-                            {% for stock in safe_stocks %}
-                                <option value="{{ stock.product.id }}">{{ stock.product.model_name }}</option>
-                            {% endfor %}
-                        </select>
-                    </div>
-                    
-                    <div id="new_product_fields" style="margin-top: 1rem; padding: 10px; border: 1px dashed #ccc; border-radius: 6px;">
-                        <input type="hidden" name="is_new_product" id="is_new_product" value="false">
-                        <p style="font-size: 0.8rem; color: #666;">New Product Details:</p>
-                        <label>Category</label>
-                        <select name="category">
-                            {% for cat in categories %}<option value="{{ cat.id }}">{{ cat.name }}</option>{% endfor %}
-                        </select>
-                        <input type="text" name="new_subcategory" placeholder="Sub Category" style="margin-top: 0.5rem;">
-                        <input type="text" name="new_subsubcategory" placeholder="Sub Sub Category (Optional)" style="margin-top: 0.5rem;">
-                        <input type="text" name="product_name" placeholder="Product Name" style="margin-top: 0.5rem;">
-                        <input type="text" name="model_name" placeholder="Model Name" style="margin-top: 0.5rem;">
-                        <input type="text" name="imei_serial" placeholder="Full IMEI" style="margin-top: 0.5rem;">
-                        <input type="text" name="description" placeholder="Description (Optional)" style="margin-top: 0.5rem;">
-                        <input type="number" step="0.01" name="cost_price" placeholder="Cost Price" required style="margin-top: 0.5rem;">
-                        <input type="number" step="0.01" name="selling_price" placeholder="Selling Price" required style="margin-top: 0.5rem;">
-                    </div>
-
-                    <label style="display: block; margin-top: 1rem;">Quantity Received</label>
-                    <input type="number" name="quantity" required placeholder="0">
-                    <button type="submit" class="btn btn-success" style="width: 100%; margin-top: 1.5rem;" onclick="document.getElementById('is_new_product').value = document.getElementById('existing_product_select').value === '' ? 'true' : 'false'">Update Safe</button>
-                </form>
-            </div>
-
-            <!-- Bulk CSV Upload Form -->
-            <div id="bulk-stock" style="display: none;">
-                <form method="POST" action="{% url 'upload_stock_csv' %}" enctype="multipart/form-data">
-                    {% csrf_token %}
-                    <p style="color: #666; margin-bottom: 1rem;">Upload CSV with multiple products. Use same fields as single product form.</p>
-                    <p style="font-weight: 600; margin-bottom: 0.5rem;">CSV Format:</p>
-                    <pre style="background: #f5f5f5; padding: 1rem; border-radius: 4px; overflow-x: auto; font-size: 0.8rem;">product_name,model_name,category_id,new_subcategory,new_subsubcategory,imei_serial,selling_price,quantity
-Apple iPhone,iPhone 15,1,Phones,Premium,123456789,850000,5
-Samsung Galaxy,S24,2,Phones,Flagship,987654321,750000,3</pre>
-                    <label style="display: block; margin-top: 1rem;">
-                        <strong>Select CSV File:</strong>
-                        <input type="file" name="csv_file" accept=".csv,.txt,text/csv,text/plain" required style="margin-top: 0.5rem; padding: 0.5rem;">
-                    </label>
-                    <button type="submit" class="btn btn-success" style="width: 100%; margin-top: 1.5rem;">📤 Upload & Add to Safe</button>
-                </form>
-            </div>
-
-            <script>
-                function toggleMgrTab(tab) {
-                    document.getElementById('single-stock').style.display = (tab === 'single-stock') ? 'block' : 'none';
-                    document.getElementById('bulk-stock').style.display = (tab === 'bulk-stock') ? 'block' : 'none';
-                    document.getElementById('btn-single-mgr').style.background = (tab === 'single-stock') ? 'var(--mtn-blue)' : '#ddd';
-                    document.getElementById('btn-single-mgr').style.color = (tab === 'single-stock') ? 'white' : '#333';
-                    document.getElementById('btn-bulk-mgr').style.background = (tab === 'bulk-stock') ? 'var(--mtn-blue)' : '#ddd';
-                    document.getElementById('btn-bulk-mgr').style.color = (tab === 'bulk-stock') ? 'white' : '#333';
-                }
-            </script>
-        </div>
-
-        <div class="card" style="flex: 1; min-width: 300px;">
-            <h3>Quick Actions</h3>
-            <form method="POST" action="{% url 'add_category' %}" style="margin-bottom: 1.5rem;">
-                {% csrf_token %}
-                <label>Add New Main Category</label>
-                <div style="display: flex; gap: 5px;">
-                    <input type="text" name="name" placeholder="Category Name" required style="margin: 0; background: white; border: 1px solid #ccc;">
-                    <button type="submit" class="btn btn-warning" style="padding: 0.5rem 1rem; font-weight: bold;">Add</button>
-                </div>
-            </form>
-            
-            <h3>Release to Staff</h3>
-            <form method="POST" action="{% url 'release_stock' %}">
-                {% csrf_token %}
-                <label>Staff Member</label>
-                <select name="staff" required>
-                    {% for user in request.user.branch.user_set.all %}
-                        {% if user.role == "RETAIL" %}
-                            <option value="{{ user.id }}">{{ user.username }}</option>
-                        {% endif %}
-                    {% endfor %}
-                </select>
-                <label style="display: block; margin-top: 1rem;">Product</label>
-                <select name="product" required>
-                    {% for stock in safe_stocks %}
-                        <option value="{{ stock.product.id }}">{{ stock.product.model_name }} ({{ stock.quantity }} in safe)</option>
-                    {% endfor %}
-                </select>
-                <label style="display: block; margin-top: 1rem;">Quantity</label>
-                <input type="number" name="quantity" required placeholder="0">
-                <button type="submit" class="btn btn-primary" style="width: 100%; margin-top: 1.5rem;">Release Stock</button>
-            </form>
-        </div>
-    </div>
-
-    <div class="grid-summary">
-        <div class="card" style="border-left: 5px solid #17a2b8;">
-            <p class="stat-label">Items Sold Today</p>
-            <p class="stat-value">{{ total_retail_quantity }}</p>
-        </div>
-        <div class="card" style="border-left: 5px solid var(--success-color);">
-            <p class="stat-label">Today's Revenue</p>
-            <p class="stat-value">₦{{ total_retail_revenue|floatformat:2 }}</p>
-        </div>
-    </div>
-
-    <div class="card">
-        <h3>Safe Stock Inventory</h3>
-        <table>
-            <thead>
-                <tr>
-                    <th>Product</th>
-                    <th style="text-align: right;">Quantity</th>
-                    <th>Status</th>
-                </tr>
-            </thead>
-            <tbody>
-                {% for stock in safe_stocks %}
-                <tr>
-                    <td>{{ stock.product.model_name }}</td>
-                    <td style="text-align: right; font-weight: 600;">{{ stock.quantity }}</td>
-                    <td>
-                        {% if stock.quantity < 5 %}
-                            <span class="badge badge-danger">Low Stock</span>
-                        {% else %}
-                            <span class="badge badge-success">Good</span>
-                        {% endif %}
-                    </td>
-                </tr>
-                {% endfor %}
-            </tbody>
-        </table>
-    </div>
-
-    {% if pending_stock_requests %}
-    <div class="card" style="border-left: 5px solid var(--warning-color);">
-        <h3>Pending Stock Requests</h3>
-        <table>
-            <thead>
-                <tr><th>Staff</th><th>Product</th><th>Qty</th><th>Action</th></tr>
-            </thead>
-            <tbody>
-                {% for req in pending_stock_requests %}
-                <tr>
-                    <td>{{ req.staff.username }}</td>
-                    <td>{{ req.product_name }}</td>
-                    <td>{{ req.quantity }}</td>
-                    <td>
-                        <a href="{% url 'approve_stock_request' req.id %}" class="btn btn-success" style="padding: 5px 10px; font-size: 0.8rem;">Approve</a>
-                    </td>
-                </tr>
-                {% endfor %}
-            </tbody>
-        </table>
-    </div>
-    {% endif %}
-</div>
-
-<!-- EXPENSES SECTION -->
-<div id="expenses" class="section">
-    <div class="row" style="display: flex; gap: 2rem; flex-wrap: wrap;">
-        <div class="card" style="flex: 1; min-width: 300px;">
-            <h3>Record New Expense</h3>
-            <form method="POST" action="{% url 'record_expense' %}">
-                {% csrf_token %}
-                <label>Category</label>
-                <select name="category" required>
-                    <option value="RENT">Rent</option>
-                    <option value="ELECTRICITY">Electricity</option>
-                    <option value="TRANSPORT">Transport</option>
-                    <option value="STATIONERY">Stationery</option>
-                    <option value="REPAIRS">Repairs</option>
-                    <option value="OTHER">Other</option>
-                </select>
-                <label style="display: block; margin-top: 1rem;">Amount</label>
-                <input type="number" step="0.01" name="amount" required>
-                <label style="display: block; margin-top: 1rem;">Description</label>
-                <textarea name="description" style="width: 100%; padding: 0.8rem; border-radius: 6px; border: 1px solid #ddd;"></textarea>
-                <button type="submit" class="btn btn-danger" style="width: 100%; margin-top: 1.5rem;">Record Expense</button>
-            </form>
-        </div>
-        <div class="card" style="flex: 1; min-width: 400px;">
-            <h3>Recent Expenses</h3>
-            <table>
-                <thead>
-                    <tr><th>Category</th><th>Amount</th><th>Date</th></tr>
-                </thead>
-                <tbody>
-                    {% for exp in expenses %}
-                    <tr><td>{{ exp.get_category_display }}</td><td>₦{{ exp.amount }}</td><td>{{ exp.date }}</td></tr>
-                    {% empty %}
-                    <tr><td colspan="3">No expenses recorded.</td></tr>
-                    {% endfor %}
-                </tbody>
-            </table>
-        </div>
-    </div>
-</div>
-
-<!-- MULTICHOICE SECTION -->
-<div id="multichoice" class="section">
-    <div class="card">
-        <h3>MultiChoice Branch Summary</h3>
-        <p>Total Revenue Today: ₦{{ multichoice_revenue|floatformat:2 }}</p>
-    </div>
-    <div class="card" style="margin-top: 1rem;">
-        <h3>Commission History</h3>
-        <table>
-            <thead><tr><th>Staff</th><th>Balance</th><th>Date</th><th>Notes</th></tr></thead>
-            <tbody>
-                {% for balance in sim_logs %}
-                <tr>
-                    <td>{{ balance.weekly_report.staff.username }}</td>
-                    <td>₦{{ balance.balance_amount|floatformat:2 }}</td>
-                    <td>{{ balance.date|date:"M d, Y" }}</td>
-                    <td>{{ balance.notes|default:"" }}</td>
-                </tr>
-                {% empty %}
-                <tr><td colspan="4" style="text-align:center;">No commission history</td></tr>
-                {% endfor %}
-            </tbody>
-        </table>
-    </div>
-</div>
-
-<!-- DAILY SUMMARY SECTION -->
-<div id="summary" class="section">
-    <div class="grid-summary">
-        <div class="card" style="border-left: 5px solid var(--accent-color);">
-            <p class="stat-label">Stock Out Today</p>
-            <p class="stat-value">{{ total_stock_out }}</p>
-        </div>
-        <div class="card" style="border-left: 5px solid var(--success-color);">
-            <p class="stat-label">Retail Revenue</p>
-            <p class="stat-value">₦{{ total_retail_revenue|floatformat:2 }}</p>
-        </div>
-        <div class="card" style="border-left: 5px solid var(--warning-color);">
-            <p class="stat-label">MultiChoice Revenue</p>
-            <p class="stat-value">₦{{ multichoice_revenue|floatformat:2 }}</p>
-        </div>
-    </div>
-</div>
-
-<div class="card" style="margin-top: 2rem;">
-    <h3>📍 Staff Check In/Out Logs</h3>
-    <table>
-        <thead>
-            <tr>
-                <th>Staff</th>
-                <th>Date</th>
-                <th>Check In</th>
-                <th>Check Out</th>
-                <th>Purpose</th>
-            </tr>
-        </thead>
+    <div style="overflow-x:auto;">
+      <table class="data-table">
+        <thead><tr><th>Staff</th><th>Service</th><th>Device Tag</th><th>Qty</th><th>Status</th></tr></thead>
         <tbody>
-            {% for log in check_logs %}
+          {% for act in activities %}
+          <tr>
+            <td>{{ act.staff.username }}</td>
+            <td>{{ act.service_type }}</td>
+            <td>{{ act.device_tag.tag_name|default:"—" }}</td>
+            <td>{{ act.quantity }}</td>
+            <td>
+              {% if act.approved %}<span class="badge badge-green">Approved</span>
+              {% elif act.requires_approval %}<span class="badge badge-amber">Pending</span>
+              {% else %}<span class="badge badge-blue">Logged</span>{% endif %}
+            </td>
+          </tr>
+          {% empty %}
+          <tr><td colspan="5" style="text-align:center;color:#9ca3af;">No activities this month.</td></tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+  </div>
+  <div class="card">
+    <p class="card-title">💰 Device Commission</p>
+    <p style="font-size:.84rem;color:#6b7280;margin-bottom:.8rem;">Record Monthly Sim Commission for Device Tags.</p>
+    <a href="{% url 'add_device_commission' %}" class="btn-sm btn-primary">Go to Commission Form →</a>
+  </div>
+</div>
+</div>
+
+<!-- ══════════ TAB: RETAIL & STOCK ══════════ -->
+<div id="tab-retail" class="tab-panel">
+
+  <div class="two-col">
+    <div>
+      <div class="card">
+        <p class="card-title">📦 Safe Stock Levels</p>
+        <div style="overflow-x:auto;">
+          <table class="data-table">
+            <thead><tr><th>Product</th><th>Category</th><th style="text-align:center;">Qty</th></tr></thead>
+            <tbody>
+              {% for s in safe_stocks %}
+              <tr>
+                <td>{{ s.product.model_name }}</td>
+                <td>{{ s.product.subcategory.name }}</td>
+                <td style="text-align:center;">
+                  <span class="badge {% if s.quantity == 0 %}badge-red{% elif s.quantity < 3 %}badge-amber{% else %}badge-green{% endif %}">
+                    {{ s.quantity }}
+                  </span>
+                </td>
+              </tr>
+              {% empty %}
+              <tr><td colspan="3" style="text-align:center;color:#9ca3af;">No stock yet.</td></tr>
+              {% endfor %}
+            </tbody>
+          </table>
+        </div>
+      </div>
+
+      <div class="card">
+        <p class="card-title">➕ Add Stock to Safe</p>
+        <form method="POST" action="{% url 'add_stock_to_safe' %}">
+          {% csrf_token %}
+          <div class="form-row">
+            <div class="form-group">
+              <label>Product</label>
+              <select name="product" required>
+                <option value="">— Select —</option>
+                {% for s in safe_stocks %}<option value="{{ s.product.id }}">{{ s.product.model_name }}</option>{% endfor %}
+              </select>
+            </div>
+            <div class="form-group">
+              <label>Quantity</label>
+              <input type="number" name="quantity" min="1" required>
+            </div>
+          </div>
+          <button type="submit" class="btn-sm btn-primary" style="margin-top:.8rem;">Add to Safe</button>
+        </form>
+      </div>
+    </div>
+    
+    <div>
+      
+      <div class="card">
+        <p class="card-title">📤 Release Stock to Staff</p>
+        <form method="POST" action="{% url 'release_stock' %}">
+          {% csrf_token %}
+          <div class="form-group"><label>Staff Member</label>
+            <select name="staff" required>
+              <option value="">— Select Staff —</option>
+              {% for s in retail_staff %}<option value="{{ s.id }}">{{ s.username }}</option>{% endfor %}
+            </select>
+          </div>
+          <div class="form-group" style="margin-top:.6rem;"><label>Product</label>
+            <select name="product" required>
+              <option value="">— Select Product —</option>
+              {% for s in safe_stocks %}<option value="{{ s.product.id }}">{{ s.product.model_name }} ({{ s.quantity }} avail)</option>{% endfor %}
+            </select>
+          </div>
+          <div class="form-group" style="margin-top:.6rem;"><label>Quantity</label>
+            <input type="number" name="quantity" min="1" required>
+          </div>
+          <button type="submit" class="btn-sm btn-success" style="margin-top:.8rem;">Release Stock</button>
+        </form>
+      </div>
+      <div class="card">
+        <p class="card-title">🧾 Today's Retail Sales</p>
+        <div style="display:flex;gap:.5rem;margin-bottom:.8rem;flex-wrap:wrap;">
+          <span class="badge badge-green">Revenue ₦{{ total_retail_revenue|floatformat:0 }}</span>
+          <span class="badge badge-blue">{{ total_retail_quantity }} units</span>
+        </div>
+        <table class="data-table">
+          <thead><tr><th>Staff</th><th>Qty</th><th>Revenue</th></tr></thead>
+          <tbody>
+            {% for s in sales_per_staff %}
             <tr>
-                <td>{{ log.staff.username }}</td>
-                <td>{{ log.date|date:"M d, Y" }}</td>
-                <td>{{ log.check_in_time|date:"H:i" }}</td>
-                <td>{{ log.check_out_time|date:"H:i"|default:"—" }}</td>
-                <td>{{ log.purpose|default:"Outing" }}</td>
+              <td>{{ s.staff__username }}</td>
+              <td>{{ s.total_qty }}</td>
+              <td>₦{{ s.total_revenue|floatformat:0 }}</td>
             </tr>
             {% empty %}
-            <tr><td colspan="5" style="text-align:center;">No outings logged</td></tr>
+            <tr><td colspan="3" style="text-align:center;color:#9ca3af;">No sales today.</td></tr>
             {% endfor %}
-        </tbody>
+          </tbody>
+        </table>
+      </div>
+
+      {% if pending_stock_requests %}
+      <div class="card">
+        <p class="card-title">📬 Pending Stock Requests</p>
+        {% for req in pending_stock_requests %}
+        <div style="display:flex;justify-content:space-between;align-items:center;padding:.5rem 0;border-bottom:1px solid #f3f4f6;">
+          <div style="font-size:.84rem;">
+            <strong>{{ req.staff.username }}</strong> — {{ req.product_name }}
+            <span class="badge badge-amber">{{ req.quantity }} units</span>
+          </div>
+          <a href="{% url 'approve_stock_request' req.id %}" class="btn-sm btn-success" style="font-size:.75rem;">Approve</a>
+        </div>
+        {% endfor %}
+      </div>
+      {% endif %}
+    </div>
+  </div>
+  <div class="card">
+        <p class="card-title">📋 View Stock Movement Log</p>
+    <p style="font-size:.84rem;color:#6b7280;margin-bottom:.8rem;">Record How Stock Moves From Manager to Staff and Vise Versa.</p>
+    
+  <a href="{% url 'stock_movement_log' %}" class="btn-sm btn-outline">📋 View Stock Movement Log</a>
+  </div>
+  </div>
+  <div class="card">
+    <p class="card-title">🏆 Top Products Today</p>
+    <table class="data-table">
+      <thead><tr><th>Product</th><th style="text-align:center;">Qty Sold</th></tr></thead>
+      <tbody>
+        {% for p in top_products %}
+        <tr><td>{{ p.product__model_name }}</td><td style="text-align:center;">{{ p.total_qty }}</td></tr>
+        {% empty %}
+        <tr><td colspan="2" style="text-align:center;color:#9ca3af;">No sales today.</td></tr>
+        {% endfor %}
+      </tbody>
     </table>
+  </div>
 </div>
+
+<!-- ══════════ TAB: SIM INVENTORY ══════════ -->
+<div id="tab-sim" class="tab-panel">
+  <div class="two-col">
+    <div class="card">
+      <p class="card-title">🔄 SIM Inventory Summary</p>
+      <table class="data-table">
+        <tbody>
+          <tr><td>Opening Balance</td><td><strong>{{ sim_inventory.opening_balance }}</strong></td></tr>
+          <tr><td>Total Received</td><td><strong>{{ sim_inventory.total_received }}</strong></td></tr>
+          <tr><td>Total Sold/Used</td><td><strong>{{ sim_inventory.total_sold }}</strong></td></tr>
+          <tr style="background:#f0fdf4;">
+            <td><strong>Current Balance</strong></td>
+            <td><strong style="color:#065f46;font-size:1.1rem;">{{ sim_inventory.get_current_balance }}</strong></td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+
+    <div>
+      <div class="card">
+        <p class="card-title">📥 Set Opening Balance</p>
+        <form method="POST" action="{% url 'set_sim_opening_balance' %}">
+          {% csrf_token %}
+          <div class="form-row">
+            <div class="form-group"><label>Opening Quantity</label>
+              <input type="number" name="quantity" min="0" required>
+            </div>
+          </div>
+          <button type="submit" class="btn-sm btn-primary" style="margin-top:.8rem;">Set Opening Balance</button>
+        </form>
+      </div>
+      <div class="card">
+        <p class="card-title">➕ Record SIM Received</p>
+        <form method="POST" action="{% url 'add_sim_received' %}">
+          {% csrf_token %}
+          <div class="form-row">
+            <div class="form-group"><label>Quantity</label><input type="number" name="quantity" min="1" required></div>
+            <div class="form-group"><label>Notes</label><input type="text" name="notes" placeholder="e.g. Stock delivery"></div>
+          </div>
+          <button type="submit" class="btn-sm btn-success" style="margin-top:.8rem;">Record Receipt</button>
+        </form>
+      </div>
+    </div>
+  </div>
+
+  <div class="card">
+    <p class="card-title">📋 SIM Transaction Log</p>
+    <div style="overflow-x:auto;">
+      <table class="data-table">
+        <thead><tr><th>Type</th><th>Qty</th><th>Description</th><th>Date</th></tr></thead>
+        <tbody>
+          {% for log in sim_logs %}
+          <tr>
+            <td><span class="badge {% if log.transaction_type == 'RECEIVED' %}badge-green{% elif log.transaction_type == 'SOLD' %}badge-red{% else %}badge-blue{% endif %}">{{ log.transaction_type }}</span></td>
+            <td>{{ log.quantity }}</td>
+            <td style="max-width:280px;">{{ log.description }}</td>
+            <td style="color:#9ca3af;">{{ log.date_created|date:"d M Y H:i" }}</td>
+          </tr>
+          {% empty %}
+          <tr><td colspan="4" style="text-align:center;color:#9ca3af;">No transactions logged.</td></tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+  </div>
+</div>
+
+<!-- ══════════ TAB: MULTICHOICE ══════════ -->
+<div id="tab-multichoice" class="tab-panel">
+  <div class="kpi-grid" style="grid-template-columns:repeat(auto-fit,minmax(140px,1fr));">
+    <div class="kpi green">
+      <p class="kpi-label">MultiChoice Today</p>
+      <p class="kpi-value">₦{{ multichoice_revenue|floatformat:0 }}</p>
+    </div>
+  </div>
+  <div class="card">
+    <p class="card-title">📺 MultiChoice Overview</p>
+    <p style="color:#6b7280;font-size:.85rem;">Detailed MultiChoice reporting is managed by MultiChoice staff on their own dashboard. The revenue figure above reflects today's subscriptions at this branch.</p>
+    <a href="{% url 'commission_tracking' %}" class="btn-sm btn-outline" style="margin-top:.8rem;display:inline-block;">View Commission Tracking →</a>
+  </div>
+</div>
+
+<!-- ══════════ TAB: EXPENSES ══════════ -->
+<div id="tab-expenses" class="tab-panel">
+  <div class="two-col">
+    <div class="card">
+      <p class="card-title">➕ Record Expense</p>
+      <form method="POST" action="{% url 'record_expense' %}">
+        {% csrf_token %}
+        <div class="form-group"><label>Category</label>
+          <select name="category" required>
+            <option value="RENT">Rent</option>
+            <option value="ELECTRICITY">Electricity</option>
+            <option value="TRANSPORT">Transport</option>
+            <option value="STATIONERY">Stationery</option>
+            <option value="REPAIRS">Repairs</option>
+            <option value="OTHER">Other</option>
+          </select>
+        </div>
+        <div class="form-group" style="margin-top:.6rem;"><label>Amount (₦)</label>
+          <input type="number" name="amount" step="0.01" min="0" required>
+        </div>
+        <div class="form-group" style="margin-top:.6rem;"><label>Description</label>
+          <input type="text" name="description" placeholder="Brief description">
+        </div>
+        <button type="submit" class="btn-sm btn-danger" style="margin-top:.8rem;">Record Expense</button>
+      </form>
+    </div>
+
+    <div class="card">
+      <p class="card-title">📋 Recent Expenses</p>
+      <table class="data-table">
+        <thead><tr><th>Category</th><th>Amount</th><th>Date</th></tr></thead>
+        <tbody>
+          {% for e in expenses %}
+          <tr>
+            <td>{{ e.category }}</td>
+            <td>₦{{ e.amount|floatformat:2 }}</td>
+            <td style="color:#9ca3af;">{{ e.date|date:"d M Y" }}</td>
+          </tr>
+          {% empty %}
+          <tr><td colspan="3" style="text-align:center;color:#9ca3af;">No expenses recorded.</td></tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+  </div>
+</div>
+
+<!-- ══════════ TAB: BULK UPLOAD ══════════ -->
+<div id="tab-bulk" class="tab-panel">
+
+  <!-- Manager Bulk Upload -->
+    <div class="card">
+      <p class="card-title">📂 Bulk Upload Stock to Branch Safe</p>
+      <form method="POST" action="{% url 'upload_manager_csv' %}" enctype="multipart/form-data">
+        {% csrf_token %}
+        <div class="form-group">
+          <label>Select CSV File *</label>
+          <input type="file" name="csv_file" accept=".csv" required>
+        </div>
+        <button type="submit" class="btn-sm btn-success" style="width:100%;margin-bottom:.8rem;">📤 Upload to Branch Safe</button>
+      </form>
+      <p style="font-size:.78rem;font-weight:600;color:#374151;margin-bottom:.3rem;">CSV Format:</p>
+      <pre style="background:#f5f5f5;padding:.6rem;border-radius:6px;font-size:.72rem;overflow-x:auto;">model_name,category,subcategory,cost_price,selling_price,quantity
+iPhone 15,Phones,Smartphones,600000,850000,5
+S24 Ultra,Phones,Android,500000,700000,3
+Type-C Cable,Accessories,Cables,1200,2500,20</pre>
+    </div>
+</div>
+<!-- ══════════ TAB: STAFF ACTIONS ══════════ -->
+<div id="tab-staff" class="tab-panel">
+  <div class="two-col">
+
+    <!-- Send Staff Out -->
+    <div class="card">
+      <p class="card-title">🚶 Send Staff Out</p>
+      <form method="POST" action="{% url 'staff_checkout' 0 %}">
+        {% csrf_token %}
+        <div class="form-group">
+          <label>Staff Member *</label>
+          <select name="staff_id" required>
+            <option value="">— Select Staff —</option>
+            {% for s in retail_staff %}
+            <option value="{{ s.id }}">{{ s.username }}</option>
+            {% endfor %}
+          </select>
+        </div>
+        <div class="form-group">
+          <label>Purpose *</label>
+          <input type="text" name="purpose" placeholder="e.g. Bank run, delivery, errand" required>
+        </div>
+        <button type="submit" class="btn-sm btn-outline" style="width:100%;">📤 Send Out</button>
+      </form>
+    </div>
+ <div class="card">
+    <p class="card-title">📅 Staff Movement Log</p>
+    <table class="data-table">
+      <thead>
+        <tr>
+          <th>Staff</th>
+          <th>Check In</th>
+          <th>Check Out</th>
+          <th>Purpose</th>
+          <th>Action</th>
+        </tr>
+      </thead>
+      <tbody>
+        {% for log in check_logs %}
+        <tr>
+          <td><strong>{{ log.staff.username }}</strong></td>
+          <td>{{ log.check_in_time|date:"H:i" }}</td>
+          <td>{{ log.check_out_time|date:"H:i"|default:"Still out" }}</td>
+          <td>{{ log.purpose|default:"—" }}</td>
+          <td>
+            {% if not log.check_out_time %}
+            <form method="POST" action="{% url 'staff_checkin' log.staff.id %}" style="display:inline;">
+              {% csrf_token %}
+              <button type="submit" class="btn-sm btn-success" style="font-size:.75rem;padding:.3rem .6rem;">Back In</button>
+            </form>
+            {% endif %}
+          </td>
+        </tr>
+        {% empty %}
+        <tr><td colspan="5" style="text-align:center;color:#9ca3af;">No movement logs today.</td></tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+  </div>
+    
+
+  
+<script>
+function switchTab(name, btn) {
+  document.querySelectorAll('.tab-panel').forEach(p => p.classList.remove('active'));
+  document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
+  document.getElementById('tab-' + name).classList.add('active');
+  btn.classList.add('active');
+  // persist tab in URL hash without reload
+  history.replaceState(null, '', '#' + name);
+}
+
+// restore tab from URL hash on page load
+document.addEventListener('DOMContentLoaded', function() {
+  const hash = location.hash.replace('#', '');
+  if (hash) {
+    const btn = document.querySelector('[onclick*="switchTab(\'' + hash + '\'"]');
+    if (btn) switchTab(hash, btn);
+  }
+});
+</script>
 {% endblock %}

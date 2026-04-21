@@ -1,0 +1,96 @@
+{% extends "base.html" %}
+{% block content %}
+<style>
+.page-title{font-size:1.3rem;font-weight:700;color:#004F9F;margin:0 0 1.5rem}
+.card{background:#fff;border:1px solid #e5e7eb;border-radius:10px;padding:1.2rem 1.4rem;margin-bottom:1.2rem}
+.badge{display:inline-block;padding:.2rem .55rem;border-radius:999px;font-size:.72rem;font-weight:700}
+.badge-green{background:#d1fae5;color:#065f46}.badge-red{background:#fee2e2;color:#991b1b}
+.badge-blue{background:#dbeafe;color:#1e40af}.badge-amber{background:#fef3c7;color:#92400e}
+.data-table{width:100%;border-collapse:collapse;font-size:.85rem}
+.data-table th{background:#f9fafb;color:#374151;font-weight:600;padding:.65rem .9rem;text-align:left;border-bottom:1px solid #e5e7eb}
+.data-table td{padding:.6rem .9rem;border-bottom:1px solid #f3f4f6;color:#374151}
+.data-table tr:hover td{background:#fafafa}
+.voided td{opacity:.45;text-decoration:line-through}
+.btn-sm{padding:.4rem .85rem;font-size:.8rem;border-radius:6px;border:none;cursor:pointer;font-weight:600;text-decoration:none;display:inline-block}
+.btn-danger{background:#ef4444;color:#fff}.btn-outline{background:transparent;border:1px solid #d1d5db;color:#374151}
+.modal-overlay{display:none;position:fixed;inset:0;background:rgba(0,0,0,.5);z-index:9999;align-items:center;justify-content:center}
+.modal-overlay.show{display:flex}
+.modal-box{background:#fff;border-radius:12px;padding:1.5rem;max-width:400px;width:90%}
+</style>
+
+<div style="display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:.8rem;margin-bottom:1.5rem;">
+  <h1 class="page-title" style="margin:0;">🧾 Today's Sales — {{ today|date:"d M Y" }}</h1>
+  <a href="{% url 'manager_dashboard' %}" class="btn-sm btn-outline">← Dashboard</a>
+</div>
+
+<div style="background:#d1fae5;border-radius:8px;padding:.8rem 1.2rem;margin-bottom:1rem;font-size:.9rem;color:#065f46;font-weight:600;">
+  Total Revenue (active sales): ₦{{ total_revenue|floatformat:2 }}
+</div>
+
+<div class="card">
+  <div style="overflow-x:auto;">
+    <table class="data-table">
+      <thead>
+        <tr><th>Time</th><th>Staff</th><th>Product</th><th style="text-align:center;">Qty</th><th style="text-align:right;">Price</th><th style="text-align:right;">Total</th><th>Payment</th><th>Status</th><th>Action</th></tr>
+      </thead>
+      <tbody>
+        {% for sale in sales %}
+        <tr {% if sale.is_voided %}class="voided"{% endif %}>
+          <td style="color:#9ca3af;">{{ sale.time|time:"H:i" }}</td>
+          <td><strong>{{ sale.staff.username }}</strong></td>
+          <td>{{ sale.product.model_name }}</td>
+          <td style="text-align:center;">{{ sale.quantity }}</td>
+          <td style="text-align:right;">₦{{ sale.selling_price|floatformat:0 }}</td>
+          <td style="text-align:right;font-weight:700;">₦{% widthratio sale.quantity 1 sale.selling_price %}</td>
+          <td><span class="badge badge-blue">{{ sale.payment_method }}</span></td>
+          <td>
+            {% if sale.is_voided %}
+            <span class="badge badge-red">Voided</span>
+            {% else %}
+            <span class="badge badge-green">Active</span>
+            {% endif %}
+          </td>
+          <td>
+            {% if not sale.is_voided %}
+            <button onclick="openVoidModal({{ sale.id }}, '{{ sale.product.model_name }}')" class="btn-sm btn-danger" style="font-size:.72rem;padding:.25rem .55rem;">Void</button>
+            {% endif %}
+          </td>
+        </tr>
+        {% empty %}
+        <tr><td colspan="9" style="text-align:center;color:#9ca3af;padding:2rem 0;">No sales today.</td></tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+</div>
+
+<!-- Void Modal -->
+<div id="void-modal" class="modal-overlay">
+  <div class="modal-box">
+    <h3 style="margin:0 0 .5rem;font-size:1rem;color:#991b1b;">⚠️ Void Sale</h3>
+    <p id="void-product-name" style="font-size:.85rem;color:#374151;margin-bottom:1rem;"></p>
+    <form method="POST" id="void-form">
+      {% csrf_token %}
+      <div style="margin-bottom:.8rem;">
+        <label style="font-size:.78rem;font-weight:600;color:#374151;display:block;margin-bottom:.3rem;">Reason for voiding *</label>
+        <textarea name="void_reason" rows="3" style="width:100%;padding:.5rem;border:1px solid #d1d5db;border-radius:6px;font-size:.85rem;box-sizing:border-box;" required placeholder="e.g. Wrong product entered, customer returned item..."></textarea>
+      </div>
+      <div style="display:flex;gap:.6rem;">
+        <button type="submit" class="btn-sm btn-danger" style="flex:1;">Confirm Void</button>
+        <button type="button" onclick="closeVoidModal()" class="btn-sm btn-outline" style="flex:1;">Cancel</button>
+      </div>
+    </form>
+  </div>
+</div>
+
+<script>
+function openVoidModal(saleId, productName) {
+  document.getElementById('void-form').action = '/void-sale/' + saleId + '/';
+  document.getElementById('void-product-name').textContent = 'Voiding sale of: ' + productName + '. Stock will be returned automatically.';
+  document.getElementById('void-modal').classList.add('show');
+}
+function closeVoidModal() {
+  document.getElementById('void-modal').classList.remove('show');
+}
+</script>
+{% endblock %}
