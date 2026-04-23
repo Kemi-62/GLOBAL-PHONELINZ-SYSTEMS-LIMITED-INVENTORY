@@ -1,0 +1,81 @@
+{% extends "base.html" %}
+{% block content %}
+<style>
+.page-title{font-size:1.3rem;font-weight:700;color:#004F9F;margin:0 0 1.5rem}
+.card{background:#fff;border:1px solid #e5e7eb;border-radius:10px;padding:1.2rem 1.4rem;margin-bottom:1.2rem}
+.badge{display:inline-block;padding:.2rem .55rem;border-radius:999px;font-size:.72rem;font-weight:700}
+.badge-green{background:#d1fae5;color:#065f46}.badge-amber{background:#fef3c7;color:#92400e}.badge-red{background:#fee2e2;color:#991b1b}.badge-blue{background:#dbeafe;color:#1e40af}
+.data-table{width:100%;border-collapse:collapse;font-size:.85rem}
+.data-table th{background:#f9fafb;color:#374151;font-weight:600;padding:.65rem .9rem;text-align:left;border-bottom:1px solid #e5e7eb}
+.data-table td{padding:.6rem .9rem;border-bottom:1px solid #f3f4f6;color:#374151}
+.data-table tr:hover td{background:#fafafa}
+.btn-sm{padding:.45rem .9rem;font-size:.82rem;border-radius:6px;border:none;cursor:pointer;font-weight:600;text-decoration:none;display:inline-block}
+.btn-primary{background:#004F9F;color:#fff}.btn-success{background:#10b981;color:#fff}.btn-outline{background:transparent;border:1px solid #d1d5db;color:#374151}
+</style>
+
+<div style="display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:.8rem;margin-bottom:1.5rem;">
+  <h1 class="page-title" style="margin:0;">📋 Purchase Orders</h1>
+  <div style="display:flex;gap:.5rem;">
+    <a href="/purchase-orders/create/" class="btn-sm btn-primary">+ New Order</a>
+    <a href="/suppliers/" class="btn-sm btn-outline">🏭 Suppliers</a>
+  </div>
+</div>
+
+<div class="card">
+  <div style="overflow-x:auto;">
+    <table class="data-table">
+      <thead>
+        <tr>
+          <th>PO #</th>
+          <th>Supplier</th>
+          <th>Branch</th>
+          <th>Ordered By</th>
+          <th style="text-align:right;">Total Amount</th>
+          <th>Date Ordered</th>
+          <th>Status</th>
+          <th>Action</th>
+        </tr>
+      </thead>
+      <tbody>
+        {% for order in orders %}
+        <tr>
+          <td><strong>#{{ order.id }}</strong></td>
+          <td>{{ order.supplier.name }}</td>
+          <td>{{ order.branch.name }}</td>
+          <td>{{ order.ordered_by.username|default:"—" }}</td>
+          <td style="text-align:right;">₦{{ order.total_amount|floatformat:0 }}</td>
+          <td style="color:#9ca3af;">{{ order.date_ordered|date:"d M Y" }}</td>
+          <td>
+            {% if order.status == "RECEIVED" %}
+              <span class="badge badge-green">Received</span>
+            {% elif order.status == "CANCELLED" %}
+              <span class="badge badge-red">Cancelled</span>
+            {% else %}
+              <span class="badge badge-amber">Pending</span>
+            {% endif %}
+          </td>
+          <td>
+            {% if order.status == "PENDING" %}
+            <form method="POST" action="/purchase-orders/{{ order.id }}/receive/" style="display:inline;" onsubmit="return confirm('Mark PO #{{ order.id }} as received? This will add stock to the branch safe.');">
+              {% csrf_token %}
+              <button type="submit" class="btn-sm btn-success" style="font-size:.75rem;padding:.3rem .6rem;">Mark Received</button>
+            </form>
+            {% else %}
+            {% if order.date_received %}
+            <span style="font-size:.75rem;color:#9ca3af;">{{ order.date_received|date:"d M Y" }}</span>
+            {% endif %}
+            {% endif %}
+          </td>
+        </tr>
+        {% empty %}
+        <tr>
+          <td colspan="8" style="text-align:center;color:#9ca3af;padding:2rem 0;">
+            No purchase orders yet. <a href="/purchase-orders/create/" style="color:#004F9F;">Create one</a>.
+          </td>
+        </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+</div>
+{% endblock %}

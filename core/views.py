@@ -310,83 +310,6 @@ def approve_activity(request, activity_id):
 # ─────────────────────────────────────────
 # DIRECTOR DASHBOARD
 # ─────────────────────────────────────────
-
-@role_required("DIRECTOR")
-def director_dashboard(request):
-    today = timezone.now().date()
-    device_filter = request.GET.get("device")
-
-    # Telecom
-    activities = ServiceActivity.objects.filter(
-        date__year=today.year, date__month=today.month, approved=True
-    ).select_related("staff", "branch", "device_tag")
-    if device_filter:
-        activities = activities.filter(device_tag_id=device_filter)
-    branch_summary = activities.values("branch__name").annotate(total=Sum("quantity")).order_by("-total")
-    device_tags = DeviceTag.objects.all()
-
-    # Revenue
-    all_sales_today = RetailSale.objects.filter(date=today)
-    total_expenses = Expense.objects.filter(date=today).aggregate(total=Sum("amount"))["total"] or 0
-    total_quantity = all_sales_today.aggregate(total=Sum("quantity"))["total"] or 0
-    total_revenue = all_sales_today.aggregate(total=Sum(F("quantity") * F("selling_price")))["total"] or 0
-    profit_expr = ExpressionWrapper(
-        (F("selling_price") - F("product__cost_price")) * F("quantity"), output_field=DecimalField()
-    )
-    gross_profit = all_sales_today.aggregate(total=Sum(profit_expr))["total"] or 0
-    net_profit = (gross_profit or 0) - total_expenses
-
-    # Monthly
-    monthly_sales = RetailSale.objects.filter(date__month=today.month, date__year=today.year)
-    monthly_expenses = Expense.objects.filter(date__month=today.month, date__year=today.year).aggregate(total=Sum("amount"))["total"] or 0
-    monthly_revenue = monthly_sales.aggregate(total=Sum(F("quantity") * F("selling_price")))["total"] or 0
-    monthly_gross = monthly_sales.aggregate(total=Sum(profit_expr))["total"] or 0
-    monthly_net = (monthly_gross or 0) - monthly_expenses
-
-    # MultiChoice
-    mc_today = MultiChoiceSale.objects.filter(date=today)
-    multichoice_total = mc_today.aggregate(total=Sum("amount"))["total"] or 0
-    multichoice_by_branch = mc_today.values("branch__name").annotate(total_revenue=Sum("amount")).order_by("-total_revenue")
-
-    # Branch / staff / product performance
-    branch_performance = all_sales_today.values("branch__name").annotate(
-        total_qty=Sum("quantity"), total_revenue=Sum(F("quantity") * F("selling_price"))
-    ).order_by("-total_revenue")
-    staff_performance = all_sales_today.values("staff__username", "branch__name").annotate(
-        total_qty=Sum("quantity"), total_revenue=Sum(F("quantity") * F("selling_price"))
-    ).order_by("-total_revenue")[:10]
-    top_products = all_sales_today.values("product__model_name").annotate(
-        total_qty=Sum("quantity")
-    ).order_by("-total_qty")[:10]
-
-    low_stock = BranchSafeStock.objects.filter(quantity__lt=1)
-    check_logs = CheckInOutLog.objects.filter(branch=request.user.branch).order_by("-date", "-check_in_time")[:20]
-
-    return render(request, "director_dashboard.html", {
-        "branch_summary": branch_summary,
-        "device_tags": device_tags,
-        "selected_device": device_filter,
-        "total_quantity": total_quantity,
-        "total_revenue": total_revenue,
-        "total_profit": net_profit,
-        "gross_profit": gross_profit,
-        "total_expenses": total_expenses,
-        "monthly_revenue": monthly_revenue,
-        "monthly_profit": monthly_net,
-        "monthly_gross_profit": monthly_gross,
-        "monthly_expenses": monthly_expenses,
-        "multichoice_total": multichoice_total,
-        "multichoice_by_branch": multichoice_by_branch,
-        "branch_performance": branch_performance,
-        "staff_performance": staff_performance,
-        "top_products": top_products,
-        "low_stock": low_stock,
-        "categories": RetailCategory.objects.all(),
-        "check_logs": check_logs,
-        "all_branches": Branch.objects.all(),
-    })
-
-
 @role_required("DIRECTOR")
 def daily_sales_report(request):
     today = timezone.now().date()
@@ -595,22 +518,6 @@ def multichoice_dashboard(request):
         "search_query": search_query,
         "selected_month": selected_month,
     })
-
-
-@login_required
-def start_weekly_report(request):
-    if request.method == "POST" and request.user.role == "MULTICHOICE":
-        today = timezone.now().date()
-        week_start = today - timedelta(days=today.weekday())
-        MultiChoiceWeeklyReport.objects.get_or_create(
-            staff=request.user, branch=request.user.branch, week_start_date=week_start,
-            defaults={
-                "opening_balance": request.POST.get("opening_balance", 0),
-                "additional_funds": request.POST.get("additional_funds", 0),
-            }
-        )
-    return redirect("multichoice_dashboard")
-
 
 @login_required
 def close_weekly_report(request):
@@ -966,18 +873,6 @@ def attendance_history(request):
 
 
 @role_required("DIRECTOR")
-def director_attendance_dashboard(request):
-    today = timezone.now().date()
-    records = Attendance.objects.filter(date=today)
-    return render(request, "director/attendance.html", {
-        "records": records,
-        "total_late": records.filter(is_late=True).count(),
-        "total_absent": records.filter(is_absent=True).count(),
-        "total_deductions": records.aggregate(Sum("deduction_amount"))["deduction_amount__sum"] or 0,
-    })
-
-
-@role_required("DIRECTOR")
 def manage_branch_locations(request):
     if request.method == "POST":
         try:
@@ -992,37 +887,6 @@ def manage_branch_locations(request):
             messages.error(request, f"Error: {e}")
         return redirect("manage_branch_locations")
     return render(request, "director/manage_locations.html", {"branches": Branch.objects.all()})
-
-
-@role_required("DIRECTOR")
-def export_monthly_attendance_pdf(request):
-    from reportlab.platypus import SimpleDocTemplate, Table, TableStyle, Paragraph, Spacer
-    from reportlab.lib import colors
-    from reportlab.lib.styles import getSampleStyleSheet
-    from reportlab.lib.units import inch
-
-    records = Attendance.objects.all().order_by("-date")
-    buffer = io.BytesIO()
-    doc = SimpleDocTemplate(buffer)
-    styles = getSampleStyleSheet()
-    elements = [
-        Paragraph("Monthly Attendance Report", styles["Heading1"]),
-        Spacer(1, 0.3 * inch),
-    ]
-    data = [["Staff", "Date", "Late", "Absent", "Deduction"]]
-    for r in records:
-        data.append([r.user.username, str(r.date), "Yes" if r.is_late else "No",
-                      "Yes" if r.is_absent else "No", f"₦{r.deduction_amount}"])
-    table = Table(data)
-    table.setStyle(TableStyle([
-        ("BACKGROUND", (0, 0), (-1, 0), colors.grey),
-        ("GRID", (0, 0), (-1, -1), 1, colors.black),
-    ]))
-    elements.append(table)
-    doc.build(elements)
-    buffer.seek(0)
-    return HttpResponse(buffer, content_type="application/pdf",
-                        headers={"Content-Disposition": 'attachment; filename="Monthly_Attendance.pdf"'})
 
 
 # ─────────────────────────────────────────
@@ -2312,8 +2176,8 @@ def payroll_deduction_summary(request):
     staff_summary = (
         records.values("user__username", "branch__name")
         .annotate(
-            total_late=Count("id", filter=models.Q(is_late=True)),
-            total_absent=Count("id", filter=models.Q(is_absent=True)),
+            total_late=Count("id", filter=Q(is_late=True)),
+            total_absent=Count("id", filter=Q(is_absent=True)),
             total_deduction=Sum("deduction_amount"),
         )
         .order_by("branch__name", "user__username")
@@ -2543,3 +2407,168 @@ def manager_sales_today(request):
         "total_revenue": total_revenue,
         "today": today,
     })
+
+# ─────────────────────────────────────────
+# FIXED DIRECTOR ATTENDANCE DASHBOARD
+# ─────────────────────────────────────────
+
+@role_required("DIRECTOR")
+def director_attendance_dashboard(request):
+    selected_date_str = request.GET.get("date", timezone.now().date().isoformat())
+    branch_filter = request.GET.get("branch", "")
+
+    try:
+        from datetime import date as _date
+        selected_date = _date.fromisoformat(selected_date_str)
+    except Exception:
+        selected_date = timezone.now().date()
+
+    staff_filter = request.GET.get("staff", "")
+
+    records = Attendance.objects.filter(date=selected_date).select_related("user", "branch").order_by("branch__name", "user__username")
+
+    if branch_filter:
+        records = records.filter(branch_id=branch_filter)
+    if staff_filter:
+        records = records.filter(user_id=staff_filter)
+
+    all_staff = User.objects.exclude(role__in=["DIRECTOR","SUPERADMIN"]).select_related("branch").order_by("branch__name", "username")
+
+    return render(request, "director/attendance.html", {
+        "records": records,
+        "selected_date": selected_date,
+        "selected_branch": branch_filter,
+        "selected_staff": staff_filter,
+        "branches": Branch.objects.all(),
+        "all_staff": all_staff,
+        "total_ontime": records.filter(is_late=False, is_absent=False).count(),
+        "total_late": records.filter(is_late=True).count(),
+        "total_absent": records.filter(is_absent=True).count(),
+        "total_deductions": records.aggregate(Sum("deduction_amount"))["deduction_amount__sum"] or 0,
+    })
+
+
+# ─────────────────────────────────────────
+# FULL ATTENDANCE PDF — with selfies, check-in/out times, status
+# ─────────────────────────────────────────
+
+@role_required("DIRECTOR")
+def export_monthly_attendance_pdf(request):
+    from reportlab.platypus import SimpleDocTemplate, Table, TableStyle, Paragraph, Spacer, HRFlowable
+    from reportlab.lib import colors
+    from reportlab.lib.styles import getSampleStyleSheet, ParagraphStyle
+    from reportlab.lib.units import inch
+    from reportlab.lib.enums import TA_CENTER
+
+    date_str   = request.GET.get("date", "")
+    month_str  = request.GET.get("month", "")
+    branch_str = request.GET.get("branch", "")
+
+    records = Attendance.objects.all().select_related("user", "branch").order_by("branch__name", "date", "user__username")
+    filename_label = "Full_Report"
+
+    if date_str:
+        try:
+            from datetime import date as _d
+            d = _d.fromisoformat(date_str)
+            records = records.filter(date=d)
+            filename_label = d.strftime("%d_%b_%Y")
+        except Exception:
+            pass
+    elif month_str:
+        try:
+            yr, mo = month_str.split("-")
+            records = records.filter(date__year=int(yr), date__month=int(mo))
+            from datetime import date as _d
+            filename_label = _d(int(yr), int(mo), 1).strftime("%B_%Y")
+        except Exception:
+            pass
+
+    if branch_str:
+        records = records.filter(branch_id=branch_str)
+
+    BLUE  = colors.HexColor("#004F9F")
+    LGRAY = colors.HexColor("#F3F4F6")
+    MGRAY = colors.HexColor("#374151")
+
+    buffer = io.BytesIO()
+    doc = SimpleDocTemplate(buffer, rightMargin=0.5*inch, leftMargin=0.5*inch, topMargin=0.7*inch, bottomMargin=0.7*inch)
+    styles = getSampleStyleSheet()
+
+    title_s = ParagraphStyle("T", parent=styles["Heading1"], fontSize=15, textColor=BLUE, alignment=TA_CENTER, spaceAfter=2)
+    sub_s   = ParagraphStyle("S", parent=styles["Normal"], fontSize=9, textColor=colors.grey, alignment=TA_CENTER, spaceAfter=10)
+    foot_s  = ParagraphStyle("F", parent=styles["Normal"], fontSize=8, textColor=colors.grey, alignment=TA_CENTER)
+
+    elements = [
+        Paragraph("GLOBAL PHONELINZ SYSTEMS LIMITED", title_s),
+        Paragraph(f"Staff Attendance Report — {filename_label.replace(chr(95), chr(32))}", sub_s),
+        HRFlowable(width="100%", thickness=2, color=BLUE, spaceAfter=10),
+    ]
+
+    branch_groups = {}
+    for r in records:
+        bn = r.branch.name if r.branch else "No Branch"
+        branch_groups.setdefault(bn, []).append(r)
+
+    summary_data = [["Branch", "Present", "On Time", "Late", "Absent", "Total Deductions"]]
+    grand_ded = Decimal(0)
+    for bn, recs in branch_groups.items():
+        on_time = sum(1 for r in recs if not r.is_late and not r.is_absent)
+        late    = sum(1 for r in recs if r.is_late)
+        absent  = sum(1 for r in recs if r.is_absent)
+        ded     = sum(r.deduction_amount or 0 for r in recs)
+        grand_ded += ded
+        summary_data.append([bn, len(recs), on_time, late, absent, f"N{ded:,.2f}"])
+    summary_data.append(["TOTAL", sum(len(v) for v in branch_groups.values()), "", "", "", f"N{grand_ded:,.2f}"])
+
+    st = Table(summary_data, colWidths=[2.2*inch, 0.8*inch, 0.8*inch, 0.7*inch, 0.7*inch, 1.3*inch])
+    st.setStyle(TableStyle([
+        ("BACKGROUND",  (0,0), (-1,0), BLUE), ("TEXTCOLOR", (0,0), (-1,0), colors.white),
+        ("FONTNAME",    (0,0), (-1,0), "Helvetica-Bold"),
+        ("BACKGROUND",  (0,-1), (-1,-1), LGRAY), ("FONTNAME", (0,-1), (-1,-1), "Helvetica-Bold"),
+        ("GRID",        (0,0), (-1,-1), 0.4, colors.HexColor("#E5E7EB")),
+        ("ROWBACKGROUNDS", (0,1), (-1,-2), [colors.white, colors.HexColor("#F9FAFB")]),
+        ("ALIGN",       (1,0), (-1,-1), "CENTER"), ("FONTSIZE", (0,0), (-1,-1), 9),
+        ("TOPPADDING",  (0,0), (-1,-1), 5), ("BOTTOMPADDING", (0,0), (-1,-1), 5),
+    ]))
+    elements.append(Paragraph("Summary by Branch", styles["Heading2"]))
+    elements.append(st)
+    elements.append(Spacer(1, 0.25*inch))
+
+    for bn, recs in branch_groups.items():
+        branch_header = Table([[Paragraph(f"  {bn}", ParagraphStyle("bh", parent=styles["Normal"], fontSize=10, textColor=colors.white, fontName="Helvetica-Bold"))]], colWidths=[7.5*inch])
+        branch_header.setStyle(TableStyle([("BACKGROUND", (0,0), (-1,-1), MGRAY), ("TOPPADDING", (0,0), (-1,-1), 5), ("BOTTOMPADDING", (0,0), (-1,-1), 5)]))
+        elements.append(branch_header)
+        elements.append(Spacer(1, 2))
+
+        rows = [["Staff", "Date", "Check In", "Check Out", "Status", "Distance", "Deduction"]]
+        for r in recs:
+            status  = "ABSENT" if r.is_absent else ("LATE" if r.is_late else "ON TIME")
+            cin     = r.check_in_time.strftime("%H:%M")  if r.check_in_time  else "--"
+            cout    = r.check_out_time.strftime("%H:%M") if r.check_out_time else "Not out"
+            dist    = f"{r.distance_from_branch:.0f}m" if r.distance_from_branch else "--"
+            ded     = f"N{r.deduction_amount:,.2f}" if r.deduction_amount else "--"
+            rows.append([r.user.username, r.date.strftime("%d %b %Y"), cin, cout, status, dist, ded])
+
+        dt = Table(rows, colWidths=[1.3*inch, 0.9*inch, 0.75*inch, 0.8*inch, 0.75*inch, 0.75*inch, 0.95*inch], repeatRows=1)
+        dt.setStyle(TableStyle([
+            ("BACKGROUND",    (0,0), (-1,0), colors.HexColor("#E5E7EB")),
+            ("FONTNAME",      (0,0), (-1,0), "Helvetica-Bold"),
+            ("FONTSIZE",      (0,0), (-1,-1), 8),
+            ("GRID",          (0,0), (-1,-1), 0.3, colors.HexColor("#E5E7EB")),
+            ("ROWBACKGROUNDS",(0,1), (-1,-1), [colors.white, colors.HexColor("#F9FAFB")]),
+            ("ALIGN",         (1,0), (-1,-1), "CENTER"),
+            ("TOPPADDING",    (0,0), (-1,-1), 4), ("BOTTOMPADDING", (0,0), (-1,-1), 4),
+        ]))
+        elements.append(dt)
+        elements.append(Spacer(1, 0.15*inch))
+
+    elements.append(HRFlowable(width="100%", thickness=1, color=BLUE, spaceBefore=10))
+    elements.append(Paragraph("Generated " + timezone.now().strftime("%d %B %Y at %H:%M") + " — Global Phonelinz Systems Ltd", foot_s))
+
+    doc.build(elements)
+    buffer.seek(0)
+    return HttpResponse(buffer, content_type="application/pdf",
+        headers={"Content-Disposition": f'attachment; filename="Attendance_{filename_label}.pdf"'})
+
+

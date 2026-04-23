@@ -1,0 +1,85 @@
+{% extends "base.html" %}
+{% block content %}
+<style>
+.page-title{font-size:1.3rem;font-weight:700;color:#004F9F;margin:0 0 1.5rem}
+.card{background:#fff;border:1px solid #e5e7eb;border-radius:10px;padding:1.2rem 1.4rem;margin-bottom:1.2rem}
+.card-title{font-size:1rem;font-weight:700;color:#111827;margin:0 0 1rem}
+.form-group{margin-bottom:.8rem}
+.form-group label{font-size:.78rem;font-weight:600;color:#374151;display:block;margin-bottom:.3rem}
+.form-group input,.form-group select,.form-group textarea{width:100%;padding:.5rem .75rem;border:1px solid #d1d5db;border-radius:6px;font-size:.88rem;box-sizing:border-box}
+.form-row{display:grid;grid-template-columns:repeat(auto-fit,minmax(160px,1fr));gap:.8rem}
+.btn-sm{padding:.5rem 1rem;font-size:.85rem;border-radius:6px;border:none;cursor:pointer;font-weight:600;text-decoration:none;display:inline-block}
+.btn-primary{background:#004F9F;color:#fff}.btn-success{background:#10b981;color:#fff}.btn-outline{background:transparent;border:1px solid #d1d5db;color:#374151}
+.item-row{display:grid;grid-template-columns:2fr 1fr 1fr auto;gap:.6rem;align-items:end;margin-bottom:.6rem;padding:.6rem;background:#f9fafb;border-radius:6px}
+</style>
+
+<div style="display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:.8rem;margin-bottom:1.5rem;">
+  <h1 class="page-title" style="margin:0;">➕ New Purchase Order</h1>
+  <a href="/purchase-orders/" class="btn-sm btn-outline">← Back</a>
+</div>
+
+<form method="POST" action="/purchase-orders/create/">
+  {% csrf_token %}
+  <div class="card">
+    <p class="card-title">Order Details</p>
+    <div class="form-row">
+      <div class="form-group">
+        <label>Supplier *</label>
+        <select name="supplier" required>
+          <option value="">— Select Supplier —</option>
+          {% for s in suppliers %}
+          <option value="{{ s.id }}">{{ s.name }}</option>
+          {% endfor %}
+        </select>
+      </div>
+    </div>
+    <div class="form-group">
+      <label>Notes</label>
+      <textarea name="notes" rows="2" placeholder="Optional notes about this order"></textarea>
+    </div>
+  </div>
+
+  <div class="card">
+    <p class="card-title">Products in this Order</p>
+    <div id="items-container">
+      <div class="item-row">
+        <div class="form-group" style="margin:0;">
+          <label>Product *</label>
+          <select name="product_id" required>
+            <option value="">— Select —</option>
+            {% for p in products %}
+            <option value="{{ p.id }}">{{ p.model_name }}</option>
+            {% endfor %}
+          </select>
+        </div>
+        <div class="form-group" style="margin:0;">
+          <label>Quantity *</label>
+          <input type="number" name="quantity" min="1" required placeholder="0">
+        </div>
+        <div class="form-group" style="margin:0;">
+          <label>Unit Cost (₦) *</label>
+          <input type="number" name="unit_cost" step="0.01" min="0" required placeholder="0.00">
+        </div>
+        <div style="padding-bottom:.1rem;">
+          <label style="visibility:hidden;display:block;font-size:.78rem;">Del</label>
+          <button type="button" onclick="this.closest('.item-row').remove()" style="padding:.45rem .7rem;background:#fee2e2;color:#991b1b;border:none;border-radius:6px;cursor:pointer;font-weight:700;">✕</button>
+        </div>
+      </div>
+    </div>
+    <button type="button" onclick="addItem()" class="btn-sm btn-outline" style="margin-top:.6rem;">+ Add Another Product</button>
+  </div>
+
+  <button type="submit" class="btn-sm btn-primary" style="width:100%;padding:.7rem;">Create Purchase Order</button>
+</form>
+
+<script>
+function addItem() {
+  const container = document.getElementById('items-container');
+  const first = container.querySelector('.item-row');
+  const clone = first.cloneNode(true);
+  clone.querySelectorAll('input').forEach(i => i.value = '');
+  clone.querySelectorAll('select').forEach(s => s.selectedIndex = 0);
+  container.appendChild(clone);
+}
+</script>
+{% endblock %}

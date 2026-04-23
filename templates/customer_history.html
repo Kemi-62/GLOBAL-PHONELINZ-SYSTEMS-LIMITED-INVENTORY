@@ -1,0 +1,50 @@
+{% extends "base.html" %}
+{% block content %}
+<div style="display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:.8rem;margin-bottom:1.5rem;">
+  <h1 style="font-size:1.3rem;font-weight:700;color:#004F9F;margin:0;">👤 {{ customer.name }}</h1>
+  <a href="{% url 'customer_crm' %}" style="padding:.45rem .9rem;font-size:.82rem;border-radius:6px;border:1px solid #d1d5db;color:#374151;text-decoration:none;background:#fff;">← Back to CRM</a>
+</div>
+<div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(140px,1fr));gap:1rem;margin-bottom:1.5rem;">
+  <div style="background:#fff;border-radius:10px;border:1px solid #e5e7eb;padding:1rem 1.2rem;border-left:4px solid #10b981;">
+    <p style="font-size:.72rem;text-transform:uppercase;color:#6b7280;margin:0 0 .3rem;">Total Spent</p>
+    <p style="font-size:1.4rem;font-weight:700;margin:0;">₦{{ total_spent|floatformat:0 }}</p>
+  </div>
+  <div style="background:#fff;border-radius:10px;border:1px solid #e5e7eb;padding:1rem 1.2rem;border-left:4px solid #3b82f6;">
+    <p style="font-size:.72rem;text-transform:uppercase;color:#6b7280;margin:0 0 .3rem;">Total Items</p>
+    <p style="font-size:1.4rem;font-weight:700;margin:0;">{{ total_items }}</p>
+  </div>
+  <div style="background:#fff;border-radius:10px;border:1px solid #e5e7eb;padding:1rem 1.2rem;border-left:4px solid #f59e0b;">
+    <p style="font-size:.72rem;text-transform:uppercase;color:#6b7280;margin:0 0 .3rem;">Phone</p>
+    <p style="font-size:1rem;font-weight:700;margin:0;">{{ customer.phone_number|default:"—" }}</p>
+  </div>
+</div>
+<div style="background:#fff;border:1px solid #e5e7eb;border-radius:10px;padding:1.2rem 1.4rem;">
+  <p style="font-size:1rem;font-weight:700;color:#111827;margin:0 0 1rem;">Purchase History</p>
+  <div style="overflow-x:auto;">
+    <table style="width:100%;border-collapse:collapse;font-size:.85rem;">
+      <thead><tr style="background:#f9fafb;">
+        <th style="padding:.65rem .9rem;text-align:left;border-bottom:1px solid #e5e7eb;font-weight:600;color:#374151;">Date</th>
+        <th style="padding:.65rem .9rem;text-align:left;border-bottom:1px solid #e5e7eb;font-weight:600;color:#374151;">Product</th>
+        <th style="padding:.65rem .9rem;text-align:center;border-bottom:1px solid #e5e7eb;font-weight:600;color:#374151;">Qty</th>
+        <th style="padding:.65rem .9rem;text-align:right;border-bottom:1px solid #e5e7eb;font-weight:600;color:#374151;">Amount</th>
+        <th style="padding:.65rem .9rem;text-align:left;border-bottom:1px solid #e5e7eb;font-weight:600;color:#374151;">Branch</th>
+        <th style="padding:.65rem .9rem;text-align:left;border-bottom:1px solid #e5e7eb;font-weight:600;color:#374151;">Staff</th>
+      </tr></thead>
+      <tbody>
+        {% for sale in sales %}
+        <tr style="border-bottom:1px solid #f3f4f6;">
+          <td style="padding:.6rem .9rem;color:#9ca3af;">{{ sale.date }}</td>
+          <td style="padding:.6rem .9rem;"><strong>{{ sale.product.model_name }}</strong></td>
+          <td style="padding:.6rem .9rem;text-align:center;">{{ sale.quantity }}</td>
+          <td style="padding:.6rem .9rem;text-align:right;">₦{{ sale.selling_price|floatformat:0 }}</td>
+          <td style="padding:.6rem .9rem;color:#9ca3af;">{{ sale.branch.name }}</td>
+          <td style="padding:.6rem .9rem;">{{ sale.staff.username }}</td>
+        </tr>
+        {% empty %}
+        <tr><td colspan="6" style="text-align:center;color:#9ca3af;padding:2rem 0;">No purchase history found for this customer.</td></tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+</div>
+{% endblock %}
