@@ -120,4 +120,5 @@ urlpatterns = [
     # Notifications
     path('notifications/', views.notifications_view, name='notifications_view'),
     path('notifications/count/', views.notification_count, name='notification_count'),
+    path('multichoice/export-pdf/', views.multichoice_export_pdf, name='multichoice_export_pdf'),
 ]
