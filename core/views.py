@@ -7,11 +7,16 @@ from django.db import transaction
 from django.db.models import Sum, F, Q, DecimalField, ExpressionWrapper
 from django.core.paginator import Paginator
 from django.utils import timezone
+from django.conf import settings as django_settings
 from decimal import Decimal
 from datetime import date, time, timedelta
 import math
 import csv
 import io
+try:
+    import PIL.Image as _PILImage
+except ImportError:
+    _PILImage = None  # type: ignore[assignment]
 
 from .models import (
     User, Branch, DeviceTag, ServiceTarget, ServiceActivity,
@@ -35,6 +40,46 @@ def calculate_distance(lat1, lon1, lat2, lon2):
     dlam = math.radians(lon2 - lon1)
     a = math.sin(dphi/2)**2 + math.cos(phi1)*math.cos(phi2)*math.sin(dlam/2)**2
     return R * 2 * math.atan2(math.sqrt(a), math.sqrt(1-a))
+
+
+def _get_dashboard_url(user):
+    """Return the dashboard URL name for the given user's role."""
+    from django.urls import reverse
+    role_map = {
+        "DIRECTOR":    "director_dashboard",
+        "SUPERADMIN":  "director_dashboard",
+        "MANAGER":     "manager_dashboard",
+        "RETAIL":      "retail_dashboard",
+        "MULTICHOICE": "multichoice_dashboard",
+        "TELECOM":     "staff_dashboard",
+    }
+    if getattr(user, "is_superuser", False):
+        return reverse("director_dashboard")
+    name = role_map.get(getattr(user, "role", None), "login")
+    return reverse(name)
+
+
+def _get_director_phone():
+    """Return the director's WhatsApp number from settings."""
+    return getattr(django_settings, "DIRECTOR_WHATSAPP", "")
+
+
+def send_whatsapp(phone, message):
+    """Send a WhatsApp message via CallMeBot API. Returns True on success."""
+    if not phone:
+        return False
+    import urllib.request
+    import urllib.parse
+    api_key = getattr(django_settings, "CALLMEBOT_API_KEY", "")
+    if not api_key:
+        return False
+    try:
+        encoded = urllib.parse.quote(message)
+        url = f"https://api.callmebot.com/whatsapp.php?phone={phone}&text={encoded}&apikey={api_key}"
+        with urllib.request.urlopen(url, timeout=10) as resp:
+            return resp.status == 200
+    except Exception:
+        return False
 
 
 def attendance_status():
@@ -1050,7 +1095,7 @@ def _compress_image(image_file, max_size_kb=200, max_dimension=800):
         if w > max_dimension or h > max_dimension:
             img.thumbnail((max_dimension, max_dimension), _PILImage.LANCZOS)
         # Save compressed
-        output = _io.BytesIO()
+        output = io.BytesIO()
         quality = 85
         while True:
             output.seek(0)
@@ -1135,9 +1180,6 @@ def check_in(request):
         return redirect(_get_dashboard_url(user))
 
     return render(request, "staff/attendance.html")
-
-
-@login_required
 
 
 @role_required("MANAGER")
@@ -1787,12 +1829,8 @@ def director_all_activities(request):
         "total_mc_rev": mc_sales.aggregate(t=Sum("amount"))["t"] or 0,
         "total_telecom": telecom.aggregate(t=Sum("quantity"))["t"] or 0,
     })
-import io
-from datetime import date, timedelta
-from decimal import Decimal
-
 # ─────────────────────────────────────────
-# FIX: start_weekly_report — handle empty decimal fields
+# start_weekly_report — handle empty decimal fields
 # ─────────────────────────────────────────
 
 @login_required

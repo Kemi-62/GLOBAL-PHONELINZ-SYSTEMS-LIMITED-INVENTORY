@@ -12,6 +12,9 @@ python = "^3.10"
 # https://github.com/microsoft/pyright/blob/main/docs/configuration.md
 useLibraryCodeForTypes = true
 exclude = [".cache"]
+pythonVersion = "3.10"
+djangoSettings = "django_project.settings"
+typeCheckingMode = "basic"
 
 [tool.ruff]
 # https://beta.ruff.rs/docs/configuration/

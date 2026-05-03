@@ -1,6 +1,7 @@
 from django.db import models
 from django.contrib.auth.models import AbstractUser
 from django.db.models import Sum
+from django.conf import settings
 from datetime import date
 from django.utils import timezone
 from decimal import Decimal
@@ -57,7 +58,6 @@ class DeviceTag(models.Model):
 # Daily Service Targets
 # -----------------------
 class ServiceTarget(models.Model):
-    customer_phone = models.CharField(max_length=15, null=True, blank=True)
     SERVICE_CHOICES = [
         ('SIM_REG', 'SIM Registration'),
         ('SIM_SWAP', 'SIM Swap'),
@@ -121,7 +121,6 @@ class DirectorSafeStock(models.Model):
 
 
 class ServiceActivity(models.Model):
-    customer_phone = models.CharField(max_length=15, null=True, blank=True)
     SERVICE_CHOICES = (
         ('SIM_REG', 'SIM Registration'),
         ('SIM_SWAP', 'SIM Swap'),
@@ -153,10 +152,6 @@ class ServiceActivity(models.Model):
     def __str__(self):
         return f"{self.service_type} - {self.quantity}"
 
-ServiceActivity.objects = models.Manager()
-
-
-from django.conf import settings
 
 class Performance(models.Model):
     staff = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.CASCADE)
@@ -174,7 +169,6 @@ class RetailCategory(models.Model):
     def __str__(self):
         return self.name
 
-RetailCategory.objects = models.Manager()
 
 class RetailSubCategory(models.Model):
     category = models.ForeignKey(RetailCategory, on_delete=models.CASCADE)
@@ -183,7 +177,6 @@ class RetailSubCategory(models.Model):
     def __str__(self):
         return f"{self.category.name} - {self.name}"
 
-RetailSubCategory.objects = models.Manager()
 
 class RetailSubSubCategory(models.Model):
     subcategory = models.ForeignKey(RetailSubCategory, on_delete=models.CASCADE)
@@ -192,7 +185,6 @@ class RetailSubSubCategory(models.Model):
     def __str__(self):
         return f"{self.subcategory} - {self.name}"
 
-RetailSubSubCategory.objects = models.Manager()
 
 
 class Expense(models.Model):
@@ -213,7 +205,6 @@ class Expense(models.Model):
     def __str__(self):
         return f"{self.category} - {self.amount} at {self.branch.name}"
 
-Expense.objects = models.Manager()
 
 class Product(models.Model):
     subsubcategory = models.ForeignKey(RetailSubSubCategory, on_delete=models.CASCADE, null=True, blank=True)
@@ -229,7 +220,6 @@ class Product(models.Model):
     def __str__(self):
         return f"{self.product_name or self.model_name} ({self.model_name}) - {self.imei_serial or 'No IMEI'}"
 
-Product.objects = models.Manager()
 
 class BranchSafeStock(models.Model):
     branch = models.ForeignKey(Branch, on_delete=models.CASCADE)
@@ -239,7 +229,6 @@ class BranchSafeStock(models.Model):
     def __str__(self):
         return f"{self.branch.name} - {self.product.model_name}"
 
-BranchSafeStock.objects = models.Manager()
 
 class StaffStock(models.Model):
     staff = models.ForeignKey(User, on_delete=models.CASCADE)
@@ -249,7 +238,6 @@ class StaffStock(models.Model):
     def __str__(self):
         return f"{self.staff.username} - {self.product.model_name}"
 
-StaffStock.objects = models.Manager()
 
 class StockMovement(models.Model):
     MOVEMENT_TYPE = (
@@ -271,7 +259,6 @@ class StockMovement(models.Model):
     def __str__(self):
         return f"{self.product.model_name} - {self.movement_type}"
 
-StockMovement.objects = models.Manager()
 class MultiChoiceSale(models.Model):
     staff = models.ForeignKey(User, on_delete=models.CASCADE)
     branch = models.ForeignKey(Branch, on_delete=models.CASCADE)
@@ -299,7 +286,6 @@ class MultiChoiceSale(models.Model):
     def __str__(self):
         return f"{self.customer_name} - {self.package_type}"
 
-MultiChoiceSale.objects = models.Manager()
 
 class MultiChoiceWeeklyReport(models.Model):
     staff = models.ForeignKey(User, on_delete=models.CASCADE)
@@ -318,7 +304,6 @@ class MultiChoiceWeeklyReport(models.Model):
             return self.commission
         return 0
 
-MultiChoiceWeeklyReport.objects = models.Manager()
 
 class MultiChoiceBalance(models.Model):
     weekly_report = models.ForeignKey(MultiChoiceWeeklyReport, on_delete=models.CASCADE, related_name='balance_history')
@@ -336,7 +321,6 @@ class MultiChoiceBalance(models.Model):
     def __str__(self):
         return f"{self.weekly_report.staff.username} - ₦{self.balance_amount} on {self.date}"
 
-MultiChoiceBalance.objects = models.Manager()
 
 class CommissionPayment(models.Model):
     staff = models.ForeignKey(User, on_delete=models.CASCADE)
@@ -356,7 +340,6 @@ class CommissionPayment(models.Model):
     def __str__(self):
         return f"{self.staff.username} - ₦{self.commission_detected} on {self.date_detected}"
 
-CommissionPayment.objects = models.Manager()
 
 class RetailSale(models.Model):
     PAYMENT_METHODS = (
@@ -393,7 +376,6 @@ class RetailSale(models.Model):
     def __str__(self):
         return f"{self.product.model_name} - {self.quantity} sold by {self.staff.username}"
 
-RetailSale.objects = models.Manager()
 
 class StockRequest(models.Model):
     STATUS_CHOICES = (
@@ -408,7 +390,6 @@ class StockRequest(models.Model):
     status = models.CharField(max_length=10, choices=STATUS_CHOICES, default='PENDING')
     date_requested = models.DateField(auto_now_add=True)
 
-StockRequest.objects = models.Manager()
 
 # -----------------------
 # Customer CRM
@@ -425,7 +406,6 @@ class Customer(models.Model):
     def __str__(self):
         return f"{self.name} - {self.phone_number}"
 
-Customer.objects = models.Manager()
 
 class StockAlert(models.Model):
     ALERT_TYPES = (
@@ -443,7 +423,6 @@ class StockAlert(models.Model):
     def __str__(self):
         return f"{self.product.model_name} - {self.alert_type}"
 
-StockAlert.objects = models.Manager()
 
 class DeviceTagCommission(models.Model):
     branch = models.ForeignKey(Branch, on_delete=models.CASCADE)
@@ -459,7 +438,6 @@ class DeviceTagCommission(models.Model):
     def __str__(self):
         return f"{self.device_tag.tag_name} - {self.month_year}"
 
-DeviceTagCommission.objects = models.Manager()
 
 class CheckInOutLog(models.Model):
     staff = models.ForeignKey(User, on_delete=models.CASCADE)
@@ -473,7 +451,6 @@ class CheckInOutLog(models.Model):
     def __str__(self):
         return f"{self.staff.username} - {self.date}"
 
-CheckInOutLog.objects = models.Manager()
 
 class Attendance(models.Model):
     SESSION_CHOICES = (
@@ -498,7 +475,6 @@ class Attendance(models.Model):
     def __str__(self):
         return f"{self.user.username} - {self.date}"
 
-Attendance.objects = models.Manager()
 
 
 class SimInventory(models.Model):
@@ -516,7 +492,6 @@ class SimInventory(models.Model):
     def __str__(self):
         return f"{self.branch.name} SIM Inventory - Balance: {self.get_current_balance()}"
 
-SimInventory.objects = models.Manager()
 
 
 class SimInventoryLog(models.Model):
@@ -536,7 +511,6 @@ class SimInventoryLog(models.Model):
     def __str__(self):
         return f"{self.inventory.branch.name} - {self.transaction_type}: {self.quantity} SIMs"
 
-SimInventoryLog.objects = models.Manager()
 
 
 # ─────────────────────────────────────────
@@ -566,7 +540,6 @@ class AuditLog(models.Model):
     def __str__(self):
         return f"{self.user} — {self.action} {self.model_name} at {self.timestamp:%d %b %Y %H:%M}"
 
-AuditLog.objects = models.Manager()
 
 
 def log_action(user, action, model_name, obj_id=None, description='', request=None):
@@ -606,7 +579,6 @@ class Notification(models.Model):
     def __str__(self):
         return f"{self.recipient.username} — {self.title}"
 
-Notification.objects = models.Manager()
 
 
 def notify_user(recipient, title, message, notif_type='GENERAL', link=''):
@@ -642,7 +614,6 @@ class Supplier(models.Model):
     def __str__(self):
         return self.name
 
-Supplier.objects = models.Manager()
 
 
 class PurchaseOrder(models.Model):
@@ -663,7 +634,6 @@ class PurchaseOrder(models.Model):
     def __str__(self):
         return f"PO#{self.id} — {self.supplier.name} ({self.status})"
 
-PurchaseOrder.objects = models.Manager()
 
 
 class PurchaseOrderItem(models.Model):
@@ -679,4 +649,3 @@ class PurchaseOrderItem(models.Model):
     def __str__(self):
         return f"{self.product.model_name} x{self.quantity}"
 
-PurchaseOrderItem.objects = models.Manager()
