@@ -153,6 +153,9 @@ class ServiceActivity(models.Model):
     def __str__(self):
         return f"{self.service_type} - {self.quantity}"
 
+ServiceActivity.objects = models.Manager()
+
+
 from django.conf import settings
 
 class Performance(models.Model):
@@ -171,6 +174,8 @@ class RetailCategory(models.Model):
     def __str__(self):
         return self.name
 
+RetailCategory.objects = models.Manager()
+
 class RetailSubCategory(models.Model):
     category = models.ForeignKey(RetailCategory, on_delete=models.CASCADE)
     name = models.CharField(max_length=100)
@@ -178,12 +183,16 @@ class RetailSubCategory(models.Model):
     def __str__(self):
         return f"{self.category.name} - {self.name}"
 
+RetailSubCategory.objects = models.Manager()
+
 class RetailSubSubCategory(models.Model):
     subcategory = models.ForeignKey(RetailSubCategory, on_delete=models.CASCADE)
     name = models.CharField(max_length=100)
 
     def __str__(self):
         return f"{self.subcategory} - {self.name}"
+
+RetailSubSubCategory.objects = models.Manager()
 
 
 class Expense(models.Model):
@@ -204,6 +213,8 @@ class Expense(models.Model):
     def __str__(self):
         return f"{self.category} - {self.amount} at {self.branch.name}"
 
+Expense.objects = models.Manager()
+
 class Product(models.Model):
     subsubcategory = models.ForeignKey(RetailSubSubCategory, on_delete=models.CASCADE, null=True, blank=True)
     subcategory = models.ForeignKey(RetailSubCategory, on_delete=models.CASCADE)
@@ -218,6 +229,8 @@ class Product(models.Model):
     def __str__(self):
         return f"{self.product_name or self.model_name} ({self.model_name}) - {self.imei_serial or 'No IMEI'}"
 
+Product.objects = models.Manager()
+
 class BranchSafeStock(models.Model):
     branch = models.ForeignKey(Branch, on_delete=models.CASCADE)
     product = models.ForeignKey(Product, on_delete=models.CASCADE)
@@ -226,6 +239,8 @@ class BranchSafeStock(models.Model):
     def __str__(self):
         return f"{self.branch.name} - {self.product.model_name}"
 
+BranchSafeStock.objects = models.Manager()
+
 class StaffStock(models.Model):
     staff = models.ForeignKey(User, on_delete=models.CASCADE)
     product = models.ForeignKey(Product, on_delete=models.CASCADE)
@@ -233,6 +248,8 @@ class StaffStock(models.Model):
 
     def __str__(self):
         return f"{self.staff.username} - {self.product.model_name}"
+
+StaffStock.objects = models.Manager()
 
 class StockMovement(models.Model):
     MOVEMENT_TYPE = (
@@ -253,6 +270,8 @@ class StockMovement(models.Model):
 
     def __str__(self):
         return f"{self.product.model_name} - {self.movement_type}"
+
+StockMovement.objects = models.Manager()
 class MultiChoiceSale(models.Model):
     staff = models.ForeignKey(User, on_delete=models.CASCADE)
     branch = models.ForeignKey(Branch, on_delete=models.CASCADE)
@@ -280,6 +299,8 @@ class MultiChoiceSale(models.Model):
     def __str__(self):
         return f"{self.customer_name} - {self.package_type}"
 
+MultiChoiceSale.objects = models.Manager()
+
 class MultiChoiceWeeklyReport(models.Model):
     staff = models.ForeignKey(User, on_delete=models.CASCADE)
     branch = models.ForeignKey(Branch, on_delete=models.CASCADE)
@@ -297,6 +318,8 @@ class MultiChoiceWeeklyReport(models.Model):
             return self.commission
         return 0
 
+MultiChoiceWeeklyReport.objects = models.Manager()
+
 class MultiChoiceBalance(models.Model):
     weekly_report = models.ForeignKey(MultiChoiceWeeklyReport, on_delete=models.CASCADE, related_name='balance_history')
     balance_amount = models.DecimalField(max_digits=12, decimal_places=2)
@@ -312,6 +335,8 @@ class MultiChoiceBalance(models.Model):
 
     def __str__(self):
         return f"{self.weekly_report.staff.username} - ₦{self.balance_amount} on {self.date}"
+
+MultiChoiceBalance.objects = models.Manager()
 
 class CommissionPayment(models.Model):
     staff = models.ForeignKey(User, on_delete=models.CASCADE)
@@ -330,6 +355,8 @@ class CommissionPayment(models.Model):
 
     def __str__(self):
         return f"{self.staff.username} - ₦{self.commission_detected} on {self.date_detected}"
+
+CommissionPayment.objects = models.Manager()
 
 class RetailSale(models.Model):
     PAYMENT_METHODS = (
@@ -366,6 +393,8 @@ class RetailSale(models.Model):
     def __str__(self):
         return f"{self.product.model_name} - {self.quantity} sold by {self.staff.username}"
 
+RetailSale.objects = models.Manager()
+
 class StockRequest(models.Model):
     STATUS_CHOICES = (
         ('PENDING', 'Pending'),
@@ -378,6 +407,8 @@ class StockRequest(models.Model):
     quantity = models.PositiveIntegerField()
     status = models.CharField(max_length=10, choices=STATUS_CHOICES, default='PENDING')
     date_requested = models.DateField(auto_now_add=True)
+
+StockRequest.objects = models.Manager()
 
 # -----------------------
 # Customer CRM
@@ -393,6 +424,8 @@ class Customer(models.Model):
 
     def __str__(self):
         return f"{self.name} - {self.phone_number}"
+
+Customer.objects = models.Manager()
 
 class StockAlert(models.Model):
     ALERT_TYPES = (
@@ -410,6 +443,8 @@ class StockAlert(models.Model):
     def __str__(self):
         return f"{self.product.model_name} - {self.alert_type}"
 
+StockAlert.objects = models.Manager()
+
 class DeviceTagCommission(models.Model):
     branch = models.ForeignKey(Branch, on_delete=models.CASCADE)
     device_tag = models.ForeignKey(DeviceTag, on_delete=models.CASCADE)
@@ -424,6 +459,8 @@ class DeviceTagCommission(models.Model):
     def __str__(self):
         return f"{self.device_tag.tag_name} - {self.month_year}"
 
+DeviceTagCommission.objects = models.Manager()
+
 class CheckInOutLog(models.Model):
     staff = models.ForeignKey(User, on_delete=models.CASCADE)
     branch = models.ForeignKey(Branch, on_delete=models.CASCADE)
@@ -435,6 +472,8 @@ class CheckInOutLog(models.Model):
 
     def __str__(self):
         return f"{self.staff.username} - {self.date}"
+
+CheckInOutLog.objects = models.Manager()
 
 class Attendance(models.Model):
     SESSION_CHOICES = (
@@ -459,6 +498,8 @@ class Attendance(models.Model):
     def __str__(self):
         return f"{self.user.username} - {self.date}"
 
+Attendance.objects = models.Manager()
+
 
 class SimInventory(models.Model):
     branch = models.OneToOneField(Branch, on_delete=models.CASCADE, related_name='sim_inventory')
@@ -474,6 +515,8 @@ class SimInventory(models.Model):
 
     def __str__(self):
         return f"{self.branch.name} SIM Inventory - Balance: {self.get_current_balance()}"
+
+SimInventory.objects = models.Manager()
 
 
 class SimInventoryLog(models.Model):
@@ -492,10 +535,8 @@ class SimInventoryLog(models.Model):
 
     def __str__(self):
         return f"{self.inventory.branch.name} - {self.transaction_type}: {self.quantity} SIMs"
-from django.db import models
-from django.contrib.auth import get_user_model
 
-User = get_user_model()
+SimInventoryLog.objects = models.Manager()
 
 
 # ─────────────────────────────────────────
@@ -524,6 +565,8 @@ class AuditLog(models.Model):
 
     def __str__(self):
         return f"{self.user} — {self.action} {self.model_name} at {self.timestamp:%d %b %Y %H:%M}"
+
+AuditLog.objects = models.Manager()
 
 
 def log_action(user, action, model_name, obj_id=None, description='', request=None):
@@ -563,6 +606,8 @@ class Notification(models.Model):
     def __str__(self):
         return f"{self.recipient.username} — {self.title}"
 
+Notification.objects = models.Manager()
+
 
 def notify_user(recipient, title, message, notif_type='GENERAL', link=''):
     Notification.objects.create(
@@ -597,6 +642,8 @@ class Supplier(models.Model):
     def __str__(self):
         return self.name
 
+Supplier.objects = models.Manager()
+
 
 class PurchaseOrder(models.Model):
     STATUS_CHOICES = (
@@ -616,6 +663,8 @@ class PurchaseOrder(models.Model):
     def __str__(self):
         return f"PO#{self.id} — {self.supplier.name} ({self.status})"
 
+PurchaseOrder.objects = models.Manager()
+
 
 class PurchaseOrderItem(models.Model):
     order    = models.ForeignKey(PurchaseOrder, on_delete=models.CASCADE, related_name='items')
@@ -629,3 +678,5 @@ class PurchaseOrderItem(models.Model):
 
     def __str__(self):
         return f"{self.product.model_name} x{self.quantity}"
+
+PurchaseOrderItem.objects = models.Manager()
