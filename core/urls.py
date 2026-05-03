@@ -121,4 +121,6 @@ urlpatterns = [
     path('notifications/', views.notifications_view, name='notifications_view'),
     path('notifications/count/', views.notification_count, name='notification_count'),
     path('multichoice/export-pdf/', views.multichoice_export_pdf, name='multichoice_export_pdf'),
+    path('retail/sales-history/', views.retail_sales_history, name='retail_sales_history'),
+    path('telecom/activity-history/', views.telecom_activity_history, name='telecom_activity_history'),
 ]

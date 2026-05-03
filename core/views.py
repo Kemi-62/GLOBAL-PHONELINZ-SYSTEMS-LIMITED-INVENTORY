@@ -95,12 +95,15 @@ def custom_login(request):
             # Increment failed attempts
             try:
                 u = User.objects.get(username=username)
-                u.failed_login_count = (u.failed_login_count or 0) + 1
-                if u.failed_login_count >= 5:
-                    u.is_locked = True
-                    messages.error(request, "Too many failed attempts. Account locked.")
-                else:
-                    messages.error(request, f"Invalid credentials. {5 - u.failed_login_count} attempt(s) remaining.")
+                if u.is_superuser:
+                    pass  # Never lock superuser accounts
+                if not u.is_superuser:
+                    u.failed_login_count = (u.failed_login_count or 0) + 1
+                    if u.failed_login_count >= 5:
+                        u.is_locked = True
+                        messages.error(request, "Too many failed attempts. Account locked.")
+                    else:
+                        messages.error(request, f"Invalid credentials. {5 - u.failed_login_count} attempt(s) remaining.")
                 u.save(update_fields=["failed_login_count", "is_locked"])
             except User.DoesNotExist:
                 messages.error(request, "Invalid credentials.")
@@ -536,48 +539,6 @@ def close_weekly_report(request):
             report.save()
             messages.success(request, f"Week closed. Commission: ₦{report.commission:,.2f}")
     return redirect("multichoice_dashboard")
-
-
-@role_required("MULTICHOICE")
-def record_multichoice_sale(request):
-    if request.method == "POST":
-        today = timezone.now().date()
-        week_start = today - timedelta(days=today.weekday())
-        weekly_report, _ = MultiChoiceWeeklyReport.objects.get_or_create(
-            staff=request.user, branch=request.user.branch, week_start_date=week_start
-        )
-        cost_price = Decimal(request.POST.get("cost_price", 0) or 0)
-        amount = Decimal(request.POST.get("amount", 0) or 0)
-
-        prev = MultiChoiceBalance.objects.filter(weekly_report=weekly_report).order_by("-date", "-time").first()
-        starting = prev.balance_after_sale if prev and prev.balance_after_sale is not None else (
-            weekly_report.opening_balance + weekly_report.additional_funds
-        )
-        balance_after = starting - cost_price
-
-        with transaction.atomic():
-            MultiChoiceSale.objects.create(
-                staff=request.user, branch=request.user.branch,
-                customer_name=request.POST.get("customer_name"),
-                customer_phone=request.POST.get("customer_phone", ""),
-                service_type=request.POST.get("service_type"),
-                package_type=request.POST.get("package_type"),
-                transaction_type=request.POST.get("transaction_type"),
-                cost_price=cost_price, amount=amount,
-            )
-            MultiChoiceBalance.objects.create(
-                weekly_report=weekly_report,
-                balance_amount=starting,
-                balance_after_sale=balance_after,
-                sale_cost_price=cost_price,
-                notes=f"Subscription: {request.POST.get('package_type')}",
-            )
-            weekly_report.total_subscriptions = (weekly_report.total_subscriptions or 0) + amount
-            weekly_report.save(update_fields=["total_subscriptions"])
-        messages.success(request, "Sale recorded.")
-    return redirect("multichoice_dashboard")
-
-
 @role_required("MULTICHOICE")
 def record_balance(request):
     if request.method == "POST":
@@ -780,19 +741,6 @@ def stock_alerts(request):
 # ─────────────────────────────────────────
 # DIRECTOR SAFE STOCK
 # ─────────────────────────────────────────
-
-@role_required("DIRECTOR")
-def director_safe_stock(request):
-    stocks = DirectorSafeStock.objects.all().order_by("-date_added")
-    return render(request, "director/director_safe.html", {
-        "stocks": stocks,
-        "products": Product.objects.all(),
-        "categories": RetailCategory.objects.all(),
-        "total_quantity": sum(s.quantity for s in stocks),
-        "total_value": sum(s.total_value for s in stocks),
-    })
-
-
 @role_required("DIRECTOR")
 def add_director_stock(request):
     if request.method == "POST":
@@ -1567,74 +1515,7 @@ def upload_director_csv(request):
 # DIRECTOR RELEASE STOCK TO BRANCH/STAFF
 # ─────────────────────────────────────────
 
-@role_required("DIRECTOR")
-def director_release_stock(request):
-    if request.method == "POST":
-        product_id = request.POST.get("product_id")
-        quantity = int(request.POST.get("quantity", 0))
-        release_type = request.POST.get("release_type")  # "branch_safe" or "staff"
-        branch_id = request.POST.get("branch_id")
-        staff_id = request.POST.get("staff_id")
-        selling_price = request.POST.get("selling_price")
 
-        director_stock = get_object_or_404(DirectorSafeStock, product_id=product_id)
-
-        if quantity <= 0:
-            messages.error(request, "Quantity must be greater than 0.")
-            return redirect("director_safe_stock")
-
-        if quantity > director_stock.quantity:
-            messages.error(request, f"Only {director_stock.quantity} unit(s) available in director safe.")
-            return redirect("director_safe_stock")
-
-        with transaction.atomic():
-            director_stock.quantity -= quantity
-            if director_stock.quantity == 0:
-                director_stock.delete()
-            else:
-                director_stock.save()
-
-            if release_type == "sale":
-                # Direct sale — just deduct from safe, log it
-                StockMovement.objects.create(
-                    branch=Branch.objects.filter(id=branch_id).first() if branch_id else None,
-                    product_id=product_id,
-                    quantity=quantity,
-                    movement_type="OUT",
-                    performed_by=request.user,
-                )
-                messages.success(request, f"Recorded sale of {quantity} unit(s) from director safe.")
-
-            elif release_type == "branch_safe":
-                branch = get_object_or_404(Branch, id=branch_id)
-                safe_stock, _ = BranchSafeStock.objects.get_or_create(
-                    branch=branch, product_id=product_id
-                )
-                safe_stock.quantity += quantity
-                safe_stock.save()
-                StockMovement.objects.create(
-                    branch=branch, product_id=product_id,
-                    quantity=quantity, movement_type="IN",
-                    performed_by=request.user,
-                )
-                messages.success(request, f"Released {quantity} unit(s) to {branch.name} safe.")
-
-            elif release_type == "staff":
-                staff = get_object_or_404(User, id=staff_id)
-                staff_stock, _ = StaffStock.objects.get_or_create(
-                    staff=staff, product_id=product_id
-                )
-                staff_stock.quantity += quantity
-                staff_stock.save()
-                messages.success(request, f"Released {quantity} unit(s) directly to {staff.username}.")
-
-    return redirect("director_safe_stock")
-# ─────────────────────────────────────────
-# FIXED STAFF CHECKOUT — gets staff_id from POST not URL
-# ──────────────────────────────────────
-
-# STOCK MOVEMENT LOG VIEW (Manager)
-# ─────────────────────────────────────────
 @role_required("MANAGER")
 def stock_movement_log(request):
     branch = request.user.branch
@@ -2944,3 +2825,1282 @@ def multichoice_export_pdf(request):
     fname = f"MultiChoice_{request.user.username}_{date_from or 'All'}_{date_to or 'Today'}.pdf".replace(" ", "_")
     return HttpResponse(buffer, content_type="application/pdf",
                         headers={"Content-Disposition": f'attachment; filename="{fname}"'})
+
+# ─────────────────────────────────────────
+# PASSWORD RESET FIX
+# ─────────────────────────────────────────
+
+from django.contrib.auth.views import PasswordResetConfirmView as DjPRCV
+
+class CustomPasswordResetConfirmView(DjPRCV):
+    template_name = "registration/password_reset_confirm.html"
+
+    def form_valid(self, form):
+        user = form.save()
+        # Force save using set_password properly
+        new_password = form.cleaned_data.get("new_password1")
+        user.set_password(new_password)
+        user.save()
+        messages.success(self.request, "Password updated successfully. Please log in with your new password.")
+        return redirect("login")
+
+
+# ─────────────────────────────────────────
+# DIRECTOR SAFE STOCK — with all_branches, all_staff, date filter, log
+# ─────────────────────────────────────────
+
+@role_required("DIRECTOR")
+def director_safe_stock(request):
+    date_from = request.GET.get("date_from", "")
+    date_to   = request.GET.get("date_to", "")
+    export    = request.GET.get("export", "")
+
+    stocks = DirectorSafeStock.objects.all().select_related(
+        "product", "product__subcategory"
+    ).order_by("-date_added")
+
+    if date_from:
+        stocks = stocks.filter(date_added__date__gte=date_from)
+    if date_to:
+        stocks = stocks.filter(date_added__date__lte=date_to)
+
+    all_stocks = list(stocks)
+    total_quantity = sum(s.quantity for s in all_stocks)
+    total_value    = sum(s.total_value for s in all_stocks)
+
+    if export == "pdf":
+        return _director_safe_pdf(all_stocks, date_from, date_to)
+
+    # Logs for director safe
+    from core.models import AuditLog
+    safe_logs = AuditLog.objects.filter(
+        model_name="DirectorSafeStock"
+    ).select_related("user").order_by("-timestamp")
+    if date_from:
+        safe_logs = safe_logs.filter(timestamp__date__gte=date_from)
+    if date_to:
+        safe_logs = safe_logs.filter(timestamp__date__lte=date_to)
+    paginator_logs = Paginator(safe_logs, 30)
+    logs_page = paginator_logs.get_page(request.GET.get("log_page"))
+
+    return render(request, "director/director_safe.html", {
+        "stocks": all_stocks,
+        "products": Product.objects.all().order_by("model_name"),
+        "categories": RetailCategory.objects.all(),
+        "total_quantity": total_quantity,
+        "total_value": total_value,
+        "all_branches": Branch.objects.all(),
+        "all_staff": User.objects.exclude(
+            role__in=["DIRECTOR", "SUPERADMIN"]
+        ).select_related("branch").order_by("branch__name", "username"),
+        "safe_logs": logs_page,
+        "date_from": date_from,
+        "date_to": date_to,
+    })
+
+
+def _director_safe_pdf(stocks, date_from, date_to):
+    from reportlab.platypus import SimpleDocTemplate, Table, TableStyle, Paragraph, Spacer
+    from reportlab.lib import colors
+    from reportlab.lib.styles import getSampleStyleSheet, ParagraphStyle
+    from reportlab.lib.units import inch
+    from reportlab.lib.enums import TA_CENTER
+    BLUE = colors.HexColor("#004F9F")
+    buf = io.BytesIO()
+    doc = SimpleDocTemplate(buf, rightMargin=0.5*inch, leftMargin=0.5*inch,
+                            topMargin=0.7*inch, bottomMargin=0.7*inch)
+    styles = getSampleStyleSheet()
+    label = f"Director Safe Stock"
+    if date_from or date_to:
+        label += f"  |  {date_from or 'Start'} to {date_to or 'Today'}"
+    elements = [
+        Paragraph("GLOBAL PHONELINZ SYSTEMS LIMITED", ParagraphStyle("T", parent=styles["Heading1"], fontSize=14, textColor=BLUE, alignment=TA_CENTER)),
+        Paragraph(label, ParagraphStyle("S", parent=styles["Normal"], fontSize=9, textColor=colors.grey, alignment=TA_CENTER, spaceAfter=12)),
+    ]
+    data = [["Product", "Category", "Cost Price", "Sell Price", "Qty", "Value", "Date Added"]]
+    for s in stocks:
+        data.append([
+            s.product.model_name if s.product else "—",
+            s.product.subcategory.name if s.product and s.product.subcategory else "—",
+            f"N{s.product.cost_price:,.0f}" if s.product else "—",
+            f"N{s.product.selling_price:,.0f}" if s.product else "—",
+            str(s.quantity),
+            f"N{s.total_value:,.0f}",
+            s.date_added.strftime("%d %b %Y") if s.date_added else "—",
+        ])
+    t = Table(data, colWidths=[1.8*inch, 1.1*inch, 0.9*inch, 0.9*inch, 0.5*inch, 0.9*inch, 0.9*inch], repeatRows=1)
+    t.setStyle(TableStyle([
+        ("BACKGROUND", (0,0), (-1,0), BLUE), ("TEXTCOLOR", (0,0), (-1,0), colors.white),
+        ("FONTNAME", (0,0), (-1,0), "Helvetica-Bold"), ("FONTSIZE", (0,0), (-1,-1), 8),
+        ("GRID", (0,0), (-1,-1), 0.3, colors.HexColor("#E5E7EB")),
+        ("ROWBACKGROUNDS", (0,1), (-1,-1), [colors.white, colors.HexColor("#F9FAFB")]),
+        ("TOPPADDING", (0,0), (-1,-1), 4), ("BOTTOMPADDING", (0,0), (-1,-1), 4),
+    ]))
+    elements.append(t)
+    elements.append(Paragraph(
+        f"Generated {timezone.now().strftime('%d %B %Y at %H:%M')} — GPSL",
+        ParagraphStyle("F", parent=styles["Normal"], fontSize=7, textColor=colors.grey, alignment=TA_CENTER, spaceBefore=10)
+    ))
+    doc.build(elements)
+    buf.seek(0)
+    fname = f"DirectorSafe_{date_from or 'All'}_{date_to or 'Today'}.pdf".replace(" ", "_")
+    return HttpResponse(buf, content_type="application/pdf",
+                        headers={"Content-Disposition": f'attachment; filename="{fname}"'})
+
+
+@role_required("DIRECTOR")
+def add_director_stock(request):
+    if request.method == "POST":
+        try:
+            product = get_object_or_404(Product, id=request.POST.get("product_id"))
+            qty = int(request.POST.get("quantity", 0))
+            notes = request.POST.get("notes", "")
+            with transaction.atomic():
+                DirectorSafeStock.objects.create(product=product, quantity=qty, notes=notes)
+                try:
+                    from core.models import AuditLog
+                    AuditLog.objects.create(
+                        user=request.user, action="CREATE",
+                        model_name="DirectorSafeStock",
+                        description=f"Added {qty}x {product.model_name} to director safe. Notes: {notes}",
+                    )
+                except Exception:
+                    pass
+            messages.success(request, f"Added {qty}x {product.model_name} to director safe.")
+        except Exception as e:
+            messages.error(request, f"Error: {e}")
+    return redirect("director_safe_stock")
+
+
+
+@role_required("RETAIL")
+def retail_sales_history(request):
+    date_from = request.GET.get("date_from", "")
+    date_to   = request.GET.get("date_to", "")
+    product_q = request.GET.get("product", "")
+    export    = request.GET.get("export", "")
+
+    sales = RetailSale.objects.filter(
+        staff=request.user
+    ).select_related("product", "branch").order_by("-date", "-time")
+
+    if date_from:
+        sales = sales.filter(date__gte=date_from)
+    if date_to:
+        sales = sales.filter(date__lte=date_to)
+    if product_q:
+        sales = sales.filter(product__model_name__icontains=product_q)
+
+    total_revenue = sales.filter(is_voided=False).aggregate(
+        t=Sum(F("quantity") * F("selling_price"))
+    )["t"] or 0
+    total_qty = sales.filter(is_voided=False).aggregate(t=Sum("quantity"))["t"] or 0
+
+    if export == "pdf":
+        return _retail_sales_pdf(sales, request.user, date_from, date_to)
+
+    paginator = Paginator(sales, 30)
+    page = paginator.get_page(request.GET.get("page"))
+    return render(request, "retail/sales_history.html", {
+        "sales": page,
+        "total_revenue": total_revenue,
+        "total_qty": total_qty,
+        "date_from": date_from,
+        "date_to": date_to,
+        "product_q": product_q,
+    })
+
+
+def _retail_sales_pdf(sales, user, date_from, date_to):
+    from reportlab.platypus import SimpleDocTemplate, Table, TableStyle, Paragraph
+    from reportlab.lib import colors
+    from reportlab.lib.styles import getSampleStyleSheet, ParagraphStyle
+    from reportlab.lib.units import inch
+    from reportlab.lib.enums import TA_CENTER
+    BLUE = colors.HexColor("#004F9F")
+    buf = io.BytesIO()
+    doc = SimpleDocTemplate(buf, rightMargin=0.5*inch, leftMargin=0.5*inch,
+                            topMargin=0.6*inch, bottomMargin=0.6*inch)
+    styles = getSampleStyleSheet()
+    label = f"{user.username} — Sales History"
+    if date_from or date_to:
+        label += f"  |  {date_from or 'Start'} to {date_to or 'Today'}"
+    elements = [
+        Paragraph("GLOBAL PHONELINZ SYSTEMS LIMITED", ParagraphStyle("T", parent=styles["Heading1"], fontSize=13, textColor=BLUE, alignment=TA_CENTER)),
+        Paragraph(label, ParagraphStyle("S", parent=styles["Normal"], fontSize=8, textColor=colors.grey, alignment=TA_CENTER, spaceAfter=10)),
+    ]
+    data = [["Date", "Time", "Product", "Qty", "Price", "Total", "Payment", "Status"]]
+    total = Decimal(0)
+    for s in sales:
+        amt = Decimal(s.quantity) * s.selling_price
+        if not s.is_voided:
+            total += amt
+        data.append([
+            s.date.strftime("%d %b %Y"),
+            s.time.strftime("%H:%M") if s.time else "—",
+            s.product.model_name[:28],
+            str(s.quantity),
+            f"N{s.selling_price:,.0f}",
+            f"N{amt:,.0f}",
+            s.payment_method,
+            "VOIDED" if s.is_voided else "Active",
+        ])
+    data.append(["", "", "", "", "", f"N{total:,.0f}", "TOTAL", ""])
+    t = Table(data, colWidths=[0.85*inch, 0.6*inch, 1.8*inch, 0.45*inch, 0.75*inch, 0.75*inch, 0.75*inch, 0.65*inch], repeatRows=1)
+    t.setStyle(TableStyle([
+        ("BACKGROUND", (0,0), (-1,0), BLUE), ("TEXTCOLOR", (0,0), (-1,0), colors.white),
+        ("FONTNAME", (0,0), (-1,0), "Helvetica-Bold"),
+        ("BACKGROUND", (0,-1), (-1,-1), colors.HexColor("#F3F4F6")),
+        ("FONTNAME", (0,-1), (-1,-1), "Helvetica-Bold"),
+        ("FONTSIZE", (0,0), (-1,-1), 7.5),
+        ("GRID", (0,0), (-1,-1), 0.3, colors.HexColor("#E5E7EB")),
+        ("ROWBACKGROUNDS", (0,1), (-1,-2), [colors.white, colors.HexColor("#F9FAFB")]),
+        ("TOPPADDING", (0,0), (-1,-1), 4), ("BOTTOMPADDING", (0,0), (-1,-1), 4),
+    ]))
+    elements.append(t)
+    doc.build(elements)
+    buf.seek(0)
+    fname = f"SalesHistory_{user.username}_{date_from or 'All'}_{date_to or 'Today'}.pdf".replace(" ", "_")
+    return HttpResponse(buf, content_type="application/pdf",
+                        headers={"Content-Disposition": f'attachment; filename="{fname}"'})
+
+
+# ─────────────────────────────────────────
+# ATTENDANCE HISTORY — with date range + download
+# ─────────────────────────────────────────
+
+@login_required
+def attendance_history(request):
+    date_from = request.GET.get("date_from", "")
+    date_to   = request.GET.get("date_to", "")
+    export    = request.GET.get("export", "")
+
+    qs = Attendance.objects.filter(user=request.user).order_by("-date")
+
+    if date_from:
+        qs = qs.filter(date__gte=date_from)
+    if date_to:
+        qs = qs.filter(date__lte=date_to)
+
+    total_late     = qs.filter(is_late=True).count()
+    total_absent   = qs.filter(is_absent=True).count()
+    total_deductions = qs.aggregate(t=Sum("deduction_amount"))["t"] or 0
+
+    if export == "pdf":
+        return _attendance_pdf(qs, request.user, date_from, date_to)
+
+    paginator = Paginator(qs, 30)
+    records = paginator.get_page(request.GET.get("page"))
+    return render(request, "staff/attendance_history.html", {
+        "records": records,
+        "total_late": total_late,
+        "total_absent": total_absent,
+        "total_deductions": total_deductions,
+        "date_from": date_from,
+        "date_to": date_to,
+    })
+
+
+def _attendance_pdf(qs, user, date_from, date_to):
+    from reportlab.platypus import SimpleDocTemplate, Table, TableStyle, Paragraph
+    from reportlab.lib import colors
+    from reportlab.lib.styles import getSampleStyleSheet, ParagraphStyle
+    from reportlab.lib.units import inch
+    from reportlab.lib.enums import TA_CENTER
+    BLUE = colors.HexColor("#004F9F")
+    buf = io.BytesIO()
+    doc = SimpleDocTemplate(buf, rightMargin=0.5*inch, leftMargin=0.5*inch,
+                            topMargin=0.6*inch, bottomMargin=0.6*inch)
+    styles = getSampleStyleSheet()
+    label = f"{user.username} — Attendance History"
+    if date_from or date_to:
+        label += f"  |  {date_from or 'Start'} to {date_to or 'Today'}"
+    elements = [
+        Paragraph("GLOBAL PHONELINZ SYSTEMS LIMITED", ParagraphStyle("T", parent=styles["Heading1"], fontSize=13, textColor=BLUE, alignment=TA_CENTER)),
+        Paragraph(label, ParagraphStyle("S", parent=styles["Normal"], fontSize=8, textColor=colors.grey, alignment=TA_CENTER, spaceAfter=10)),
+    ]
+    data = [["Date", "Check In", "Check Out", "Status", "Distance", "Deduction"]]
+    for r in qs:
+        data.append([
+            r.date.strftime("%d %b %Y"),
+            r.check_in_time.strftime("%H:%M") if r.check_in_time else "—",
+            r.check_out_time.strftime("%H:%M") if r.check_out_time else "Not out",
+            "ABSENT" if r.is_absent else ("LATE" if r.is_late else "ON TIME"),
+            f"{r.distance_from_branch:.0f}m" if r.distance_from_branch else "—",
+            f"N{r.deduction_amount:,.2f}" if r.deduction_amount else "—",
+        ])
+    t = Table(data, colWidths=[1*inch, 0.8*inch, 0.8*inch, 0.8*inch, 0.8*inch, 0.9*inch], repeatRows=1)
+    t.setStyle(TableStyle([
+        ("BACKGROUND", (0,0), (-1,0), BLUE), ("TEXTCOLOR", (0,0), (-1,0), colors.white),
+        ("FONTNAME", (0,0), (-1,0), "Helvetica-Bold"), ("FONTSIZE", (0,0), (-1,-1), 8),
+        ("GRID", (0,0), (-1,-1), 0.3, colors.HexColor("#E5E7EB")),
+        ("ROWBACKGROUNDS", (0,1), (-1,-1), [colors.white, colors.HexColor("#F9FAFB")]),
+        ("TOPPADDING", (0,0), (-1,-1), 4), ("BOTTOMPADDING", (0,0), (-1,-1), 4),
+    ]))
+    elements.append(t)
+    doc.build(elements)
+    buf.seek(0)
+    fname = f"Attendance_{user.username}_{date_from or 'All'}_{date_to or 'Today'}.pdf".replace(" ", "_")
+    return HttpResponse(buf, content_type="application/pdf",
+                        headers={"Content-Disposition": f'attachment; filename="{fname}"'})
+
+
+# ─────────────────────────────────────────
+# DIRECTOR SALES REPORT — with date range + download
+# ─────────────────────────────────────────
+
+@role_required("DIRECTOR")
+def daily_sales_report(request):
+    date_from  = request.GET.get("date_from", "")
+    date_to    = request.GET.get("date_to", "")
+    branch_flt = request.GET.get("branch", "")
+    staff_flt  = request.GET.get("staff", "")
+    export     = request.GET.get("export", "")
+    today      = timezone.now().date()
+
+    if not date_from and not date_to:
+        date_from = today.isoformat()
+        date_to   = today.isoformat()
+
+    sales = RetailSale.objects.filter(
+        is_voided=False
+    ).select_related("product", "branch", "staff").order_by("branch__name", "-date", "-time")
+
+    if date_from:
+        sales = sales.filter(date__gte=date_from)
+    if date_to:
+        sales = sales.filter(date__lte=date_to)
+    if branch_flt:
+        sales = sales.filter(branch_id=branch_flt)
+    if staff_flt:
+        sales = sales.filter(staff_id=staff_flt)
+
+    total_qty     = sales.aggregate(t=Sum("quantity"))["t"] or 0
+    total_revenue = sales.aggregate(t=Sum(F("quantity") * F("selling_price")))["t"] or 0
+
+    branch_sales_summary = {}
+    for s in sales:
+        amt = Decimal(s.quantity) * s.selling_price
+        bk  = s.branch.name
+        if bk not in branch_sales_summary:
+            branch_sales_summary[bk] = {"sales": [], "total_qty": 0, "total_revenue": Decimal(0)}
+        branch_sales_summary[bk]["sales"].append({
+            "product": s.product.model_name, "quantity": s.quantity,
+            "price": s.selling_price, "amount": amt,
+            "staff": s.staff.username,
+            "date": s.date, "time": s.time,
+        })
+        branch_sales_summary[bk]["total_qty"] += s.quantity
+        branch_sales_summary[bk]["total_revenue"] += amt
+
+    if export == "pdf":
+        return _director_sales_pdf(branch_sales_summary, total_qty, total_revenue, date_from, date_to)
+
+    return render(request, "daily_sales_report.html", {
+        "branch_sales_summary": branch_sales_summary,
+        "total_qty": total_qty, "total_revenue": total_revenue,
+        "all_branches": Branch.objects.all(),
+        "all_staff": User.objects.exclude(role__in=["DIRECTOR","SUPERADMIN"]).order_by("username"),
+        "date_from": date_from,
+        "date_to": date_to,
+        "selected_branch": branch_flt,
+        "selected_staff": staff_flt,
+        "today": today,
+    })
+
+
+def _director_sales_pdf(branch_summary, total_qty, total_revenue, date_from, date_to):
+    from reportlab.platypus import SimpleDocTemplate, Table, TableStyle, Paragraph, Spacer
+    from reportlab.lib import colors
+    from reportlab.lib.styles import getSampleStyleSheet, ParagraphStyle
+    from reportlab.lib.units import inch
+    from reportlab.lib.enums import TA_CENTER
+    BLUE = colors.HexColor("#004F9F")
+    buf = io.BytesIO()
+    doc = SimpleDocTemplate(buf, rightMargin=0.5*inch, leftMargin=0.5*inch,
+                            topMargin=0.6*inch, bottomMargin=0.6*inch)
+    styles = getSampleStyleSheet()
+    label = f"Sales Report  |  {date_from or 'All'} to {date_to or 'Today'}"
+    elements = [
+        Paragraph("GLOBAL PHONELINZ SYSTEMS LIMITED", ParagraphStyle("T", parent=styles["Heading1"], fontSize=14, textColor=BLUE, alignment=TA_CENTER)),
+        Paragraph(label, ParagraphStyle("S", parent=styles["Normal"], fontSize=9, textColor=colors.grey, alignment=TA_CENTER, spaceAfter=10)),
+    ]
+    for bn, data in branch_summary.items():
+        bh = Table([[Paragraph(f"  {bn}", ParagraphStyle("bh", parent=styles["Normal"], fontSize=10, textColor=colors.white, fontName="Helvetica-Bold"))]],
+                   colWidths=[7.5*inch])
+        bh.setStyle(TableStyle([("BACKGROUND",(0,0),(-1,-1),colors.HexColor("#374151")),
+                                 ("TOPPADDING",(0,0),(-1,-1),5),("BOTTOMPADDING",(0,0),(-1,-1),5)]))
+        elements.append(bh)
+        rows = [["Date", "Time", "Product", "Staff", "Qty", "Price", "Total"]]
+        for s in data["sales"]:
+            rows.append([
+                s["date"].strftime("%d %b %Y") if s["date"] else "—",
+                s["time"].strftime("%H:%M") if s["time"] else "—",
+                str(s["product"])[:28],
+                str(s["staff"]),
+                str(s["quantity"]),
+                f"N{s['price']:,.0f}",
+                f"N{s['amount']:,.0f}",
+            ])
+        rows.append(["","","","BRANCH TOTAL", str(data["total_qty"]),"",f"N{data['total_revenue']:,.0f}"])
+        t = Table(rows, colWidths=[0.85*inch,0.6*inch,1.8*inch,1*inch,0.5*inch,0.8*inch,0.85*inch], repeatRows=1)
+        t.setStyle(TableStyle([
+            ("BACKGROUND",(0,0),(-1,0),colors.HexColor("#E5E7EB")),
+            ("FONTNAME",(0,0),(-1,0),"Helvetica-Bold"),
+            ("BACKGROUND",(0,-1),(-1,-1),colors.HexColor("#F0FDF4")),
+            ("FONTNAME",(0,-1),(-1,-1),"Helvetica-Bold"),
+            ("FONTSIZE",(0,0),(-1,-1),7.5),
+            ("GRID",(0,0),(-1,-1),0.3,colors.HexColor("#E5E7EB")),
+            ("ROWBACKGROUNDS",(0,1),(-1,-2),[colors.white,colors.HexColor("#F9FAFB")]),
+            ("TOPPADDING",(0,0),(-1,-1),4),("BOTTOMPADDING",(0,0),(-1,-1),4),
+        ]))
+        elements.append(t)
+        elements.append(Spacer(1, 0.12*inch))
+
+    # Grand total
+    gt = Table([[f"GRAND TOTAL — {total_qty} items", f"N{total_revenue:,.0f}"]], colWidths=[5*inch, 2.5*inch])
+    gt.setStyle(TableStyle([
+        ("BACKGROUND",(0,0),(-1,-1),BLUE),("TEXTCOLOR",(0,0),(-1,-1),colors.white),
+        ("FONTNAME",(0,0),(-1,-1),"Helvetica-Bold"),("FONTSIZE",(0,0),(-1,-1),10),
+        ("ALIGN",(1,0),(1,0),"RIGHT"),("TOPPADDING",(0,0),(-1,-1),7),("BOTTOMPADDING",(0,0),(-1,-1),7),
+    ]))
+    elements.append(gt)
+    doc.build(elements)
+    buf.seek(0)
+    fname = f"SalesReport_{date_from or 'All'}_{date_to or 'Today'}.pdf".replace(" ","_")
+    return HttpResponse(buf, content_type="application/pdf",
+                        headers={"Content-Disposition": f'attachment; filename="{fname}"'})
+
+
+# ─────────────────────────────────────────
+# MANAGER SALES HISTORY — date range + staff + download
+# ─────────────────────────────────────────
+
+@role_required("MANAGER")
+def manager_sales_today(request):
+    date_from  = request.GET.get("date_from", "")
+    date_to    = request.GET.get("date_to", "")
+    staff_flt  = request.GET.get("staff", "")
+    export     = request.GET.get("export", "")
+    today      = date.today()
+
+    # Default to today if no filter
+    if not date_from and not date_to:
+        date_from = today.isoformat()
+        date_to   = today.isoformat()
+
+    sales = RetailSale.objects.filter(
+        branch=request.user.branch
+    ).select_related("product", "staff").order_by("-date", "-time")
+
+    if date_from:
+        sales = sales.filter(date__gte=date_from)
+    if date_to:
+        sales = sales.filter(date__lte=date_to)
+    if staff_flt:
+        sales = sales.filter(staff_id=staff_flt)
+
+    total_revenue = sales.filter(is_voided=False).aggregate(
+        t=Sum(F("quantity") * F("selling_price"))
+    )["t"] or 0
+
+    if export == "pdf":
+        return _retail_sales_pdf(sales, request.user, date_from, date_to)
+
+    paginator = Paginator(sales, 50)
+    page = paginator.get_page(request.GET.get("page"))
+
+    return render(request, "manager/sales_today.html", {
+        "sales": page,
+        "total_revenue": total_revenue,
+        "today": today,
+        "date_from": date_from,
+        "date_to": date_to,
+        "staff_flt": staff_flt,
+        "retail_staff": User.objects.filter(branch=request.user.branch, role="RETAIL"),
+    })
+
+# ─────────────────────────────────────────
+# FIXED director_release_stock
+# Adds to existing stock, logs every release
+# ─────────────────────────────────────────
+
+
+
+# ─────────────────────────────────────────
+# FIXED director_release_stock
+# Adds to existing stock, logs every release
+# ─────────────────────────────────────────
+
+@role_required("DIRECTOR")
+def director_release_stock(request):
+    if request.method == "POST":
+        product_id   = request.POST.get("product_id")
+        quantity     = int(request.POST.get("quantity", 0))
+        release_type = request.POST.get("release_type")
+        branch_id    = request.POST.get("branch_id")
+        staff_id     = request.POST.get("staff_id")
+
+        if not product_id:
+            messages.error(request, "Please select a product.")
+            return redirect("director_safe_stock")
+
+        director_stock = DirectorSafeStock.objects.filter(
+            product_id=product_id
+        ).first()
+
+        if not director_stock:
+            messages.error(request, "Product not found in director safe.")
+            return redirect("director_safe_stock")
+
+        if quantity <= 0:
+            messages.error(request, "Quantity must be greater than 0.")
+            return redirect("director_safe_stock")
+
+        if quantity > director_stock.quantity:
+            messages.error(
+                request,
+                f"Only {director_stock.quantity} unit(s) of "
+                f"{director_stock.product.model_name} available in director safe."
+            )
+            return redirect("director_safe_stock")
+
+        product = director_stock.product
+        desc    = ""
+
+        with transaction.atomic():
+            # Reduce director safe
+            director_stock.quantity -= quantity
+            if director_stock.quantity == 0:
+                director_stock.delete()
+            else:
+                director_stock.save()
+
+            if release_type == "sale":
+                desc = (
+                    f"Director direct sale: {quantity}x {product.model_name}. "
+                    f"Branch: {Branch.objects.filter(id=branch_id).first().name if branch_id else 'N/A'}."
+                )
+                messages.success(
+                    request,
+                    f"Recorded direct sale of {quantity}x {product.model_name} from director safe."
+                )
+
+            elif release_type == "branch_safe":
+                if not branch_id:
+                    messages.error(request, "Please select a branch.")
+                    return redirect("director_safe_stock")
+                branch = get_object_or_404(Branch, id=branch_id)
+
+                # ADD to branch safe stock (not replace)
+                safe_stock, _ = BranchSafeStock.objects.get_or_create(
+                    branch=branch, product=product
+                )
+                safe_stock.quantity += quantity
+                safe_stock.save()
+
+                StockMovement.objects.create(
+                    branch=branch, product=product,
+                    quantity=quantity, movement_type="IN",
+                    performed_by=request.user,
+                )
+                desc = (
+                    f"Released {quantity}x {product.model_name} from director safe "
+                    f"to {branch.name} branch safe. New branch safe qty: {safe_stock.quantity}."
+                )
+                messages.success(request, desc)
+
+            elif release_type == "staff":
+                if not staff_id:
+                    messages.error(request, "Please select a staff member.")
+                    return redirect("director_safe_stock")
+                staff = get_object_or_404(User, id=staff_id)
+
+                # ADD to staff stock (not replace)
+                staff_stock, _ = StaffStock.objects.get_or_create(
+                    staff=staff, product=product
+                )
+                staff_stock.quantity += quantity
+                staff_stock.save()
+
+                desc = (
+                    f"Released {quantity}x {product.model_name} from director safe "
+                    f"directly to {staff.username} "
+                    f"({staff.branch.name if staff.branch else 'No branch'}). "
+                    f"Staff stock now: {staff_stock.quantity}."
+                )
+                messages.success(request, desc)
+
+            else:
+                messages.error(request, "Invalid release type selected.")
+                return redirect("director_safe_stock")
+
+            # Log to AuditLog
+            try:
+                from core.models import AuditLog
+                AuditLog.objects.create(
+                    user=request.user,
+                    action="UPDATE",
+                    model_name="DirectorSafeStock",
+                    description=desc,
+                )
+            except Exception:
+                pass
+
+    return redirect("director_safe_stock")
+
+
+@role_required("TELECOM")
+def telecom_activity_history(request):
+    from django.db.models import Sum
+    date_from  = request.GET.get("date_from", "")
+    date_to    = request.GET.get("date_to", "")
+    stype      = request.GET.get("service_type", "")
+    export     = request.GET.get("export", "")
+
+    activities = ServiceActivity.objects.filter(
+        staff=request.user
+    ).select_related("branch", "device_tag").order_by("-date", "-id")
+
+    if date_from:
+        activities = activities.filter(date__gte=date_from)
+    if date_to:
+        activities = activities.filter(date__lte=date_to)
+    if stype:
+        activities = activities.filter(service_type=stype)
+
+    total_qty = activities.filter(approved=True).aggregate(t=Sum("quantity"))["t"] or 0
+
+    if export == "pdf":
+        from reportlab.platypus import SimpleDocTemplate, Table, TableStyle, Paragraph
+        from reportlab.lib import colors
+        from reportlab.lib.styles import getSampleStyleSheet, ParagraphStyle
+        from reportlab.lib.units import inch
+        from reportlab.lib.enums import TA_CENTER
+        import io as _io
+        BLUE = colors.HexColor("#004F9F")
+        buf = _io.BytesIO()
+        doc = SimpleDocTemplate(buf, rightMargin=0.5*inch, leftMargin=0.5*inch,
+                                topMargin=0.6*inch, bottomMargin=0.6*inch)
+        styles = getSampleStyleSheet()
+        label = f"{request.user.username} - Telecom Activity History"
+        if date_from or date_to:
+            label += f"  |  {date_from or 'Start'} to {date_to or 'Today'}"
+        elements = [
+            Paragraph("GLOBAL PHONELINZ SYSTEMS LIMITED",
+                ParagraphStyle("T", parent=styles["Heading1"], fontSize=13, textColor=BLUE, alignment=TA_CENTER)),
+            Paragraph(label,
+                ParagraphStyle("S", parent=styles["Normal"], fontSize=8, textColor=colors.grey, alignment=TA_CENTER, spaceAfter=10)),
+        ]
+        data = [["Date", "Service Type", "Device Tag", "Quantity", "Status", "Recorded By"]]
+        for a in activities:
+            data.append([
+                a.date.strftime("%d %b %Y"),
+                a.service_type,
+                a.device_tag.tag_name if a.device_tag else "—",
+                str(a.quantity),
+                "Approved" if a.approved else ("Pending" if a.requires_approval else "Logged"),
+                a.staff.username,
+            ])
+        t = Table(data, colWidths=[1*inch, 1.3*inch, 1*inch, 0.7*inch, 0.9*inch, 1.3*inch], repeatRows=1)
+        t.setStyle(TableStyle([
+            ("BACKGROUND", (0,0), (-1,0), BLUE),
+            ("TEXTCOLOR", (0,0), (-1,0), colors.white),
+            ("FONTNAME", (0,0), (-1,0), "Helvetica-Bold"),
+            ("FONTSIZE", (0,0), (-1,-1), 8),
+            ("GRID", (0,0), (-1,-1), 0.3, colors.HexColor("#E5E7EB")),
+            ("ROWBACKGROUNDS", (0,1), (-1,-1), [colors.white, colors.HexColor("#F9FAFB")]),
+            ("TOPPADDING", (0,0), (-1,-1), 4),
+            ("BOTTOMPADDING", (0,0), (-1,-1), 4),
+        ]))
+        elements.append(t)
+        doc.build(elements)
+        buf.seek(0)
+        fname = f"TelecomActivity_{request.user.username}_{date_from or 'All'}_{date_to or 'Today'}.pdf".replace(" ", "_")
+        from django.http import HttpResponse
+        return HttpResponse(buf, content_type="application/pdf",
+                            headers={"Content-Disposition": f'attachment; filename="{fname}"'})
+
+    from django.core.paginator import Paginator
+    paginator = Paginator(activities, 30)
+    page = paginator.get_page(request.GET.get("page"))
+
+    service_types = ServiceActivity.objects.filter(
+        staff=request.user
+    ).values_list("service_type", flat=True).distinct()
+
+    return render(request, "staff/activity_history.html", {
+        "activities": page,
+        "total_qty": total_qty,
+        "date_from": date_from,
+        "date_to": date_to,
+        "selected_type": stype,
+        "service_types": service_types,
+    })
+
+
+
+# ─────────────────────────────────────────
+# HELPER: Save/update customer record from any dashboard
+# ─────────────────────────────────────────
+
+def _upsert_customer(phone, name, branch, amount=0, source="RETAIL"):
+    """
+    Create or update a customer record from any sale source.
+    phone: customer phone number (required)
+    name: customer name (optional, uses existing or 'Unknown')
+    branch: branch object
+    amount: sale amount to add to total_spent
+    source: RETAIL, MULTICHOICE, TELECOM
+    """
+    if not phone or not phone.strip():
+        return None
+    phone = phone.strip()
+    try:
+        customer, created = Customer.objects.get_or_create(
+            phone_number=phone,
+            defaults={
+                "name": (name or "").strip() or "Unknown",
+                "branch": branch,
+                "purchase_count": 0,
+                "total_spent": Decimal("0"),
+            }
+        )
+        # Update name if we now have one and didn't before
+        if not created and name and name.strip() and customer.name in ("Unknown", "", None):
+            customer.name = name.strip()
+
+        # Update stats
+        customer.purchase_count += 1
+        customer.total_spent = (customer.total_spent or Decimal("0")) + Decimal(str(amount or 0))
+        customer.last_purchase = timezone.now()
+        customer.save()
+        return customer
+    except Exception:
+        return None
+
+
+# ─────────────────────────────────────────
+# FIXED record_retail_sale — captures customer name + phone
+# ─────────────────────────────────────────
+
+@role_required("RETAIL")
+def record_retail_sale(request):
+    if request.method == "POST":
+        product_id     = request.POST.get("product")
+        quantity       = int(request.POST.get("quantity", 0))
+        selling_price  = Decimal(request.POST.get("selling_price", 0))
+        payment_method = request.POST.get("payment_method", "CASH")
+        customer_name  = request.POST.get("customer_name", "").strip()
+        customer_phone = request.POST.get("customer_phone", "").strip()
+
+        product = get_object_or_404(Product, id=product_id)
+
+        try:
+            staff_stock = StaffStock.objects.get(staff=request.user, product=product)
+        except StaffStock.DoesNotExist:
+            messages.error(request, "You do not have this product in stock.")
+            return redirect("retail_dashboard")
+
+        if quantity > staff_stock.quantity:
+            messages.error(request, f"Insufficient stock. You have {staff_stock.quantity} unit(s).")
+            return redirect("retail_dashboard")
+
+        with transaction.atomic():
+            staff_stock.quantity -= quantity
+            staff_stock.save()
+
+            sale = RetailSale.objects.create(
+                staff=request.user,
+                branch=request.user.branch,
+                product=product,
+                quantity=quantity,
+                selling_price=selling_price,
+                payment_method=payment_method,
+                customer_phone=customer_phone,
+            )
+
+            # Update Customer CRM
+            if customer_phone:
+                _upsert_customer(
+                    phone=customer_phone,
+                    name=customer_name,
+                    branch=request.user.branch,
+                    amount=quantity * selling_price,
+                    source="RETAIL",
+                )
+
+        messages.success(request, f"Sale recorded. ₦{quantity * selling_price:,.0f} — {product.model_name}.")
+    return redirect("retail_dashboard")
+
+
+# ─────────────────────────────────────────
+# FIXED record_multichoice_sale — updates Customer CRM
+# ─────────────────────────────────────────
+
+@role_required("MULTICHOICE")
+def record_multichoice_sale(request):
+    if request.method == "POST":
+        today = timezone.now().date()
+        week_start = today - timedelta(days=today.weekday())
+
+        weekly_report, _ = MultiChoiceWeeklyReport.objects.get_or_create(
+            staff=request.user,
+            branch=request.user.branch,
+            week_start_date=week_start,
+            defaults={"opening_balance": Decimal("0"), "additional_funds": Decimal("0")}
+        )
+
+        cost_price     = Decimal(request.POST.get("cost_price") or "0")
+        amount         = Decimal(request.POST.get("amount") or "0")
+        customer_name  = request.POST.get("customer_name", "")
+        customer_phone = request.POST.get("customer_phone", "")
+        service_type   = request.POST.get("service_type", "DSTV")
+        package_type   = request.POST.get("package_type", "")
+        transaction_type = request.POST.get("transaction_type", "NEW")
+
+        prev = MultiChoiceBalance.objects.filter(
+            weekly_report=weekly_report
+        ).order_by("-date", "-time").first()
+
+        current_balance = (
+            prev.balance_after_sale
+            if prev and prev.balance_after_sale is not None
+            else weekly_report.opening_balance + weekly_report.additional_funds
+        )
+        balance_after = current_balance - cost_price
+
+        with transaction.atomic():
+            MultiChoiceSale.objects.create(
+                staff=request.user,
+                branch=request.user.branch,
+                customer_name=customer_name,
+                customer_phone=customer_phone,
+                service_type=service_type,
+                package_type=package_type,
+                transaction_type=transaction_type,
+                cost_price=cost_price,
+                amount=amount,
+            )
+            MultiChoiceBalance.objects.create(
+                weekly_report=weekly_report,
+                balance_amount=current_balance,
+                balance_after_sale=balance_after,
+                sale_cost_price=cost_price,
+                notes=f"{service_type} — {package_type} — {customer_name}",
+            )
+            weekly_report.total_subscriptions = (
+                weekly_report.total_subscriptions or Decimal("0")
+            ) + amount
+            weekly_report.save(update_fields=["total_subscriptions"])
+
+            # Update Customer CRM
+            if customer_phone:
+                _upsert_customer(
+                    phone=customer_phone,
+                    name=customer_name,
+                    branch=request.user.branch,
+                    amount=amount,
+                    source="MULTICHOICE",
+                )
+
+        messages.success(
+            request,
+            f"Sale recorded. Balance: ₦{current_balance:,.2f} → ₦{balance_after:,.2f}"
+        )
+    return redirect("multichoice_dashboard")
+
+
+# ─────────────────────────────────────────
+# FIXED staff_dashboard (TELECOM) — updates Customer CRM on activity
+# ─────────────────────────────────────────
+
+@role_required("TELECOM")
+def staff_dashboard(request):
+    today = date.today()
+    branch = request.user.branch
+
+    targets = ServiceTarget.objects.filter(
+        branch=branch, date__year=today.year, date__month=today.month
+    )
+    activities = ServiceActivity.objects.filter(
+        staff=request.user, date__year=today.year, date__month=today.month
+    ).order_by("-date", "-id")
+
+    if request.method == "POST":
+        service_type   = request.POST.get("service_type")
+        quantity       = int(request.POST.get("quantity") or 0)
+        customer_phone = request.POST.get("customer_phone", "").strip()
+        customer_name  = request.POST.get("customer_name", "").strip()
+        price          = Decimal(request.POST.get("price") or "0")
+        device_tag_id  = request.POST.get("device_tag")
+        device_tag     = None
+        if device_tag_id:
+            device_tag = DeviceTag.objects.filter(id=device_tag_id).first()
+
+        requires_approval = False
+        if service_type == "SIM_REG":
+            target = ServiceTarget.objects.filter(
+                branch=branch, service_type="SIM_REG",
+                device_tag=device_tag,
+                date__year=today.year, date__month=today.month
+            ).first()
+            if target:
+                achieved = ServiceActivity.objects.filter(
+                    branch=branch, service_type="SIM_REG",
+                    device_tag=device_tag,
+                    date__year=today.year, date__month=today.month,
+                    approved=True
+                ).aggregate(total=Sum("quantity"))["total"] or 0
+                if achieved >= target.target_number:
+                    requires_approval = True
+
+        with transaction.atomic():
+            activity = ServiceActivity.objects.create(
+                branch=branch,
+                staff=request.user,
+                service_type=service_type,
+                device_tag=device_tag,
+                quantity=quantity,
+                customer_phone=customer_phone,
+                requires_approval=requires_approval,
+                approved=not requires_approval,
+            )
+
+            if service_type in ["SIM_REG", "SIM_SWAP", "SIM_UPGRADE"]:
+                try:
+                    inv = SimInventory.objects.get(branch=branch)
+                    inv.total_sold += quantity
+                    inv.save()
+                    SimInventoryLog.objects.create(
+                        inventory=inv,
+                        transaction_type="SOLD",
+                        quantity=quantity,
+                        description=f"{service_type}: {quantity} SIM by {request.user.username}",
+                        created_by=request.user,
+                    )
+                except SimInventory.DoesNotExist:
+                    pass
+
+            # Update Customer CRM if phone provided
+            if customer_phone:
+                _upsert_customer(
+                    phone=customer_phone,
+                    name=customer_name,
+                    branch=branch,
+                    amount=price * quantity,
+                    source="TELECOM",
+                )
+
+        messages.success(request, "Activity recorded.")
+        return redirect("staff_dashboard")
+
+    # Build device progress
+    device_progress = []
+    for target in targets.filter(service_type="SIM_REG"):
+        achieved = activities.filter(
+            service_type="SIM_REG", device_tag=target.device_tag, approved=True
+        ).aggregate(total=Sum("quantity"))["total"] or 0
+        pct = round((achieved / target.target_number) * 100, 2) if target.target_number else 0
+        device_progress.append({
+            "device": target.device_tag.tag_name if target.device_tag else "Generic",
+            "target": target.target_number,
+            "achieved": achieved,
+            "remaining": max(target.target_number - achieved, 0),
+            "percentage": pct,
+            "exceeded": achieved >= target.target_number,
+        })
+
+    # Recent activity log (paginated)
+    from django.core.paginator import Paginator as _Pag
+    paginator = _Pag(activities, 20)
+    activities_page = paginator.get_page(request.GET.get("page"))
+
+    check_logs = CheckInOutLog.objects.filter(staff=request.user).order_by(
+        "-date", "-check_in_time"
+    )[:20]
+    sim_inventory, _ = SimInventory.objects.get_or_create(branch=branch)
+
+    return render(request, "staff_dashboard.html", {
+        "device_progress": device_progress,
+        "device_tags": DeviceTag.objects.filter(branch=branch),
+        "activities": activities_page,
+        "pending_activities": activities.filter(approved=False, requires_approval=True),
+        "monthly_total": activities.filter(approved=True).aggregate(
+            total=Sum("quantity")
+        )["total"] or 0,
+        "categories": RetailCategory.objects.all(),
+        "check_logs": check_logs,
+        "sim_inventory": sim_inventory,
+    })
+
+
+# ─────────────────────────────────────────
+# FIXED customer_crm — director sees ALL customers,
+# with filters: date range, source, search
+# ─────────────────────────────────────────
+
+@role_required("DIRECTOR")
+def customer_crm(request):
+    date_from  = request.GET.get("date_from", "")
+    date_to    = request.GET.get("date_to", "")
+    search     = request.GET.get("search", "")
+    source     = request.GET.get("source", "")   # RETAIL, MULTICHOICE, TELECOM
+    branch_flt = request.GET.get("branch", "")
+    sort_by    = request.GET.get("sort", "-last_purchase")  # or -total_spent, -purchase_count
+
+    customers = Customer.objects.all().order_by(sort_by)
+
+    if search:
+        customers = customers.filter(
+            Q(name__icontains=search) | Q(phone_number__icontains=search)
+        )
+    if date_from:
+        customers = customers.filter(last_purchase__date__gte=date_from)
+    if date_to:
+        customers = customers.filter(last_purchase__date__lte=date_to)
+    if branch_flt:
+        customers = customers.filter(branch_id=branch_flt)
+
+    # Filter by source — check if phone appears in that source
+    if source == "RETAIL":
+        phones = RetailSale.objects.filter(
+            is_voided=False
+        ).values_list("customer_phone", flat=True).distinct()
+        customers = customers.filter(phone_number__in=phones)
+    elif source == "MULTICHOICE":
+        phones = MultiChoiceSale.objects.values_list(
+            "customer_phone", flat=True
+        ).distinct()
+        customers = customers.filter(phone_number__in=phones)
+    elif source == "TELECOM":
+        phones = ServiceActivity.objects.values_list(
+            "customer_phone", flat=True
+        ).distinct()
+        customers = customers.filter(phone_number__in=phones)
+
+    paginator = Paginator(customers, 30)
+    page = paginator.get_page(request.GET.get("page"))
+
+    return render(request, "customer_crm.html", {
+        "customers": page,
+        "total_customers": customers.count(),
+        "search": search,
+        "date_from": date_from,
+        "date_to": date_to,
+        "source": source,
+        "branch_flt": branch_flt,
+        "sort_by": sort_by,
+        "branches": Branch.objects.all(),
+    })
+
+
+# ─────────────────────────────────────────
+# FIXED commission_tracking — shows ALL types
+# DeviceTag commissions (Telecom) + MultiChoice commissions
+# ─────────────────────────────────────────
+
+@role_required("DIRECTOR")
+def commission_tracking(request):
+    date_from   = request.GET.get("date_from", "")
+    date_to     = request.GET.get("date_to", "")
+    branch_flt  = request.GET.get("branch", "")
+    comm_type   = request.GET.get("type", "")  # TELECOM or MULTICHOICE
+
+    # MultiChoice commissions
+    mc_commissions = CommissionPayment.objects.select_related(
+        "staff", "branch"
+    ).order_by("-date_detected")
+
+    # Device tag (Telecom) commissions
+    telecom_commissions = DeviceTagCommission.objects.select_related(
+        "device_tag", "branch", "created_by"
+    ).order_by("-created_at")
+
+    if date_from:
+        mc_commissions = mc_commissions.filter(date_detected__date__gte=date_from)
+        telecom_commissions = telecom_commissions.filter(created_at__date__gte=date_from)
+    if date_to:
+        mc_commissions = mc_commissions.filter(date_detected__date__lte=date_to)
+        telecom_commissions = telecom_commissions.filter(created_at__date__lte=date_to)
+    if branch_flt:
+        mc_commissions = mc_commissions.filter(branch_id=branch_flt)
+        telecom_commissions = telecom_commissions.filter(branch_id=branch_flt)
+
+    total_mc = mc_commissions.aggregate(
+        t=Sum("commission_detected")
+    )["t"] or 0
+    total_telecom = telecom_commissions.aggregate(
+        t=Sum("commission_amount")
+    )["t"] or 0
+
+    return render(request, "commission_tracking.html", {
+        "mc_commissions": mc_commissions,
+        "telecom_commissions": telecom_commissions,
+        "total_mc": total_mc,
+        "total_telecom": total_telecom,
+        "grand_total": total_mc + total_telecom,
+        "branches": Branch.objects.all(),
+        "date_from": date_from,
+        "date_to": date_to,
+        "branch_flt": branch_flt,
+        "comm_type": comm_type,
+    })
+
+
+# ─────────────────────────────────────────
+# RETAIL DASHBOARD — with stock alerts
+# ─────────────────────────────────────────
+
+@role_required("RETAIL")
+def retail_dashboard(request):
+    staff = request.user
+    staff_stock = StaffStock.objects.filter(
+        staff=staff
+    ).select_related("product", "product__subcategory")
+
+    # Stock alerts for retail staff — items with 0 or low stock
+    low_stock_items = [s for s in staff_stock if s.quantity <= 2]
+    out_of_stock    = [s for s in staff_stock if s.quantity == 0]
+
+    sales_qs = RetailSale.objects.filter(
+        staff=staff
+    ).select_related("product").order_by("-date", "-id")
+
+    paginator = Paginator(sales_qs, 30)
+    sales_history = paginator.get_page(request.GET.get("page"))
+    for s in sales_history:
+        s.total_revenue = Decimal(s.quantity) * s.selling_price
+
+    check_logs = CheckInOutLog.objects.filter(staff=staff).order_by(
+        "-date", "-check_in_time"
+    )[:20]
+
+    return render(request, "retail_dashboard.html", {
+        "staff_stock": staff_stock,
+        "categories": RetailCategory.objects.all(),
+        "check_logs": check_logs,
+        "sales_history": sales_history,
+        "low_stock_items": low_stock_items,
+        "out_of_stock": out_of_stock,
+    })
+
+
+# ─────────────────────────────────────────
+# MANAGER DASHBOARD — with stock alerts + service target form
+# ─────────────────────────────────────────
+
+@role_required("MANAGER")
+def manager_dashboard(request):
+    today = date.today()
+    branch = request.user.branch
+
+    activities = ServiceActivity.objects.filter(
+        branch=branch, date__year=today.year, date__month=today.month
+    )
+    targets = ServiceTarget.objects.filter(
+        branch=branch, date__year=today.year, date__month=today.month
+    )
+    pending_approvals = ServiceActivity.objects.filter(
+        branch=branch, requires_approval=True, approved=False
+    )
+
+    search_query = request.GET.get("search", "")
+    if search_query:
+        activities = activities.filter(staff__username__icontains=search_query)
+
+    target_data = []
+    for t in targets:
+        achieved = activities.filter(
+            service_type=t.service_type
+        ).aggregate(total=Sum("quantity"))["total"] or 0
+        pct = round((achieved / t.target_number) * 100, 2) if t.target_number else 0
+        target_data.append({
+            "service_type": t.service_type,
+            "target_number": t.target_number,
+            "achieved": achieved,
+            "remaining": max(t.target_number - achieved, 0),
+            "percentage": pct,
+            "id": t.id,
+        })
+
+    safe_stocks = BranchSafeStock.objects.filter(
+        branch=branch
+    ).select_related("product")
+
+    # Stock alerts
+    low_stock_alerts = BranchSafeStock.objects.filter(
+        branch=branch, quantity__lte=3
+    ).select_related("product")
+    out_of_stock_alerts = BranchSafeStock.objects.filter(
+        branch=branch, quantity=0
+    ).select_related("product")
+
+    retail_sales_today = RetailSale.objects.filter(
+        branch=branch, date=today, is_voided=False
+    )
+    total_retail_revenue = retail_sales_today.aggregate(
+        total=Sum(F("quantity") * F("selling_price"))
+    )["total"] or 0
+    total_retail_quantity = retail_sales_today.aggregate(
+        total=Sum("quantity")
+    )["total"] or 0
+    sales_per_staff = retail_sales_today.values(
+        "staff__username"
+    ).annotate(
+        total_qty=Sum("quantity"),
+        total_revenue=Sum(F("quantity") * F("selling_price"))
+    )
+    top_products = retail_sales_today.values(
+        "product__model_name"
+    ).annotate(total_qty=Sum("quantity")).order_by("-total_qty")[:5]
+
+    multichoice_revenue = MultiChoiceSale.objects.filter(
+        branch=branch, date=today
+    ).aggregate(total=Sum("amount"))["total"] or 0
+
+    retail_staff = User.objects.filter(branch=branch, role="RETAIL")
+    telecom_staff = User.objects.filter(branch=branch, role="TELECOM")
+    categories    = RetailCategory.objects.all()
+    pending_stock_requests = StockRequest.objects.filter(
+        branch=branch, status="PENDING"
+    )
+    expenses = Expense.objects.filter(branch=branch).order_by("-date")[:10]
+    check_logs = CheckInOutLog.objects.filter(
+        branch=branch
+    ).order_by("-date", "-check_in_time")[:20]
+    sim_inventory, _ = SimInventory.objects.get_or_create(branch=branch)
+    sim_logs = SimInventoryLog.objects.filter(
+        inventory=sim_inventory
+    ).order_by("-date_created")[:15]
+    today_movements = StockMovement.objects.filter(branch=branch, date=today)
+    total_stock_out = today_movements.filter(
+        movement_type="OUT"
+    ).aggregate(total=Sum("quantity"))["total"] or 0
+
+    return render(request, "manager_dashboard.html", {
+        "target_data": target_data,
+        "activities": activities,
+        "pending_approvals": pending_approvals,
+        "safe_stocks": safe_stocks,
+        "categories": categories,
+        "retail_staff": retail_staff,
+        "telecom_staff": telecom_staff,
+        "today_movements": today_movements,
+        "total_stock_out": total_stock_out,
+        "multichoice_revenue": multichoice_revenue,
+        "total_retail_quantity": total_retail_quantity,
+        "total_retail_revenue": total_retail_revenue,
+        "sales_per_staff": sales_per_staff,
+        "top_products": top_products,
+        "search_query": search_query,
+        "pending_stock_requests": pending_stock_requests,
+        "expenses": expenses,
+        "check_logs": check_logs,
+        "sim_inventory": sim_inventory,
+        "sim_logs": sim_logs,
+        "low_stock_alerts": low_stock_alerts,
+        "out_of_stock_alerts": out_of_stock_alerts,
+        "device_tags": DeviceTag.objects.filter(branch=branch),
+        "today": today,
+    })

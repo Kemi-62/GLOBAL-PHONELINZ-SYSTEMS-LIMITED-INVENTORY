@@ -1,4 +1,6 @@
-{% extends "base.html" %}
+import os
+
+content = '''{% extends "base.html" %}
 {% block content %}
 <style>
 .page-title{font-size:1.3rem;font-weight:700;color:#004F9F;margin:0 0 1.5rem}
@@ -42,7 +44,7 @@ pre{background:#f5f5f5;padding:.8rem;border-radius:6px;font-size:.75rem;overflow
 
 <div style="display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:.8rem;margin-bottom:1.5rem;">
   <h1 class="page-title" style="margin:0;">🏦 Director Safe Stock</h1>
-  <a href="{% url 'director_dashboard' %}" class="btn-sm btn-outline">← Dashboard</a>
+  <a href="{% url \'director_dashboard\' %}" class="btn-sm btn-outline">← Dashboard</a>
 </div>
 
 <div class="kpi-grid">
@@ -52,12 +54,12 @@ pre{background:#f5f5f5;padding:.8rem;border-radius:6px;font-size:.75rem;overflow
 </div>
 
 <div class="tab-bar">
-  <button class="tab-btn active" onclick="switchTab('stock',this)">📦 Current Stock</button>
-  <button class="tab-btn" onclick="switchTab('release',this)">📤 Release Stock</button>
-  <button class="tab-btn" onclick="switchTab('history',this)">📋 Release History</button>
-  <button class="tab-btn" onclick="switchTab('add',this)">➕ Add Stock</button>
-  <button class="tab-btn" onclick="switchTab('csv',this)">📂 Bulk Upload</button>
-  <button class="tab-btn" onclick="switchTab('new',this)">🆕 Create Product</button>
+  <button class="tab-btn active" onclick="switchTab(\'stock\',this)">📦 Current Stock</button>
+  <button class="tab-btn" onclick="switchTab(\'release\',this)">📤 Release Stock</button>
+  <button class="tab-btn" onclick="switchTab(\'history\',this)">📋 Release History</button>
+  <button class="tab-btn" onclick="switchTab(\'add\',this)">➕ Add Stock</button>
+  <button class="tab-btn" onclick="switchTab(\'csv\',this)">📂 Bulk Upload</button>
+  <button class="tab-btn" onclick="switchTab(\'new\',this)">🆕 Create Product</button>
 </div>
 
 <div id="tab-stock" class="tab-panel active">
@@ -70,7 +72,7 @@ pre{background:#f5f5f5;padding:.8rem;border-radius:6px;font-size:.75rem;overflow
       <div><span class="filter-label">From Date</span><input type="date" name="date_from" value="{{ date_from }}"></div>
       <div><span class="filter-label">To Date</span><input type="date" name="date_to" value="{{ date_to }}"></div>
       <button type="submit" class="btn-sm btn-primary" style="align-self:flex-end;">Filter</button>
-      <a href="{% url 'director_safe_stock' %}" class="btn-sm btn-outline" style="align-self:flex-end;">Clear</a>
+      <a href="{% url \'director_safe_stock\' %}" class="btn-sm btn-outline" style="align-self:flex-end;">Clear</a>
     </form>
     {% if stocks %}
     <div style="overflow-x:auto;">
@@ -88,8 +90,8 @@ pre{background:#f5f5f5;padding:.8rem;border-radius:6px;font-size:.75rem;overflow
             <td style="color:#9ca3af;font-size:.78rem;">{{ stock.date_added|date:"d M Y H:i" }}</td>
             <td>
               <div style="display:flex;gap:.4rem;flex-wrap:wrap;">
-                <button onclick="editStock({{ stock.id }}, '{{ stock.product.model_name }}', {{ stock.quantity }})" class="btn-sm btn-outline" style="font-size:.75rem;padding:.3rem .6rem;">Edit Qty</button>
-                <form method="POST" action="{% url 'delete_director_stock' stock.id %}" style="display:inline;" onsubmit="return confirm('Delete?');">
+                <button onclick="editStock({{ stock.id }}, \'{{ stock.product.model_name }}\', {{ stock.quantity }})" class="btn-sm btn-outline" style="font-size:.75rem;padding:.3rem .6rem;">Edit Qty</button>
+                <form method="POST" action="{% url \'delete_director_stock\' stock.id %}" style="display:inline;" onsubmit="return confirm(\'Delete?\');">
                   {% csrf_token %}<button type="submit" class="btn-sm btn-danger" style="font-size:.75rem;padding:.3rem .6rem;">Delete</button>
                 </form>
               </div>
@@ -109,7 +111,7 @@ pre{background:#f5f5f5;padding:.8rem;border-radius:6px;font-size:.75rem;overflow
   <div class="card">
     <p class="card-title">📤 Release Stock from Director Safe</p>
     <p style="font-size:.83rem;color:#6b7280;margin-bottom:1rem;">Stock released to a branch safe adds to existing branch stock. Stock released to staff adds to their existing stock.</p>
-    <form method="POST" action="{% url 'director_release_stock' %}">
+    <form method="POST" action="{% url \'director_release_stock\' %}">
       {% csrf_token %}
       <div class="form-group">
         <label>Product to Release *</label>
@@ -165,7 +167,7 @@ pre{background:#f5f5f5;padding:.8rem;border-radius:6px;font-size:.75rem;overflow
       <div><span class="filter-label">From Date</span><input type="date" name="date_from" value="{{ date_from }}"></div>
       <div><span class="filter-label">To Date</span><input type="date" name="date_to" value="{{ date_to }}"></div>
       <button type="submit" class="btn-sm btn-primary" style="align-self:flex-end;">Filter</button>
-      <a href="{% url 'director_safe_stock' %}" class="btn-sm btn-outline" style="align-self:flex-end;">Clear</a>
+      <a href="{% url \'director_safe_stock\' %}" class="btn-sm btn-outline" style="align-self:flex-end;">Clear</a>
     </form>
     <div style="overflow-x:auto;">
       <table class="data-table">
@@ -175,7 +177,7 @@ pre{background:#f5f5f5;padding:.8rem;border-radius:6px;font-size:.75rem;overflow
           <tr>
             <td style="white-space:nowrap;color:#9ca3af;">{{ log.timestamp|date:"d M Y" }}</td>
             <td style="color:#9ca3af;">{{ log.timestamp|time:"H:i" }}</td>
-            <td><span class="badge {% if log.action == 'CREATE' %}badge-green{% elif log.action == 'DELETE' %}badge-red{% else %}badge-amber{% endif %}">{{ log.action }}</span></td>
+            <td><span class="badge {% if log.action == \'CREATE\' %}badge-green{% elif log.action == \'DELETE\' %}badge-red{% else %}badge-amber{% endif %}">{{ log.action }}</span></td>
             <td style="max-width:350px;font-size:.82rem;line-height:1.5;">{{ log.description }}</td>
             <td><strong>{{ log.user.username|default:"System" }}</strong></td>
           </tr>
@@ -198,7 +200,7 @@ pre{background:#f5f5f5;padding:.8rem;border-radius:6px;font-size:.75rem;overflow
 <div id="tab-add" class="tab-panel">
   <div class="card">
     <p class="card-title">➕ Add Existing Product to Director Safe</p>
-    <form method="POST" action="{% url 'add_director_stock' %}">
+    <form method="POST" action="{% url \'add_director_stock\' %}">
       {% csrf_token %}
       <div class="form-group"><label>Product *</label>
         <select name="product_id" required>
@@ -218,7 +220,7 @@ pre{background:#f5f5f5;padding:.8rem;border-radius:6px;font-size:.75rem;overflow
 <div id="tab-csv" class="tab-panel">
   <div class="card">
     <p class="card-title">📂 Bulk Upload via CSV</p>
-    <form method="POST" action="{% url 'upload_director_csv' %}" enctype="multipart/form-data">
+    <form method="POST" action="{% url \'upload_director_csv\' %}" enctype="multipart/form-data">
       {% csrf_token %}
       <div class="form-group"><label>Select CSV File *</label><input type="file" name="csv_file" accept=".csv" required></div>
       <button type="submit" class="btn-sm btn-success" style="margin-bottom:1rem;">📤 Upload</button>
@@ -232,7 +234,7 @@ S24 Ultra,Phones,Android,500000,700000,3</pre>
 <div id="tab-new" class="tab-panel">
   <div class="card">
     <p class="card-title">🆕 Create New Product and Add to Safe</p>
-    <form method="POST" action="{% url 'create_director_product' %}">
+    <form method="POST" action="{% url \'create_director_product\' %}">
       {% csrf_token %}
       <div class="form-row">
         <div class="form-group"><label>Category *</label>
@@ -261,31 +263,35 @@ S24 Ultra,Phones,Android,500000,700000,3</pre>
 
 <script>
 function switchTab(name, btn) {
-  document.querySelectorAll('.tab-panel').forEach(p => p.classList.remove('active'));
-  document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
-  document.getElementById('tab-' + name).classList.add('active');
-  btn.classList.add('active');
-  history.replaceState(null, '', '#' + name);
+  document.querySelectorAll(\'.tab-panel\').forEach(p => p.classList.remove(\'active\'));
+  document.querySelectorAll(\'.tab-btn\').forEach(b => b.classList.remove(\'active\'));
+  document.getElementById(\'tab-\' + name).classList.add(\'active\');
+  btn.classList.add(\'active\');
+  history.replaceState(null, \'\', \'#\' + name);
 }
-document.addEventListener('DOMContentLoaded', function() {
-  const hash = location.hash.replace('#','');
-  if (hash) { const btn = document.querySelector('[onclick*="switchTab(\'' + hash + '\'"]}'); if (btn) switchTab(hash, btn); }
+document.addEventListener(\'DOMContentLoaded\', function() {
+  const hash = location.hash.replace(\'#\',\'\');
+  if (hash) { const btn = document.querySelector(\'[onclick*="switchTab(\\\'\' + hash + \'\\\'"]}\'); if (btn) switchTab(hash, btn); }
 });
 function toggleReleaseTarget() {
-  const type = document.getElementById('release_type').value;
-  document.getElementById('branch-target').classList.toggle('show', type === 'branch_safe' || type === 'sale');
-  document.getElementById('staff-target').classList.toggle('show', type === 'staff');
+  const type = document.getElementById(\'release_type\').value;
+  document.getElementById(\'branch-target\').classList.toggle(\'show\', type === \'branch_safe\' || type === \'sale\');
+  document.getElementById(\'staff-target\').classList.toggle(\'show\', type === \'staff\');
 }
 function updateAvailable(sel) {
   const opt = sel.options[sel.selectedIndex];
   const qty = opt.dataset.qty; const name = opt.dataset.name;
-  const info = document.getElementById('avail-info');
-  if (qty && name) { info.style.display='block'; info.textContent='Available: ' + qty + ' unit(s) of ' + name; }
-  else { info.style.display='none'; }
+  const info = document.getElementById(\'avail-info\');
+  if (qty && name) { info.style.display=\'block\'; info.textContent=\'Available: \' + qty + \' unit(s) of \' + name; }
+  else { info.style.display=\'none\'; }
 }
 function editStock(id, name, qty) {
-  const newQty = prompt('Edit quantity for ' + name + ' (current: ' + qty + '):', qty);
-  if (newQty !== null && !isNaN(newQty) && newQty >= 0) { window.location.href = '/edit-director-stock/' + id + '/?quantity=' + newQty; }
+  const newQty = prompt(\'Edit quantity for \' + name + \' (current: \' + qty + \'):\', qty);
+  if (newQty !== null && !isNaN(newQty) && newQty >= 0) { window.location.href = \'/edit-director-stock/\' + id + \'/?quantity=\' + newQty; }
 }
 </script>
-{% endblock %}
+{% endblock %}'''
+
+os.makedirs('/home/runner/workspace/templates/director', exist_ok=True)
+open('/home/runner/workspace/templates/director/director_safe.html', 'w').write(content)
+print('Template created successfully')

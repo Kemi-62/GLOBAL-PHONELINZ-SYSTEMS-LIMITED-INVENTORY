@@ -140,6 +140,9 @@ class ServiceActivity(models.Model):
     date = models.DateField(auto_now_add=True)
 
     approved = models.BooleanField(default=False)
+    customer_phone = models.CharField(max_length=20, blank=True, default='')
+    customer_name  = models.CharField(max_length=200, blank=True, default='')
+    price          = models.DecimalField(max_digits=12, decimal_places=2, default=0)
     requires_approval = models.BooleanField(default=False)
 
     def save(self, *args, **kwargs):
