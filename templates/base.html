@@ -224,16 +224,16 @@
         <a href="{% url 'manage_branch_locations' %}" class="sidebar-link">
             <span class="icon">📍</span> Branch Locations
         </a>
-        <a href="/director/audit-log/" class="sidebar-link">
+        <a href="{% url 'audit_log_view' %}" class="sidebar-link">
     <span class="icon">🔍</span> Audit Log
 </a>
-<a href="/director/payroll-summary/" class="sidebar-link">
+<a href="{% url 'payroll_deduction_summary' %}" class="sidebar-link">
     <span class="icon">💸</span> Payroll Deductions
 </a>
-<a href="/suppliers/" class="sidebar-link">
+<a href="{% url 'supplier_list' %}" class="sidebar-link">
     <span class="icon">🏭</span> Suppliers
 </a>
-<a href="/purchase-orders/" class="sidebar-link">
+<a href="{% url 'purchase_order_list' %}" class="sidebar-link">
     <span class="icon">📦</span> Purchase Orders
 </a>
         <a href="{% url 'export_monthly_attendance_pdf' %}" class="sidebar-link">
@@ -283,13 +283,13 @@
         <a href="{% url 'check_out' %}" class="sidebar-link">
             <span class="icon">🌆</span> Check Out
         </a>
-        <a href="/manager/sales-today/" class="sidebar-link">
+        <a href="{% url 'manager_sales_today' %}" class="sidebar-link">
     <span class="icon">🧾</span> Today's Sales & Voids
 </a>
-<a href="/suppliers/" class="sidebar-link">
+<a href="{% url 'supplier_list' %}" class="sidebar-link">
     <span class="icon">🏭</span> Suppliers
 </a>
-<a href="/purchase-orders/" class="sidebar-link">
+<a href="{% url 'purchase_order_list' %}" class="sidebar-link">
     <span class="icon">📦</span> Purchase Orders
 </a>
         <a href="{% url 'attendance_history' %}" class="sidebar-link">
@@ -406,7 +406,7 @@
     {% endif %}
 
 
-        <a href="/notifications/" class="sidebar-link">
+        <a href="{% url 'notifications_view' %}" class="sidebar-link">
             <span class="icon">🔔</span> Notifications
         </a>
     <div class="sidebar-divider"></div>
@@ -432,7 +432,7 @@
         {% if user.is_authenticated %}
         <span class="topbar-role">{{ user.role }}</span>
         <span class="topbar-user">{{ user.username }}</span>
-        <a href="/notifications/" style="position:relative;color:rgba(255,255,255,.8);text-decoration:none;padding:.3rem .5rem;font-size:1.1rem;" title="Notifications">
+        <a href="{% url 'notifications_view' %}" style="position:relative;color:rgba(255,255,255,.8);text-decoration:none;padding:.3rem .5rem;font-size:1.1rem;" title="Notifications">
   🔔
   <span id="notif-badge" style="display:none;position:absolute;top:-2px;right:-2px;background:#ef4444;color:#fff;border-radius:50%;width:16px;height:16px;font-size:.6rem;font-weight:700;align-items:center;justify-content:center;">0</span>
         </a>

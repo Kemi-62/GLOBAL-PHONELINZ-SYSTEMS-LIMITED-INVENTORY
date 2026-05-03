@@ -15,10 +15,10 @@
 
 <div style="display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:.8rem;margin-bottom:1.5rem;">
   <h1 class="page-title" style="margin:0;">➕ New Purchase Order</h1>
-  <a href="/purchase-orders/" class="btn-sm btn-outline">← Back</a>
+  <a href="{% url 'purchase_order_list' %}" class="btn-sm btn-outline">← Back</a>
 </div>
 
-<form method="POST" action="/purchase-orders/create/">
+<form method="POST" action="{% url 'purchase_order_create' %}">
   {% csrf_token %}
   <div class="card">
     <p class="card-title">Order Details</p>

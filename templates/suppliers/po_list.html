@@ -16,8 +16,8 @@
 <div style="display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:.8rem;margin-bottom:1.5rem;">
   <h1 class="page-title" style="margin:0;">📋 Purchase Orders</h1>
   <div style="display:flex;gap:.5rem;">
-    <a href="/purchase-orders/create/" class="btn-sm btn-primary">+ New Order</a>
-    <a href="/suppliers/" class="btn-sm btn-outline">🏭 Suppliers</a>
+    <a href="{% url 'purchase_order_create' %}" class="btn-sm btn-primary">+ New Order</a>
+    <a href="{% url 'supplier_list' %}" class="btn-sm btn-outline">🏭 Suppliers</a>
   </div>
 </div>
 
@@ -56,7 +56,7 @@
           </td>
           <td>
             {% if order.status == "PENDING" %}
-            <form method="POST" action="/purchase-orders/{{ order.id }}/receive/" style="display:inline;" onsubmit="return confirm('Mark PO #{{ order.id }} as received? This will add stock to the branch safe.');">
+            <form method="POST" action="{% url 'purchase_order_receive' order.id %}" style="display:inline;" onsubmit="return confirm('Mark PO #{{ order.id }} as received? This will add stock to the branch safe.');">
               {% csrf_token %}
               <button type="submit" class="btn-sm btn-success" style="font-size:.75rem;padding:.3rem .6rem;">Mark Received</button>
             </form>
@@ -70,7 +70,7 @@
         {% empty %}
         <tr>
           <td colspan="8" style="text-align:center;color:#9ca3af;padding:2rem 0;">
-            No purchase orders yet. <a href="/purchase-orders/create/" style="color:#004F9F;">Create one</a>.
+            No purchase orders yet. <a href="{% url 'purchase_order_create' %}" style="color:#004F9F;">Create one</a>.
           </td>
         </tr>
         {% endfor %}

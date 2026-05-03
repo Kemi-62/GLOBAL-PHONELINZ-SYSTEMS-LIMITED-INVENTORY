@@ -18,7 +18,7 @@
 
 <div style="display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:.8rem;margin-bottom:1.5rem;">
   <h1 class="page-title" style="margin:0;">🏭 Suppliers</h1>
-  <a href="/purchase-orders/" class="btn-sm btn-outline">📋 Purchase Orders</a>
+  <a href="{% url 'purchase_order_list' %}" class="btn-sm btn-outline">📋 Purchase Orders</a>
 </div>
 
 <div class="card">
@@ -33,7 +33,7 @@
           <td>{{ s.phone|default:"—" }}</td>
           <td>{{ s.email|default:"—" }}</td>
           <td style="color:#9ca3af;">{{ s.address|default:"—"|truncatechars:40 }}</td>
-          <td><a href="/purchase-orders/create/" class="btn-sm btn-success" style="font-size:.75rem;padding:.3rem .6rem;">+ Create PO</a></td>
+          <td><a href="{% url 'purchase_order_create' %}" class="btn-sm btn-success" style="font-size:.75rem;padding:.3rem .6rem;">+ Create PO</a></td>
         </tr>
         {% empty %}
         <tr><td colspan="5" style="text-align:center;color:#9ca3af;padding:1.5rem 0;">No suppliers yet. Add one below.</td></tr>
@@ -45,7 +45,7 @@
 
 <div class="card">
   <p class="card-title">Add New Supplier</p>
-  <form method="POST" action="/suppliers/create/">
+  <form method="POST" action="{% url 'supplier_create' %}">
     {% csrf_token %}
     <div class="form-row">
       <div class="form-group"><label>Supplier Name *</label><input type="text" name="name" required placeholder="e.g. Samsung Nigeria Ltd"></div>
