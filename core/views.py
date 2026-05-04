@@ -2504,12 +2504,23 @@ def record_multichoice_sale(request):
         today = timezone.now().date()
         week_start = today - timedelta(days=today.weekday())
 
-        weekly_report, _ = MultiChoiceWeeklyReport.objects.get_or_create(
-            staff=request.user,
-            branch=request.user.branch,
-            week_start_date=week_start,
-            defaults={"opening_balance": Decimal("0"), "additional_funds": Decimal("0")}
+        weekly_report = (
+            MultiChoiceWeeklyReport.objects.filter(
+                staff=request.user,
+                branch=request.user.branch,
+                week_start_date=week_start,
+            )
+            .order_by("-id")
+            .first()
         )
+        if weekly_report is None:
+            weekly_report = MultiChoiceWeeklyReport.objects.create(
+                staff=request.user,
+                branch=request.user.branch,
+                week_start_date=week_start,
+                opening_balance=Decimal("0"),
+                additional_funds=Decimal("0"),
+            )
 
         cost_price = Decimal(request.POST.get("cost_price") or "0")
         amount     = Decimal(request.POST.get("amount") or "0")
