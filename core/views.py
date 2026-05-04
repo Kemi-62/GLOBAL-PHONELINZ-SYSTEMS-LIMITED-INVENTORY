@@ -612,11 +612,20 @@ def record_balance(request):
         ).order_by("-id").first()
         balance = request.POST.get("current_balance")
         if weekly_report and balance:
+            latest = MultiChoiceBalance.objects.filter(
+                weekly_report=weekly_report
+            ).order_by("-date", "-time", "-id").first()
+            before = latest.balance_after_sale if latest and latest.balance_after_sale is not None else weekly_report.opening_balance + weekly_report.additional_funds
+            after = Decimal(balance)
             MultiChoiceBalance.objects.create(
                 weekly_report=weekly_report,
-                balance_amount=balance,
+                balance_amount=before,
+                balance_after_sale=after,
+                sale_cost_price=Decimal("0"),
                 notes=request.POST.get("notes", ""),
             )
+            weekly_report.closing_balance = after
+            weekly_report.save(update_fields=["closing_balance"])
             messages.success(request, f"Balance ₦{balance} recorded.")
         else:
             messages.error(request, "No active weekly report or invalid balance.")
@@ -648,6 +657,8 @@ def record_daily_balance(request):
             )
         balance_record = MultiChoiceBalance.objects.create(
             weekly_report=weekly_report, balance_amount=balance,
+            balance_after_sale=balance,
+            sale_cost_price=Decimal("0"),
             notes=request.POST.get("notes", ""),
         )
         prev = MultiChoiceBalance.objects.filter(
@@ -668,6 +679,8 @@ def record_daily_balance(request):
             messages.success(request, f"Commission detected: ₦{commission_amt:,.2f}")
         else:
             messages.success(request, f"Balance ₦{balance:,.2f} recorded.")
+        weekly_report.closing_balance = balance
+        weekly_report.save(update_fields=["closing_balance"])
     return redirect("multichoice_dashboard")
 
 
