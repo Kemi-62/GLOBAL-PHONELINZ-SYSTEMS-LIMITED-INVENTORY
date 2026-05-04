@@ -532,7 +532,15 @@ def product_catalog(request):
 def multichoice_dashboard(request):
     today = timezone.now().date()
     week_start = today - timedelta(days=today.weekday())
-    weekly_report = MultiChoiceWeeklyReport.objects.filter(staff=request.user, week_start_date=week_start).first()
+    weekly_report = (
+        MultiChoiceWeeklyReport.objects.filter(
+            staff=request.user,
+            branch=request.user.branch,
+            week_start_date=week_start,
+        )
+        .order_by("-id")
+        .first()
+    )
 
     today_sales = MultiChoiceSale.objects.filter(staff=request.user, date=today).order_by("-time")
 
@@ -549,8 +557,19 @@ def multichoice_dashboard(request):
             Q(package_type__icontains=search_query)
         )
 
-    balance_history = weekly_report.balance_history.all() if weekly_report else None
-    weekly_total_sales = weekly_report.total_subscriptions if weekly_report and weekly_report.is_closed else 0
+    balance_history = None
+    current_balance = None
+    if weekly_report:
+        balance_history = MultiChoiceBalance.objects.filter(
+            weekly_report=weekly_report
+        ).order_by("-date", "-time", "-id")
+        latest_balance = balance_history.first()
+        current_balance = (
+            latest_balance.balance_after_sale
+            if latest_balance and latest_balance.balance_after_sale is not None
+            else weekly_report.opening_balance + weekly_report.additional_funds
+        )
+    weekly_total_sales = weekly_report.total_subscriptions if weekly_report else 0
 
     return render(request, "multichoice_dashboard.html", {
         "today_sales": today_sales,
@@ -562,6 +581,7 @@ def multichoice_dashboard(request):
         "is_saturday": today.weekday() == 5,
         "weekly_total_sales": weekly_total_sales,
         "balance_history": balance_history,
+        "current_balance": current_balance,
         "check_logs": CheckInOutLog.objects.filter(staff=request.user).order_by("-date", "-check_in_time")[:20],
         "search_query": search_query,
         "selected_month": selected_month,
@@ -589,7 +609,7 @@ def record_balance(request):
     if request.method == "POST":
         weekly_report = MultiChoiceWeeklyReport.objects.filter(
             staff=request.user, branch=request.user.branch, is_closed=False
-        ).first()
+        ).order_by("-id").first()
         balance = request.POST.get("current_balance")
         if weekly_report and balance:
             MultiChoiceBalance.objects.create(
@@ -609,16 +629,30 @@ def record_daily_balance(request):
         balance = Decimal(request.POST.get("balance", 0))
         today = timezone.now().date()
         week_start = today - timedelta(days=today.weekday())
-        weekly_report, _ = MultiChoiceWeeklyReport.objects.get_or_create(
-            staff=request.user, branch=request.user.branch, week_start_date=week_start
+        weekly_report = (
+            MultiChoiceWeeklyReport.objects.filter(
+                staff=request.user,
+                branch=request.user.branch,
+                week_start_date=week_start,
+            )
+            .order_by("-id")
+            .first()
         )
+        if weekly_report is None:
+            weekly_report = MultiChoiceWeeklyReport.objects.create(
+                staff=request.user,
+                branch=request.user.branch,
+                week_start_date=week_start,
+                opening_balance=Decimal("0"),
+                additional_funds=Decimal("0"),
+            )
         balance_record = MultiChoiceBalance.objects.create(
             weekly_report=weekly_report, balance_amount=balance,
             notes=request.POST.get("notes", ""),
         )
         prev = MultiChoiceBalance.objects.filter(
-            weekly_report__staff=request.user, date__lt=today
-        ).order_by("-date", "-time").first()
+            weekly_report=weekly_report
+        ).order_by("-date", "-time", "-id").first()
         if prev and balance > prev.balance_amount:
             commission_amt = balance - prev.balance_amount
             balance_record.is_commission_payment = True
@@ -2528,7 +2562,7 @@ def record_multichoice_sale(request):
         # Get the most recent balance entry to find current running balance
         prev = MultiChoiceBalance.objects.filter(
             weekly_report=weekly_report
-        ).order_by("-date", "-time").first()
+        ).order_by("-date", "-time", "-id").first()
 
         if prev and prev.balance_after_sale is not None:
             current_balance = prev.balance_after_sale
@@ -3749,10 +3783,11 @@ def record_multichoice_sale(request):
                 sale_cost_price=cost_price,
                 notes=f"{service_type} — {package_type} — {customer_name}",
             )
+            weekly_report.closing_balance = balance_after
             weekly_report.total_subscriptions = (
                 weekly_report.total_subscriptions or Decimal("0")
             ) + amount
-            weekly_report.save(update_fields=["total_subscriptions"])
+            weekly_report.save(update_fields=["closing_balance", "total_subscriptions"])
 
             # Update Customer CRM
             if customer_phone:
