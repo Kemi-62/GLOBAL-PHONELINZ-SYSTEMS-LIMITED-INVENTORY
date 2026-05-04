@@ -3762,6 +3762,7 @@ def record_multichoice_sale(request):
         amount         = Decimal(request.POST.get("amount") or "0")
         customer_name  = request.POST.get("customer_name", "")
         customer_phone = request.POST.get("customer_phone", "")
+        iuc_number     = request.POST.get("iuc_number", "")
         service_type   = request.POST.get("service_type", "DSTV")
         package_type   = request.POST.get("package_type", "")
         transaction_type = request.POST.get("transaction_type", "NEW")
@@ -3783,6 +3784,7 @@ def record_multichoice_sale(request):
                 branch=request.user.branch,
                 customer_name=customer_name,
                 customer_phone=customer_phone,
+                iuc_number=iuc_number,
                 service_type=service_type,
                 package_type=package_type,
                 transaction_type=transaction_type,
