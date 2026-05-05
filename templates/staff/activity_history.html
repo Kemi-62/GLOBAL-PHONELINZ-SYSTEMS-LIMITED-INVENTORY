@@ -1,0 +1,38 @@
+{% extends "base.html" %}
+{% block content %}
+<div class="card">
+  <p class="card-title">📋 Activity History</p>
+  <form method="GET" style="display:flex;gap:.5rem;flex-wrap:wrap;margin-bottom:1rem;">
+    <input type="date" name="date_from" value="{{ request.GET.date_from }}">
+    <input type="date" name="date_to" value="{{ request.GET.date_to }}">
+    <select name="service_type">
+      <option value="">All Types</option>
+      <option value="SIM_REG">SIM Registration</option>
+      <option value="SIM_SWAP">SIM Swap</option>
+      <option value="SIM_UPGRADE">SIM Upgrade</option>
+      <option value="DATA_ACTIVATION">Data Activation</option>
+      <option value="RECHARGE">Recharge</option>
+    </select>
+    <button type="submit" class="btn-sm btn-primary">Filter</button>
+    <a href="?export=pdf" class="btn-sm btn-success">Download PDF</a>
+  </form>
+  <div style="overflow-x:auto;">
+    <table class="data-table">
+      <thead><tr><th>Date</th><th>Service</th><th>Device Tag</th><th>Qty</th><th>Status</th></tr></thead>
+      <tbody>
+        {% for act in activities %}
+        <tr>
+          <td>{{ act.date|date:"d M Y" }}</td>
+          <td>{{ act.service_type }}</td>
+          <td>{{ act.device_tag.tag_name|default:"—" }}</td>
+          <td>{{ act.quantity }}</td>
+          <td>{% if act.approved %}Approved{% elif act.requires_approval %}Pending{% else %}Logged{% endif %}</td>
+        </tr>
+        {% empty %}
+        <tr><td colspan="5" style="text-align:center;color:#9ca3af;">No activities found.</td></tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+</div>
+{% endblock %}

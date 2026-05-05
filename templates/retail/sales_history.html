@@ -1,105 +1,34 @@
 {% extends "base.html" %}
 {% block content %}
-<style>
-.page-title{font-size:1.3rem;font-weight:700;color:#004F9F;margin:0 0 1.5rem}
-.card{background:#fff;border:1px solid #e5e7eb;border-radius:10px;padding:1.2rem 1.4rem;margin-bottom:1.2rem}
-.badge{display:inline-block;padding:.2rem .55rem;border-radius:999px;font-size:.72rem;font-weight:700}
-.badge-green{background:#d1fae5;color:#065f46}.badge-red{background:#fee2e2;color:#991b1b}.badge-blue{background:#dbeafe;color:#1e40af}
-.data-table{width:100%;border-collapse:collapse;font-size:.85rem}
-.data-table th{background:#004F9F;color:#fff;font-weight:600;padding:.65rem .9rem;text-align:left}
-.data-table td{padding:.6rem .9rem;border-bottom:1px solid #f3f4f6;color:#374151}
-.data-table tr:hover td{background:#fafafa}
-.voided td{opacity:.45;text-decoration:line-through}
-.filter-bar{display:flex;gap:.6rem;flex-wrap:wrap;align-items:flex-end;margin-bottom:1rem}
-.filter-bar input{padding:.45rem .7rem;border:1px solid #d1d5db;border-radius:6px;font-size:.83rem}
-.filter-label{font-size:.75rem;font-weight:600;color:#374151;display:block;margin-bottom:.2rem}
-.btn-sm{padding:.45rem .9rem;font-size:.82rem;border-radius:6px;border:none;cursor:pointer;font-weight:600;text-decoration:none;display:inline-block}
-.btn-primary{background:#004F9F;color:#fff}.btn-success{background:#10b981;color:#fff}.btn-outline{background:transparent;border:1px solid #d1d5db;color:#374151}
-.kpi-strip{display:flex;gap:1rem;flex-wrap:wrap;margin-bottom:1.2rem}
-.kpi-pill{background:#fff;border:1px solid #e5e7eb;border-radius:8px;padding:.6rem 1rem;font-size:.83rem}
-.kpi-pill strong{color:#004F9F;font-size:1.1rem;display:block}
-</style>
-
-<div style="display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:.8rem;margin-bottom:1.5rem;">
-  <h1 class="page-title" style="margin:0;">📋 My Sales History</h1>
-  <a href="{% url 'retail_dashboard' %}" class="btn-sm btn-outline">← Dashboard</a>
-</div>
-
 <div class="card">
-  <form method="GET" class="filter-bar">
-    <div>
-      <span class="filter-label">From Date</span>
-      <input type="date" name="date_from" value="{{ date_from }}">
-    </div>
-    <div>
-      <span class="filter-label">To Date</span>
-      <input type="date" name="date_to" value="{{ date_to }}">
-    </div>
-    <div>
-      <span class="filter-label">Product</span>
-      <input type="text" name="product" value="{{ product_q }}" placeholder="Search product…" style="padding:.45rem .7rem;border:1px solid #d1d5db;border-radius:6px;font-size:.83rem;">
-    </div>
-    <button type="submit" class="btn-sm btn-primary" style="align-self:flex-end;">Filter</button>
-    <a href="{% url 'retail_sales_history' %}" class="btn-sm btn-outline" style="align-self:flex-end;">Clear</a>
-    <a href="{% url 'retail_sales_history' %}?date_from={{ date_from }}&date_to={{ date_to }}&product={{ product_q }}&export=pdf"
-       class="btn-sm btn-success" style="align-self:flex-end;">📥 Download PDF</a>
+  <p class="card-title">🧾 Sales History</p>
+  <form method="GET" style="display:flex;gap:.5rem;flex-wrap:wrap;margin-bottom:1rem;">
+    <input type="date" name="date_from" value="{{ date_from }}">
+    <input type="date" name="date_to" value="{{ date_to }}">
+    <input type="text" name="product" placeholder="Product" value="{{ product_q }}">
+    <button type="submit" class="btn-sm btn-primary">Filter</button>
+    <a href="?export=pdf{% if date_from %}&date_from={{ date_from }}{% endif %}{% if date_to %}&date_to={{ date_to }}{% endif %}{% if product_q %}&product={{ product_q }}{% endif %}" class="btn-sm btn-success">Download PDF</a>
   </form>
-</div>
-
-<div class="kpi-strip">
-  <div class="kpi-pill">
-    <strong>₦{{ total_revenue|floatformat:0 }}</strong>
-    Revenue (active sales)
+  <div style="display:flex;gap:.5rem;flex-wrap:wrap;margin-bottom:1rem;">
+    <span class="badge badge-green">Revenue ₦{{ total_revenue|floatformat:0 }}</span>
+    <span class="badge badge-blue">{{ total_qty }} units</span>
   </div>
-  <div class="kpi-pill">
-    <strong>{{ total_qty }}</strong>
-    Units sold
-  </div>
-</div>
-
-<div class="card">
   <div style="overflow-x:auto;">
     <table class="data-table">
-      <thead>
-        <tr>
-          <th>Date</th>
-          <th>Time</th>
-          <th>Product</th>
-          <th style="text-align:center;">Qty</th>
-          <th style="text-align:right;">Price</th>
-          <th style="text-align:right;">Total</th>
-          <th>Payment</th>
-          <th>Status</th>
-        </tr>
-      </thead>
+      <thead><tr><th>Date</th><th>Product</th><th>Qty</th><th>Revenue</th></tr></thead>
       <tbody>
         {% for sale in sales %}
-        <tr {% if sale.is_voided %}class="voided"{% endif %}>
-          <td style="color:#9ca3af;white-space:nowrap;">{{ sale.date|date:"d M Y" }}</td>
-          <td style="color:#9ca3af;">{{ sale.time|time:"H:i" }}</td>
-          <td><strong>{{ sale.product.model_name }}</strong></td>
-          <td style="text-align:center;">{{ sale.quantity }}</td>
-          <td style="text-align:right;">₦{{ sale.selling_price|floatformat:0 }}</td>
-          <td style="text-align:right;font-weight:700;">₦{% widthratio sale.quantity 1 sale.selling_price %}</td>
-          <td><span class="badge badge-blue">{{ sale.payment_method }}</span></td>
-          <td>
-            {% if sale.is_voided %}<span class="badge badge-red">Voided</span>
-            {% else %}<span class="badge badge-green">Active</span>{% endif %}
-          </td>
+        <tr>
+          <td>{{ sale.date|date:"d M Y" }}</td>
+          <td>{{ sale.product.model_name }}</td>
+          <td>{{ sale.quantity }}</td>
+          <td>₦{{ sale.total_amount|default:sale.selling_price|floatformat:0 }}</td>
         </tr>
         {% empty %}
-        <tr><td colspan="8" style="text-align:center;color:#9ca3af;padding:2rem 0;">No sales found for the selected period.</td></tr>
+        <tr><td colspan="4" style="text-align:center;color:#9ca3af;">No sales found.</td></tr>
         {% endfor %}
       </tbody>
     </table>
   </div>
-
-  {% if sales.has_other_pages %}
-  <div style="display:flex;justify-content:center;gap:.5rem;margin-top:1rem;flex-wrap:wrap;">
-    {% if sales.has_previous %}<a href="?page={{ sales.previous_page_number }}&date_from={{ date_from }}&date_to={{ date_to }}&product={{ product_q }}" class="btn-sm btn-outline">← Prev</a>{% endif %}
-    <span style="padding:.5rem 1rem;font-size:.85rem;color:#6b7280;">Page {{ sales.number }} of {{ sales.paginator.num_pages }}</span>
-    {% if sales.has_next %}<a href="?page={{ sales.next_page_number }}&date_from={{ date_from }}&date_to={{ date_to }}&product={{ product_q }}" class="btn-sm btn-outline">Next →</a>{% endif %}
-  </div>
-  {% endif %}
 </div>
 {% endblock %}

@@ -214,6 +214,38 @@
     <p style="font-size:.84rem;color:#6b7280;margin-bottom:.8rem;">Record Monthly Sim Commission for Device Tags.</p>
     <a href="{% url 'add_device_commission' %}" class="btn-sm btn-primary">Go to Commission Form →</a>
   </div>
+  <div class="card">
+    <p class="card-title">🎯 Set Monthly Telecom Target</p>
+    <form method="POST" action="{% url 'create_service_target' %}">
+      {% csrf_token %}
+      <div class="form-row">
+        <div class="form-group">
+          <label>Service Type</label>
+          <select name="service_type" required>
+            <option value="SIM_REG">SIM Registration</option>
+            <option value="SIM_SWAP">SIM Swap</option>
+            <option value="SIM_UPGRADE">SIM Upgrade</option>
+            <option value="DATA_ACTIVATION">Data Activation</option>
+            <option value="RECHARGE">Recharge</option>
+          </select>
+        </div>
+        <div class="form-group">
+          <label>Device Tag (optional)</label>
+          <select name="device_tag">
+            <option value="">All / Generic</option>
+            {% for tag in device_tags %}
+            <option value="{{ tag.id }}">{{ tag.tag_name }}</option>
+            {% endfor %}
+          </select>
+        </div>
+        <div class="form-group">
+          <label>Target Number</label>
+          <input type="number" name="target_number" min="0" required>
+        </div>
+      </div>
+      <button type="submit" class="btn-sm btn-primary" style="margin-top:.8rem;">Save Target</button>
+    </form>
+  </div>
 </div>
 </div>
 
@@ -331,11 +363,9 @@
     </div>
   </div>
   <div class="card">
-        <p class="card-title">📋 View Stock Movement Log</p>
+    <p class="card-title">📋 View Stock Movement Log</p>
     <p style="font-size:.84rem;color:#6b7280;margin-bottom:.8rem;">Record How Stock Moves From Manager to Staff and Vise Versa.</p>
-    
-  <a href="{% url 'stock_movement_log' %}" class="btn-sm btn-outline">📋 View Stock Movement Log</a>
-  </div>
+    <a href="{% url 'stock_movement_log' %}" class="btn-sm btn-outline">📋 View Stock Movement Log</a>
   </div>
   <div class="card">
     <p class="card-title">🏆 Top Products Today</p>
@@ -347,9 +377,8 @@
         {% empty %}
         <tr><td colspan="2" style="text-align:center;color:#9ca3af;">No sales today.</td></tr>
         {% endfor %}
-        </tbody>
-      </table>
-    </div>
+      </tbody>
+    </table>
   </div>
 </div>
 
