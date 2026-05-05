@@ -141,28 +141,6 @@ pre{background:#f5f5f5;padding:.8rem;border-radius:6px;font-size:.75rem;overflow
       <input type="text" id="catalog-search" placeholder="Search products…" onkeyup="filterCatalog()" style="padding:.4rem .7rem;border:1px solid #d1d5db;border-radius:6px;font-size:.82rem;width:200px;">
     </div>
     {% if staff_stock %}
-    <div class="stock-grid" id="catalog-grid">
-      {% for stock in staff_stock %}
-      <div class="stock-card catalog-item" data-name="{{ stock.product.model_name|lower }}">
-        <div class="stock-name">{{ stock.product.model_name }}</div>
-        <div class="stock-cat">{{ stock.product.subcategory.category.name|default:"—" }} › {{ stock.product.subcategory.name }}</div>
-        <div class="stock-price">₦{{ stock.product.selling_price|floatformat:0 }}</div>
-        <div class="stock-qty">
-          <span class="badge {% if stock.quantity == 0 %}badge-red{% elif stock.quantity <= 2 %}badge-amber{% else %}badge-green{% endif %}">
-            {{ stock.quantity }} in stock
-          </span>
-        </div>
-        {% if stock.product.imei_serial %}
-        <div style="font-size:.72rem;color:#9ca3af;">IMEI: {{ stock.product.imei_serial }}</div>
-        {% endif %}
-        <div style="display:flex;gap:.4rem;margin-top:.4rem;flex-wrap:wrap;">
-          <button onclick="editPrice({{ stock.id }}, {{ stock.product.selling_price }})" class="btn-sm btn-outline" style="font-size:.75rem;padding:.3rem .6rem;">Edit Price</button>
-        </div>
-      </div>
-      {% endfor %}
-    </div>
-
-    <!-- Also show as table -->
     <div style="overflow-x:auto;margin-top:1.5rem;">
       <p style="font-size:.82rem;font-weight:600;color:#374151;margin-bottom:.5rem;">Table View</p>
       <table class="data-table">
@@ -170,9 +148,9 @@ pre{background:#f5f5f5;padding:.8rem;border-radius:6px;font-size:.75rem;overflow
           <tr>
             <th>Product</th>
             <th>Category</th>
+            <th>Added At</th>
+            <th>Added By</th>
             <th style="text-align:center;">Qty in Stock</th>
-            <th style="text-align:right;">Selling Price</th>
-            <th>Cost Price</th>
             <th>IMEI/Serial</th>
             <th>Action</th>
           </tr>
@@ -182,16 +160,14 @@ pre{background:#f5f5f5;padding:.8rem;border-radius:6px;font-size:.75rem;overflow
           <tr>
             <td><strong>{{ stock.product.model_name }}</strong></td>
             <td style="color:#9ca3af;">{{ stock.product.subcategory.name }}</td>
+            <td style="color:#9ca3af;white-space:nowrap;">{{ stock.added_at|date:"d M Y H:i" }}</td>
+            <td style="color:#9ca3af;">{{ stock.added_by.username|default:"—" }}</td>
             <td style="text-align:center;">
-              <span class="badge {% if stock.quantity == 0 %}badge-red{% elif stock.quantity <= 2 %}badge-amber{% else %}badge-green{% endif %}">
-                {{ stock.quantity }}
-              </span>
+              <span class="badge {% if stock.quantity == 0 %}badge-red{% elif stock.quantity <= 2 %}badge-amber{% else %}badge-green{% endif %}">{{ stock.quantity }}</span>
             </td>
-            <td style="text-align:right;">₦{{ stock.product.selling_price|floatformat:0 }}</td>
-            <td style="color:#9ca3af;">₦{{ stock.product.cost_price|floatformat:0 }}</td>
             <td style="font-size:.75rem;color:#9ca3af;">{{ stock.product.imei_serial|default:"—" }}</td>
             <td>
-              <button onclick="editPrice({{ stock.id }}, {{ stock.product.selling_price }})" class="btn-sm btn-outline" style="font-size:.75rem;padding:.3rem .6rem;">Edit Price</button>
+              <button onclick="editQuantity({{ stock.id }}, {{ stock.quantity }})" class="btn-sm btn-outline" style="font-size:.75rem;padding:.3rem .6rem;">Edit Qty</button>
             </td>
           </tr>
           {% endfor %}
@@ -463,10 +439,10 @@ function startAttendance(type) {
   }
 }
 
-function editPrice(stockId, currentPrice) {
-  const newPrice = prompt('Enter new selling price (current: ₦' + parseFloat(currentPrice).toLocaleString() + '):', currentPrice);
-  if (newPrice && !isNaN(newPrice)) {
-    window.location.href = `/edit-staff-stock-price/${stockId}/?price=${newPrice}`;
+function editQuantity(stockId, currentQty) {
+  const newQty = prompt('Enter new quantity (current: ' + currentQty + '):', currentQty);
+  if (newQty !== null && newQty !== '' && !isNaN(newQty)) {
+    window.location.href = `/edit-staff-stock-quantity/${stockId}/?quantity=${newQty}`;
   }
 }
 

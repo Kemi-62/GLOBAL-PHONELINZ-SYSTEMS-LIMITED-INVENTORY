@@ -27,6 +27,7 @@ from .models import (
     CheckInOutLog, SimInventory, SimInventoryLog,
     Customer, StockAlert, DeviceTagCommission, CommissionPayment
 )
+from .models import log_action
 from .utils.decorators import role_required
 
 # ─────────────────────────────────────────
@@ -405,8 +406,18 @@ def retail_dashboard(request):
 
     check_logs = CheckInOutLog.objects.filter(staff=staff).order_by("-date", "-check_in_time")[:20]
 
+    stock_rows = []
+    for stock in staff_stock:
+        stock_rows.append({
+            "id": stock.id,
+            "product": stock.product,
+            "quantity": stock.quantity,
+            "added_at": stock.product.date_added,
+            "added_by": stock.product.created_by,
+        })
+
     return render(request, "retail_dashboard.html", {
-        "staff_stock": staff_stock,
+        "staff_stock": stock_rows,
         "categories": RetailCategory.objects.all(),
         "check_logs": check_logs,
         "sales_history": sales_history,
@@ -504,6 +515,28 @@ def edit_staff_stock_price(request, stock_id):
 
 
 @login_required
+def edit_staff_stock_quantity(request, stock_id):
+    if request.user.role != "RETAIL":
+        return HttpResponseForbidden()
+    stock = get_object_or_404(StaffStock, id=stock_id, staff=request.user)
+    new_qty = request.GET.get("quantity")
+    if new_qty is not None and new_qty != "":
+        old_qty = stock.quantity
+        stock.quantity = max(int(new_qty), 0)
+        stock.save(update_fields=["quantity"])
+        log_action(
+            request.user,
+            "UPDATE",
+            "StaffStock",
+            stock.id,
+            f"Quantity updated from {old_qty} to {stock.quantity} for {stock.product.model_name}",
+            request,
+        )
+        messages.success(request, "Quantity updated.")
+    return redirect("retail_dashboard")
+
+
+@login_required
 def edit_product_price(request, product_id):
     product = get_object_or_404(Product, id=product_id)
     new_price = request.GET.get("price")
@@ -519,7 +552,7 @@ def product_catalog(request):
     if request.user.role != "RETAIL":
         return HttpResponseForbidden()
     return render(request, "retail_catalog.html", {
-        "products": Product.objects.all(),
+        "products": Product.objects.select_related("subcategory", "created_by").all().order_by("-date_added"),
         "categories": RetailCategory.objects.all(),
     })
 
