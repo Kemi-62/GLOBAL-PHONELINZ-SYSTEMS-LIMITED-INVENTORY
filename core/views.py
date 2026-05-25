@@ -3968,6 +3968,20 @@ def staff_dashboard(request):
     )[:20]
     sim_inventory, _ = SimInventory.objects.get_or_create(branch=branch)
 
+    # ── WHOLESALE DEVICE DATA (merged into telecom dashboard) ──
+    from core.models import WholesaleDevice, WholesaleDeviceSale
+    wholesale_devices = WholesaleDevice.objects.filter(
+        branch=branch, staff=request.user
+    ).order_by("-date_added")
+    wholesale_sales = WholesaleDeviceSale.objects.filter(
+        branch=branch, sold_by=request.user
+    ).select_related("device").order_by("-created_at")
+    wholesale_inventory_value = sum(d.total_value for d in wholesale_devices)
+    wholesale_sales_total = wholesale_sales.aggregate(t=Sum("total_amount"))["t"] or 0
+    wholesale_director_total = wholesale_sales.filter(
+        is_director_sale=True
+    ).aggregate(t=Sum("total_amount"))["t"] or 0
+
     return render(request, "staff_dashboard.html", {
         "device_progress": device_progress,
         "device_tags": DeviceTag.objects.filter(branch=branch),
@@ -3979,6 +3993,12 @@ def staff_dashboard(request):
         "categories": RetailCategory.objects.all(),
         "check_logs": check_logs,
         "sim_inventory": sim_inventory,
+        # wholesale
+        "wholesale_devices": wholesale_devices,
+        "wholesale_sales": wholesale_sales,
+        "wholesale_inventory_value": wholesale_inventory_value,
+        "wholesale_sales_total": wholesale_sales_total,
+        "wholesale_director_total": wholesale_director_total,
     })
 
 
@@ -4258,52 +4278,8 @@ def manager_dashboard(request):
 
 @role_required("TELECOM")
 def wholesale_catalog(request):
-    from core.models import WholesaleDevice, WholesaleDeviceSale
-    branch = request.user.branch
-    date_from = request.GET.get("date_from", "")
-    date_to   = request.GET.get("date_to", "")
-    export    = request.GET.get("export", "")
-
-    devices = WholesaleDevice.objects.filter(
-        branch=branch, staff=request.user
-    ).order_by("-date_added")
-
-    if date_from:
-        devices = devices.filter(date_added__date__gte=date_from)
-    if date_to:
-        devices = devices.filter(date_added__date__lte=date_to)
-
-    # Sales log
-    sales = WholesaleDeviceSale.objects.filter(
-        branch=branch, sold_by=request.user
-    ).select_related("device").order_by("-created_at")
-
-    if date_from:
-        sales = sales.filter(date__gte=date_from)
-    if date_to:
-        sales = sales.filter(date__lte=date_to)
-
-    total_inventory_value = sum(d.total_value for d in devices)
-    total_sales_amount    = sales.aggregate(t=Sum("total_amount"))["t"] or 0
-    director_sales_total  = sales.filter(
-        is_director_sale=True
-    ).aggregate(t=Sum("total_amount"))["t"] or 0
-
-    if export == "pdf":
-        return _wholesale_pdf(devices, sales, request.user, date_from, date_to)
-
-    paginator_sales = Paginator(sales, 30)
-    sales_page = paginator_sales.get_page(request.GET.get("sales_page"))
-
-    return render(request, "staff/wholesale_catalog.html", {
-        "devices": devices,
-        "sales": sales_page,
-        "total_inventory_value": total_inventory_value,
-        "total_sales_amount": total_sales_amount,
-        "director_sales_total": director_sales_total,
-        "date_from": date_from,
-        "date_to": date_to,
-    })
+    """Redirect to the integrated staff dashboard Device Stock tab."""
+    return redirect("staff_dashboard")
 
 
 @role_required("TELECOM")
@@ -4356,7 +4332,7 @@ def wholesale_add_device(request):
                     )
         except Exception as e:
             messages.error(request, f"Error: {e}")
-    return redirect("wholesale_catalog")
+    return redirect("staff_dashboard")
 
 
 @role_required("TELECOM")
@@ -4379,14 +4355,14 @@ def wholesale_record_sale(request):
 
         if qty <= 0:
             messages.error(request, "Quantity must be at least 1.")
-            return redirect("wholesale_catalog")
+            return redirect("staff_dashboard")
 
         if qty > device.quantity:
             messages.error(
                 request,
                 f"Only {device.quantity} unit(s) available for {device.product_name}."
             )
-            return redirect("wholesale_catalog")
+            return redirect("staff_dashboard")
 
         total = qty * unit_price
         is_director = buyer_type == "DIRECTOR"
@@ -4443,7 +4419,7 @@ def wholesale_record_sale(request):
             f"Sale recorded. {qty}x {device.product_name} sold to {label} "
             f"for ₦{total:,.2f}."
         )
-    return redirect("wholesale_catalog")
+    return redirect("staff_dashboard")
 
 
 def _wholesale_pdf(devices, sales, user, date_from, date_to):

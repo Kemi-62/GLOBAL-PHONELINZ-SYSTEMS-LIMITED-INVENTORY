@@ -37,6 +37,8 @@
 .filter-bar{display:flex;gap:.6rem;flex-wrap:wrap;align-items:flex-end;margin-bottom:1rem}
 .filter-bar input,.filter-bar select{padding:.45rem .7rem;border:1px solid #d1d5db;border-radius:6px;font-size:.83rem}
 .filter-label{font-size:.75rem;font-weight:600;color:#374151;display:block;margin-bottom:.2rem}
+.buyer-target{display:none}.buyer-target.show{display:block}
+.director-row td{background:#fef9c3!important}
 </style>
 
 <div style="display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:1rem;margin-bottom:1.5rem;">
@@ -60,6 +62,10 @@
     <p class="kpi-label">SIM Balance</p>
     <p class="kpi-value">{{ sim_inventory.get_current_balance }}</p>
   </div>
+  <div class="kpi purple">
+    <p class="kpi-label">Device Stock</p>
+    <p class="kpi-value">{{ wholesale_devices|length }}</p>
+  </div>
 </div>
 
 {% if pending_activities %}
@@ -74,6 +80,8 @@
   <button class="tab-btn" onclick="switchTab('targets',this)">🎯 My Targets</button>
   <button class="tab-btn" onclick="switchTab('history',this)">📋 Activity History</button>
   <button class="tab-btn" onclick="switchTab('attendance',this)">📍 Attendance</button>
+  <button class="tab-btn" onclick="switchTab('devices',this)">📦 Device Stock</button>
+  <button class="tab-btn" onclick="switchTab('sell-device',this)">💸 Sell Device</button>
 </div>
 
 <!-- ══ TAB: RECORD ══ -->
@@ -283,6 +291,208 @@
   </div>
 </div>
 
+<!-- ══ TAB: DEVICE STOCK ══ -->
+<div id="tab-devices" class="tab-panel">
+  <div class="card">
+    <p class="card-title" style="margin:0 0 1rem;">📦 My Device Inventory</p>
+    {% if wholesale_devices %}
+    <div style="overflow-x:auto;">
+      <table class="data-table">
+        <thead>
+          <tr>
+            <th>Product</th><th>Type</th><th>Network</th><th style="text-align:center;">Qty</th>
+            <th style="text-align:right;">Cost</th><th style="text-align:right;">Sell Price</th><th style="text-align:right;">Value</th>
+          </tr>
+        </thead>
+        <tbody>
+          {% for d in wholesale_devices %}
+          <tr>
+            <td><strong>{{ d.product_name }}</strong></td>
+            <td><span class="badge badge-blue">{{ d.get_product_type_display }}</span></td>
+            <td><span class="badge {% if d.network_type == '5G' %}badge-purple{% else %}badge-green{% endif %}">{{ d.network_type }}</span></td>
+            <td style="text-align:center;">
+              <span class="badge {% if d.quantity == 0 %}badge-red{% elif d.quantity <= 2 %}badge-amber{% else %}badge-green{% endif %}">{{ d.quantity }}</span>
+            </td>
+            <td style="text-align:right;">₦{{ d.cost_price|floatformat:0 }}</td>
+            <td style="text-align:right;">₦{{ d.selling_price|floatformat:0 }}</td>
+            <td style="text-align:right;font-weight:700;">₦{{ d.total_value|floatformat:0 }}</td>
+          </tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+    {% else %}
+    <p style="text-align:center;color:#9ca3af;padding:1.5rem 0;">No devices in your catalog yet.</p>
+    {% endif %}
+  </div>
+
+  <div class="card">
+    <p class="card-title">➕ Add Device to Catalog</p>
+    <p style="font-size:.83rem;color:#6b7280;margin-bottom:1rem;">If the same product already exists, quantity will be added to existing stock.</p>
+    <form method="POST" action="{% url 'wholesale_add_device' %}">
+      {% csrf_token %}
+      <div class="form-row">
+        <div class="form-group">
+          <label>Product Name *</label>
+          <input type="text" name="product_name" required placeholder="e.g. MTN MiFi M7300">
+        </div>
+        <div class="form-group">
+          <label>Product Type *</label>
+          <select name="product_type" required>
+            <option value="SIM">SIM Card</option>
+            <option value="MIFI">MiFi Device</option>
+            <option value="ROUTER">Router</option>
+            <option value="OTHER">Other</option>
+          </select>
+        </div>
+        <div class="form-group">
+          <label>Network Type *</label>
+          <select name="network_type" required>
+            <option value="4G">4G LTE</option>
+            <option value="5G">5G</option>
+            <option value="ANY">Any / Not Applicable</option>
+          </select>
+        </div>
+      </div>
+      <div class="form-row">
+        <div class="form-group">
+          <label>Quantity *</label>
+          <input type="number" name="quantity" min="1" required placeholder="e.g. 10">
+        </div>
+        <div class="form-group">
+          <label>Selling Price (₦)</label>
+          <input type="number" name="selling_price" step="0.01" min="0" placeholder="What you sell for">
+        </div>
+      </div>
+      <div class="form-row">
+        <div class="form-group">
+          <label>Serial Number (Optional)</label>
+          <input type="text" name="serial_number" placeholder="IMEI or serial">
+        </div>
+        <div class="form-group">
+          <label>Notes</label>
+          <input type="text" name="notes" placeholder="Optional notes">
+        </div>
+      </div>
+      <button type="submit" class="btn-sm btn-primary" style="width:100%;margin-top:.5rem;">Add to Catalog</button>
+    </form>
+  </div>
+</div>
+
+<!-- ══ TAB: SELL DEVICE ══ -->
+<div id="tab-sell-device" class="tab-panel">
+  <div class="card">
+    <p class="card-title">💸 Record Device Sale</p>
+    {% if wholesale_devices %}
+    <form method="POST" action="{% url 'wholesale_record_sale' %}">
+      {% csrf_token %}
+      <div class="form-group">
+        <label>Device to Sell *</label>
+        <select name="device_id" required onchange="updateDeviceInfo(this)">
+          <option value="">— Select Device —</option>
+          {% for d in wholesale_devices %}
+          {% if d.quantity > 0 %}
+          <option value="{{ d.id }}" data-qty="{{ d.quantity }}" data-price="{{ d.selling_price }}" data-name="{{ d.product_name }}">
+            {{ d.product_name }} ({{ d.network_type }}) — {{ d.quantity }} available
+          </option>
+          {% endif %}
+          {% endfor %}
+        </select>
+      </div>
+      <div id="device-info" style="display:none;background:#eff6ff;padding:.5rem .9rem;border-radius:6px;font-size:.82rem;color:#1e40af;margin-bottom:.8rem;"></div>
+      <div class="form-row">
+        <div class="form-group">
+          <label>Quantity *</label>
+          <input type="number" name="quantity" id="sale-qty" min="1" required placeholder="How many?">
+        </div>
+        <div class="form-group">
+          <label>Unit Price (₦) *</label>
+          <input type="number" name="unit_price" id="sale-price" step="0.01" min="0" required placeholder="Price per unit">
+        </div>
+        <div class="form-group">
+          <label>Payment Method *</label>
+          <select name="payment_method" required>
+            <option value="CASH">Cash</option>
+            <option value="TRANSFER">Transfer</option>
+            <option value="POS">POS</option>
+          </select>
+        </div>
+      </div>
+      <div class="form-group">
+        <label>Sale To *</label>
+        <select name="buyer_type" id="buyer_type" required onchange="toggleBuyerFields()">
+          <option value="CUSTOMER">Customer</option>
+          <option value="DIRECTOR">⭐ Director</option>
+          <option value="BRANCH">Branch Transfer</option>
+        </select>
+      </div>
+      <div id="customer-fields" class="buyer-target show">
+        <div class="form-row">
+          <div class="form-group">
+            <label>Customer Name</label>
+            <input type="text" name="buyer_name" placeholder="Customer name (optional)">
+          </div>
+          <div class="form-group">
+            <label>Customer Phone</label>
+            <input type="tel" name="buyer_phone" placeholder="080xxxxxxxx">
+          </div>
+        </div>
+      </div>
+      <div id="director-notice" class="buyer-target" style="display:none;background:#fef9c3;border:1px solid #fcd34d;border-radius:6px;padding:.7rem .9rem;font-size:.83rem;color:#854d0e;margin-bottom:.8rem;">
+        ⭐ This sale will be marked as a <strong>Director Sale</strong> and highlighted in the sales log.
+      </div>
+      <div class="form-group">
+        <label>Notes (Optional)</label>
+        <input type="text" name="notes" placeholder="Any additional notes">
+      </div>
+      <div id="total-preview" style="display:none;background:#d1fae5;border-radius:6px;padding:.6rem .9rem;font-size:.88rem;color:#065f46;font-weight:700;margin-bottom:.8rem;"></div>
+      <button type="submit" class="btn-sm btn-success" style="width:100%;">Record Sale</button>
+    </form>
+    {% else %}
+    <p style="text-align:center;color:#9ca3af;padding:2rem 0;">No devices in catalog. Add devices in the Device Stock tab first.</p>
+    {% endif %}
+  </div>
+
+  <div class="card">
+    <p class="card-title">📋 Recent Device Sales</p>
+    <p style="font-size:.82rem;color:#6b7280;margin-bottom:.8rem;">
+      <span style="background:#fef9c3;padding:.1rem .4rem;border-radius:3px;">⭐ Yellow rows</span> = Director sales
+    </p>
+    {% if wholesale_sales %}
+    <div style="overflow-x:auto;">
+      <table class="data-table">
+        <thead>
+          <tr>
+            <th>Date</th><th>Product</th><th>Sold To</th><th style="text-align:center;">Qty</th>
+            <th style="text-align:right;">Total</th><th>Payment</th><th>Action</th>
+          </tr>
+        </thead>
+        <tbody>
+          {% for s in wholesale_sales %}
+          <tr {% if s.is_director_sale %}class="director-row"{% endif %}>
+            <td style="white-space:nowrap;color:#9ca3af;">{{ s.date|date:"d M Y" }} {{ s.time|time:"H:i" }}</td>
+            <td><strong>{{ s.device.product_name }}</strong><br><span style="font-size:.72rem;color:#9ca3af;">{{ s.device.get_network_type_display }}</span></td>
+            <td>
+              {% if s.is_director_sale %}<span class="badge badge-gold">⭐ Director</span>
+              {% else %}<span class="badge badge-blue">{{ s.buyer_type }}</span>{% endif %}
+            </td>
+            <td style="text-align:center;">{{ s.quantity }}</td>
+            <td style="text-align:right;font-weight:700;">₦{{ s.total_amount|floatformat:0 }}</td>
+            <td><span class="badge badge-blue">{{ s.payment_method }}</span></td>
+            <td>
+              <a href="{% url 'invoice_preview' sale_type='WHOLESALE' sale_id=s.id %}" class="btn-sm btn-outline" style="font-size:.72rem;padding:.25rem .55rem;">🧾 Invoice</a>
+            </td>
+          </tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+    {% else %}
+    <p style="text-align:center;color:#9ca3af;padding:1.5rem 0;">No device sales recorded yet.</p>
+    {% endif %}
+  </div>
+</div>
+
 <script>
 function switchTab(name, btn) {
   document.querySelectorAll('.tab-panel').forEach(p => p.classList.remove('active'));
@@ -298,5 +508,35 @@ document.addEventListener('DOMContentLoaded', function() {
     if (btn) switchTab(hash, btn);
   }
 });
+
+// ── Wholesale device sale helpers ──
+function updateDeviceInfo(sel) {
+  const opt = sel.options[sel.selectedIndex];
+  const qty = opt.dataset.qty, price = opt.dataset.price, name = opt.dataset.name;
+  const info = document.getElementById('device-info');
+  const priceInput = document.getElementById('sale-price');
+  if (qty && name) {
+    info.style.display = 'block';
+    info.textContent = '✓ ' + qty + ' unit(s) of ' + name + ' available. Suggested price: ₦' + parseFloat(price).toLocaleString();
+    if (priceInput && price) priceInput.value = price;
+  } else { info.style.display = 'none'; }
+  updateTotal();
+}
+function toggleBuyerFields() {
+  const type = document.getElementById('buyer_type').value;
+  document.getElementById('customer-fields').classList.toggle('show', type === 'CUSTOMER' || type === 'BRANCH');
+  document.getElementById('director-notice').classList.toggle('show', type === 'DIRECTOR');
+}
+function updateTotal() {
+  const qty = parseFloat(document.getElementById('sale-qty').value) || 0;
+  const price = parseFloat(document.getElementById('sale-price').value) || 0;
+  const preview = document.getElementById('total-preview');
+  if (qty > 0 && price > 0) {
+    preview.style.display = 'block';
+    preview.textContent = 'Total: ₦' + (qty * price).toLocaleString();
+  } else { preview.style.display = 'none'; }
+}
+document.getElementById('sale-qty')?.addEventListener('input', updateTotal);
+document.getElementById('sale-price')?.addEventListener('input', updateTotal);
 </script>
 {% endblock %}
