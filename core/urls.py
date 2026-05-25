@@ -124,4 +124,8 @@ urlpatterns = [
     path('multichoice/export-pdf/', views.multichoice_export_pdf, name='multichoice_export_pdf'),
     path('retail/sales-history/', views.retail_sales_history, name='retail_sales_history'),
     path('telecom/activity-history/', views.telecom_activity_history, name='telecom_activity_history'),
+    path('wholesale/', views.wholesale_catalog, name='wholesale_catalog'),
+    path('wholesale/add-device/', views.wholesale_add_device, name='wholesale_add_device'),
+    path('wholesale/record-sale/', views.wholesale_record_sale, name='wholesale_record_sale'),
+    path('director/multichoice-balance/', views.director_multichoice_balance, name='director_multichoice_balance'),
 ]
