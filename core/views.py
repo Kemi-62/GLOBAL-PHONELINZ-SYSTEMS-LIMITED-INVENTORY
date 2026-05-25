@@ -4803,6 +4803,7 @@ def _build_invoice_pdf(invoice):
     # Header
     elements.append(Paragraph("GLOBAL PHONELINZ SYSTEMS LIMITED", title_style))
     elements.append(Paragraph("Telecom & Retail Solutions", subtitle_style))
+    elements.append(Paragraph("08066090000, 08032036766, 08032036764", subtitle_style))
     elements.append(Spacer(1, 6))
 
     # Invoice meta
