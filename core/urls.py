@@ -131,4 +131,12 @@ urlpatterns = [
     path('wholesale/add-device/', views.wholesale_add_device, name='wholesale_add_device'),
     path('wholesale/record-sale/', views.wholesale_record_sale, name='wholesale_record_sale'),
     path('director/multichoice-balance/', views.director_multichoice_balance, name='director_multichoice_balance'),
+
+    # Moniepoint POS
+    path('moniepoint/record/', views.record_moniepoint, name='record_moniepoint'),
+    path('director/moniepoint-reconcile/', views.moniepoint_reconcile, name='moniepoint_reconcile'),
+
+    # Loyalty
+    path('loyalty/customer/<str:phone>/', views.loyalty_customer_lookup, name='loyalty_customer_lookup'),
+    path('loyalty/redeem/', views.loyalty_redeem, name='loyalty_redeem'),
 ]

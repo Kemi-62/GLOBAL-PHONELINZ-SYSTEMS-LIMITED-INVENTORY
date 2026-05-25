@@ -121,11 +121,19 @@ pre{background:#f5f5f5;padding:.8rem;border-radius:6px;font-size:.75rem;overflow
         </div>
         <div class="form-group">
           <label>Payment Method *</label>
-          <select name="payment_method" required>
+          <select name="payment_method" required id="pay-method-rd">
             <option value="CASH">Cash</option>
             <option value="TRANSFER">Transfer</option>
             <option value="POS">POS</option>
           </select>
+        </div>
+        <div class="form-group" id="moniepoint-field-rd" style="display:none;">
+          <label>Moniepoint Transaction ID</label>
+          <input type="text" name="moniepoint_txn_id" placeholder="Enter Moniepoint TID" style="font-family:monospace;">
+        </div>
+        <div class="form-group">
+          <label>&nbsp;</label>
+          <button type="button" onclick="lookupLoyalty()" class="btn-sm btn-outline" style="width:100%;margin-top:.2rem;">💛 Check Loyalty</button>
         </div>
       </div>
       <button type="submit" class="btn-sm btn-success" style="width:100%;margin-top:.5rem;">✔ Record Sale</button>
@@ -455,6 +463,38 @@ function filterCatalog() {
   document.querySelectorAll('.catalog-item').forEach(el => {
     el.style.display = el.dataset.name.includes(q) ? '' : 'none';
   });
+}
+
+// Show/hide Moniepoint field
+if (document.getElementById('pay-method-rd')) {
+  document.getElementById('pay-method-rd').addEventListener('change', function() {
+    document.getElementById('moniepoint-field-rd').style.display = this.value === 'POS' ? 'block' : 'none';
+  });
+}
+
+// Loyalty lookup
+function lookupLoyalty() {
+  const phone = prompt('Enter customer phone number:');
+  if (!phone) return;
+  fetch('/loyalty/customer/' + encodeURIComponent(phone) + '/')
+    .then(r => r.json())
+    .then(data => {
+      if (data.found) {
+        alert(data.name + '\nPoints: ' + data.points + '\nTier: ' + data.tier + '\nTotal Spent: \u20a6' + parseFloat(data.total_spent).toLocaleString());
+      } else {
+        alert('Customer not found. They will be registered after their first purchase.');
+      }
+    })
+    .catch(() => alert('Error looking up loyalty status.'));
+}
+
+// Barcode scanning for IMEI
+function scanBarcode() {
+  if ('BarcodeDetector' in window) {
+    alert('Barcode scanning: please take a photo of the barcode. This will be integrated with the camera in a future update.');
+  } else {
+    alert('Your browser does not support barcode scanning. Please type the IMEI manually.');
+  }
 }
 </script>
 {% endblock %}

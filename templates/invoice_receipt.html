@@ -140,6 +140,8 @@
 <div class="actions">
   <button class="btn btn-print" onclick="printReceipt()">🖨️ Print Receipt</button>
   <button class="btn btn-bt" onclick="connectBluetoothPrinter()">🔗 Print via Bluetooth</button>
+  <a href="https://wa.me/?text=Your%20receipt%20from%20GLOBAL%20PHONELINZ%0A%0AInvoice%3A%20{{ invoice.invoice_number|urlencode }}%0AAmount%3A%20%E2%82%A6{{ invoice.total_amount|floatformat:2 }}%0A%0AView%20online%3A%20{{ request.build_absolute_uri|urlencode }}%0A%0AThank%20you%20for%20your%20patronage!"
+     target="_blank" class="btn" style="background:#25D366;color:#fff;">📱 Share on WhatsApp</a>
   <a href="javascript:history.back()" class="btn btn-back">← Back</a>
 </div>
 

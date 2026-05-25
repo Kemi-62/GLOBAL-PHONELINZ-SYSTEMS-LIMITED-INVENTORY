@@ -176,6 +176,11 @@
     <a href="{% url 'invoice_download_pdf' sale_type=sale_type sale_id=sale_id %}" class="btn-sm btn-success">📥 Download PDF</a>
     <a href="{% url 'invoice_receipt' sale_type=sale_type sale_id=sale_id %}" class="btn-sm btn-outline" style="background:#f97316;color:#fff;border:none;">🧻 Thermal Receipt</a>
 
+    <a href="https://wa.me/?text=Your%20receipt%20from%20GLOBAL%20PHONELINZ%0A%0AInvoice%3A%20{{ invoice.invoice_number|urlencode }}%0AAmount%3A%20%E2%82%A6{{ invoice.total_amount|floatformat:2 }}%0A%0AView%20online%3A%20{{ request.build_absolute_uri|urlencode }}%0A%0AThank%20you%20for%20your%20patronage!"
+       target="_blank" class="btn-sm btn-outline" style="background:#25D366;color:#fff;border:none;">
+      📱 Share on WhatsApp
+    </a>
+
     <form method="POST" style="display:flex;gap:.5rem;align-items:center;flex:1;min-width:250px;">
       {% csrf_token %}
       <input type="email" name="email" placeholder="customer@email.com" required

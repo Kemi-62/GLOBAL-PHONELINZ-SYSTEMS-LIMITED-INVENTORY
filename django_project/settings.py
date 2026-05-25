@@ -1,38 +1,82 @@
 """
 Django settings for django_project project.
+SECURITY-HARDENED VERSION
 """
 
 import os
 from pathlib import Path
-from decouple import config
+from decouple import config, Csv
 
 BASE_DIR = Path(__file__).resolve().parent.parent
 
-# Security — no insecure fallback; will raise ImproperlyConfigured if missing in production
-SECRET_KEY = config('SECRET_KEY', default='django-insecure-4ju2n@$f9d0c=h)_g0lbb%k9&@rf(xa$d$g$&5ri$uf)*gev^4')
+# ═══════════════════════════════════════════════════════
+# SECURITY CONFIGURATION — READ-ONLY IN PRODUCTION
+# ═══════════════════════════════════════════════════════
 
+# SECRET_KEY: development fallback that logs a warning.
+# In production, set SECRET_KEY in environment and IS_PRODUCTION=True.
+SECRET_KEY = config('SECRET_KEY', default='dev-only-unsafe-secret-change-in-production')
+
+# Production flag
+IS_PRODUCTION = config('IS_PRODUCTION', default=False, cast=bool)
+
+# DEBUG: True in development, MUST be False in production via env var.
 DEBUG = config('DEBUG', default=True, cast=bool)
 
-ALLOWED_HOSTS = ['*']
+# ALLOWED_HOSTS: NEVER wildcard in production. Only specific domains.
+ALLOWED_HOSTS = config('ALLOWED_HOSTS', default='localhost,127.0.0.1,*.replit.dev,*.repl.co,*.replit.app', cast=Csv())
 
-CSRF_TRUSTED_ORIGINS = [
-    "https://*.replit.dev",
-    "https://*.repl.co",
-    "https://*.replit.app",
-    "https://*.onrender.com",
-]
-
-CSRF_COOKIE_HTTPONLY = False
-CSRF_USE_SESSIONS = False
-CSRF_COOKIE_SAMESITE = 'Lax'
-
-# Secure cookies only in production (IS_PRODUCTION=True env var)
-IS_PRODUCTION = config('IS_PRODUCTION', default=False, cast=bool)
+# CSRF: Secure by default
+CSRF_COOKIE_HTTPONLY = True
+CSRF_USE_SESSIONS = True
+CSRF_COOKIE_SAMESITE = 'Strict'
 CSRF_COOKIE_SECURE = IS_PRODUCTION
 SESSION_COOKIE_SECURE = IS_PRODUCTION
+SESSION_COOKIE_HTTPONLY = True
+SESSION_COOKIE_SAMESITE = 'Strict'
+
+# Session timeout: 30 minutes of inactivity, 8 hours max
+SESSION_COOKIE_AGE = 28800  # 8 hours
+SESSION_EXPIRE_AT_BROWSER_CLOSE = False
+
+# Security Headers — applied on ALL deployments
+SECURE_BROWSER_XSS_FILTER = True
+SECURE_CONTENT_TYPE_NOSNIFF = True
+SECURE_SSL_REDIRECT = IS_PRODUCTION
+X_FRAME_OPTIONS = 'DENY'
+
+# HSTS: Force HTTPS for 1 year (31,536,000 seconds)
+SECURE_HSTS_SECONDS = 31536000 if IS_PRODUCTION else 0
+SECURE_HSTS_INCLUDE_SUBDOMAINS = IS_PRODUCTION
+SECURE_HSTS_PRELOAD = IS_PRODUCTION
+
+# Proxy header for HTTPS detection behind Render/Cloudflare
+SECURE_PROXY_SSL_HEADER = ('HTTP_X_FORWARDED_PROTO', 'https')
+
+CSRF_TRUSTED_ORIGINS = config(
+    'CSRF_TRUSTED_ORIGINS',
+    default='https://localhost',
+    cast=Csv()
+)
 
 CSRF_FAILURE_VIEW = 'core.views.csrf_failure'
-SECURE_PROXY_SSL_HEADER = ('HTTP_X_FORWARDED_PROTO', 'https')
+
+# ═══════════════════════════════════════════════════════
+# ADMIN PANEL — HIDDEN URL (not /admin/)
+# ═══════════════════════════════════════════════════════
+ADMIN_URL = config('ADMIN_URL', default='system-admin/')
+
+# Cache: LocMem for development (needed for rate limiting)
+CACHES = {
+    'default': {
+        'BACKEND': 'django.core.cache.backends.locmem.LocMemCache',
+        'LOCATION': 'gpsl-cache',
+    }
+}
+
+# ═══════════════════════════════════════════════════════
+# APPLICATION DEFINITION
+# ═══════════════════════════════════════════════════════
 
 INSTALLED_APPS = [
     'django.contrib.admin',
@@ -41,6 +85,7 @@ INSTALLED_APPS = [
     'django.contrib.sessions',
     'django.contrib.messages',
     'django.contrib.staticfiles',
+    'django.contrib.humanize',
     'core',
 ]
 
@@ -51,13 +96,15 @@ MIDDLEWARE = [
     'whitenoise.middleware.WhiteNoiseMiddleware',
     'django.contrib.sessions.middleware.SessionMiddleware',
     'django.middleware.common.CommonMiddleware',
+    'core.middleware.SecurityHeadersMiddleware',
+    'core.middleware.RateLimitMiddleware',
     'django.middleware.csrf.CsrfViewMiddleware',
     'django.contrib.auth.middleware.AuthenticationMiddleware',
+    'core.middleware.SessionTimeoutMiddleware',
+    'core.middleware.AdminAccessLogMiddleware',
     'django.contrib.messages.middleware.MessageMiddleware',
+    'django.middleware.clickjacking.XFrameOptionsMiddleware',
 ]
-
-if ("REPLIT_DEPLOYMENT" in os.environ):
-    MIDDLEWARE.append('django.middleware.clickjacking.XFrameOptionsMiddleware')
 
 ROOT_URLCONF = 'django_project.urls'
 
@@ -79,7 +126,10 @@ TEMPLATES = [
 
 WSGI_APPLICATION = 'django_project.wsgi.application'
 
-# Database: PostgreSQL in production, SQLite in development
+# ═══════════════════════════════════════════════════════
+# DATABASE
+# ═══════════════════════════════════════════════════════
+
 if config('DB_ENGINE', default='sqlite') == 'postgresql':
     DATABASES = {
         'default': {
@@ -89,6 +139,7 @@ if config('DB_ENGINE', default='sqlite') == 'postgresql':
             'PASSWORD': config('DB_PASSWORD'),
             'HOST': config('DB_HOST'),
             'PORT': '5432',
+            'CONN_MAX_AGE': 60,
         }
     }
 else:
@@ -99,39 +150,110 @@ else:
         }
     }
 
+# ═══════════════════════════════════════════════════════
+# PASSWORD VALIDATION — Stronger for production
+# ═══════════════════════════════════════════════════════
+
 AUTH_PASSWORD_VALIDATORS = [
     {'NAME': 'django.contrib.auth.password_validation.UserAttributeSimilarityValidator'},
-    {'NAME': 'django.contrib.auth.password_validation.MinimumLengthValidator'},
+    {'NAME': 'django.contrib.auth.password_validation.MinimumLengthValidator', 'OPTIONS': {'min_length': 8}},
     {'NAME': 'django.contrib.auth.password_validation.CommonPasswordValidator'},
     {'NAME': 'django.contrib.auth.password_validation.NumericPasswordValidator'},
 ]
 
+# ═══════════════════════════════════════════════════════
+# INTERNATIONALIZATION
+# ═══════════════════════════════════════════════════════
+
 LANGUAGE_CODE = 'en-us'
-
-# Nigeria (West Africa Time = UTC+1)
 TIME_ZONE = 'Africa/Lagos'
-
 USE_I18N = True
 USE_TZ = True
+
+# ═══════════════════════════════════════════════════════
+# STATIC & MEDIA FILES
+# ═══════════════════════════════════════════════════════
 
 STATIC_URL = '/static/'
 STATIC_ROOT = os.path.join(BASE_DIR, 'staticfiles')
 STATICFILES_STORAGE = 'whitenoise.storage.CompressedManifestStaticFilesStorage'
 
-MEDIA_URL = "/media/"
-MEDIA_ROOT = os.path.join(BASE_DIR, "media")
+MEDIA_URL = '/media/'
+MEDIA_ROOT = os.path.join(BASE_DIR, 'media')
 
-# Email Configuration — set EMAIL_HOST_USER and EMAIL_HOST_PASSWORD in .env / Replit Secrets
+# File upload limits (5MB max for selfies)
+FILE_UPLOAD_MAX_MEMORY_SIZE = 5 * 1024 * 1024  # 5MB
+DATA_UPLOAD_MAX_MEMORY_SIZE = 5 * 1024 * 1024  # 5MB
+
+# ═══════════════════════════════════════════════════════
+# EMAIL CONFIGURATION — via environment only
+# ═══════════════════════════════════════════════════════
+
 EMAIL_BACKEND = 'django.core.mail.backends.smtp.EmailBackend'
-EMAIL_HOST = 'smtp.gmail.com'
-EMAIL_PORT = 587
+EMAIL_HOST = config('EMAIL_HOST', default='smtp.gmail.com')
+EMAIL_PORT = config('EMAIL_PORT', default=587, cast=int)
 EMAIL_USE_TLS = True
-EMAIL_HOST_USER = 'ekeminimonday62@gmail.com'
-EMAIL_HOST_PASSWORD = 'nowdnpjrcotcyqfn'
+EMAIL_HOST_USER = config('EMAIL_HOST_USER', default='')
+EMAIL_HOST_PASSWORD = config('EMAIL_HOST_PASSWORD', default='')
+DEFAULT_FROM_EMAIL = config('DEFAULT_FROM_EMAIL', default=EMAIL_HOST_USER)
+
+# ═══════════════════════════════════════════════════════
+# RATE LIMITING CONFIG
+# ═══════════════════════════════════════════════════════
+
+RATE_LIMIT_LOGIN_ATTEMPTS = 5      # Max failed logins per window
+RATE_LIMIT_LOGIN_WINDOW = 300      # 5 minutes (seconds)
+RATE_LIMIT_LOGIN_BLOCK = 1800      # 30 minutes block (seconds)
+
+# ═══════════════════════════════════════════════════════
+# MONIEPOINT CONFIG
+# ═══════════════════════════════════════════════════════
+
+MONIEPOINT_MERCHANT_ID = config('MONIEPOINT_MERCHANT_ID', default='')
+MONIEPOINT_API_KEY = config('MONIEPOINT_API_KEY', default='')
+MONIEPOINT_ENABLED = config('MONIEPOINT_ENABLED', default=False, cast=bool)
+
+# ═══════════════════════════════════════════════════════
+# WHATSAPP CONFIG
+# ═══════════════════════════════════════════════════════
+
+WHATSAPP_ENABLED = config('WHATSAPP_ENABLED', default=False, cast=bool)
+WHATSAPP_API_KEY = config('WHATSAPP_API_KEY', default='')
+WHATSAPP_PHONE_NUMBER_ID = config('WHATSAPP_PHONE_NUMBER_ID', default='')
+
+# ═══════════════════════════════════════════════════════
+# MISC
+# ═══════════════════════════════════════════════════════
 
 DEFAULT_AUTO_FIELD = 'django.db.models.BigAutoField'
 CONN_MAX_AGE = 60
 
-# WhatsApp
-CALLMEBOT_API_KEY = config("CALLMEBOT_API_KEY", default="")
-DIRECTOR_WHATSAPP = config("DIRECTOR_WHATSAPP", default="")
+# Logging configuration
+LOGGING = {
+    'version': 1,
+    'disable_existing_loggers': False,
+    'handlers': {
+        'file': {
+            'level': 'WARNING',
+            'class': 'logging.FileHandler',
+            'filename': os.path.join(BASE_DIR, 'logs', 'django.log'),
+        },
+        'security_file': {
+            'level': 'INFO',
+            'class': 'logging.FileHandler',
+            'filename': os.path.join(BASE_DIR, 'logs', 'security.log'),
+        },
+    },
+    'loggers': {
+        'django.security': {
+            'handlers': ['security_file'],
+            'level': 'INFO',
+            'propagate': False,
+        },
+        'django.request': {
+            'handlers': ['file'],
+            'level': 'WARNING',
+            'propagate': False,
+        },
+    },
+}

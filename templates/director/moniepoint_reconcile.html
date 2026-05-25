@@ -1,0 +1,77 @@
+{% extends "base.html" %}
+{% block content %}
+<style>
+.reconcile-header{font-size:1.4rem;font-weight:700;color:#004F9F;margin:0 0 .5rem}
+.filters{display:flex;gap:.5rem;flex-wrap:wrap;margin-bottom:1.2rem}
+.filters input,.filters select{padding:.4rem .6rem;border:1px solid #d1d5db;border-radius:6px;font-size:.85rem}
+.filters button{padding:.4rem .9rem;border:none;border-radius:6px;background:#004F9F;color:#fff;font-weight:600;cursor:pointer;font-size:.85rem}
+.kpi-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(160px,1fr));gap:1rem;margin-bottom:1.2rem}
+.kpi{background:#fff;border-radius:10px;border:1px solid #e5e7eb;padding:1rem 1.2rem}
+.kpi-label{font-size:.72rem;text-transform:uppercase;color:#6b7280;margin:0 0 .3rem}
+.kpi-value{font-size:1.4rem;font-weight:700;color:#111827;margin:0}
+.data-table{width:100%;border-collapse:collapse;font-size:.85rem}
+.data-table th{background:#004F9F;color:#fff;font-weight:600;padding:.65rem .9rem;text-align:left}
+.data-table td{padding:.6rem .9rem;border-bottom:1px solid #f3f4f6;color:#374151}
+.status-success{color:#10b981;font-weight:700}.status-pending{color:#f59e0b}.status-failed{color:#ef4444}
+.pagination{display:flex;gap:.4rem;margin-top:1rem}
+.pagination a{padding:.4rem .7rem;border:1px solid #d1d5db;border-radius:6px;text-decoration:none;color:#374151;font-size:.85rem}
+.pagination .current{padding:.4rem .7rem;background:#004F9F;color:#fff;border-radius:6px;font-size:.85rem}
+</style>
+
+<p class="reconcile-header">💳 Moniepoint POS Reconciliation</p>
+
+<form method="get" class="filters">
+  <input type="date" name="date_from" value="{{ date_from }}" placeholder="From date">
+  <input type="date" name="date_to" value="{{ date_to }}" placeholder="To date">
+  <select name="branch"><option value="">All Branches</option>{% for b in branches %}<option value="{{ b.id }}" {% if b.id|stringformat:"s" == branch_filter %}selected{% endif %}>{{ b.name }}</option>{% endfor %}</select>
+  <select name="status"><option value="">All Status</option><option value="SUCCESS" {% if status_filter == "SUCCESS" %}selected{% endif %}>Success</option><option value="PENDING" {% if status_filter == "PENDING" %}selected{% endif %}>Pending</option><option value="FAILED" {% if status_filter == "FAILED" %}selected{% endif %}>Failed</option></select>
+  <button type="submit">Filter</button>
+</form>
+
+<div class="kpi-grid">
+  <div class="kpi"><p class="kpi-label">Total Transactions</p><p class="kpi-value">{{ total_count }}</p></div>
+  <div class="kpi"><p class="kpi-label">Total Amount</p><p class="kpi-value">₦{{ total_amount|floatformat:2 }}</p></div>
+</div>
+
+{% if branch_summary %}
+<h3 style="font-size:1rem;color:#374151;margin:1rem 0 .5rem">Branch Summary</h3>
+<table class="data-table" style="margin-bottom:1.2rem">
+  <thead><tr><th>Branch</th><th>Transactions</th><th>Total Amount</th></tr></thead>
+  <tbody>
+    {% for bs in branch_summary %}
+    <tr><td>{{ bs.branch.name }}</td><td>{{ bs.count }}</td><td>₦{{ bs.total|floatformat:2 }}</td></tr>
+    {% endfor %}
+  </tbody>
+</table>
+{% endif %}
+
+<h3 style="font-size:1rem;color:#374151;margin:1rem 0 .5rem">Transaction Details</h3>
+<table class="data-table">
+  <thead><tr><th>Date</th><th>ID</th><th>Branch</th><th>Staff</th><th>Customer</th><th>Amount</th><th>Status</th><th>Linked Sale</th></tr></thead>
+  <tbody>
+    {% for t in transactions %}
+    <tr>
+      <td>{{ t.date|date:"d M Y" }} {{ t.time|time:"H:i" }}</td>
+      <td>{{ t.transaction_id }}</td>
+      <td>{{ t.branch.name }}</td>
+      <td>{{ t.staff.get_full_name|default:t.staff.username }}</td>
+      <td>{{ t.customer_name|default:"Walk-in" }}</td>
+      <td>₦{{ t.amount|floatformat:2 }}</td>
+      <td class="status-{{ t.status|lower }}">{{ t.status }}</td>
+      <td>{% if t.sale_type %}{{ t.sale_type }} #{{ t.sale_id }}{% else %}—{% endif %}</td>
+    </tr>
+    {% empty %}
+    <tr><td colspan="8" style="text-align:center;color:#6b7280">No transactions found.</td></tr>
+    {% endfor %}
+  </tbody>
+</table>
+
+{% if transactions.has_other_pages %}
+<div class="pagination">
+  {% if transactions.has_previous %}<a href="?page={{ transactions.previous_page_number }}&date_from={{ date_from }}&date_to={{ date_to }}">Previous</a>{% endif %}
+  <span class="current">Page {{ transactions.number }} of {{ transactions.paginator.num_pages }}</span>
+  {% if transactions.has_next %}<a href="?page={{ transactions.next_page_number }}&date_from={{ date_from }}&date_to={{ date_to }}">Next</a>{% endif %}
+</div>
+{% endif %}
+
+{% endblock %}

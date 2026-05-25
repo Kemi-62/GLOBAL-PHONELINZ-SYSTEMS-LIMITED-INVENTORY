@@ -767,3 +767,108 @@ class WholesaleDeviceSale(models.Model):
 
     def __str__(self):
         return f"{self.device.product_name} x{self.quantity} → {self.buyer_type} ({self.branch.name})"
+
+
+# ────────────────────────────────────────────
+# Moniepoint POS Transaction Tracking
+# ────────────────────────────────────────────
+
+class MoniepointTransaction(models.Model):
+    """Track Moniepoint POS transactions for reconciliation."""
+    STATUS_CHOICES = (
+        ('PENDING', 'Pending'),
+        ('SUCCESS', 'Success'),
+        ('FAILED', 'Failed'),
+        ('REVERSED', 'Reversed'),
+    )
+
+    transaction_id = models.CharField(max_length=100, unique=True, help_text="Moniepoint Transaction ID")
+    branch = models.ForeignKey(Branch, on_delete=models.CASCADE)
+    staff = models.ForeignKey(User, on_delete=models.CASCADE)
+    customer_name = models.CharField(max_length=150, blank=True)
+    customer_phone = models.CharField(max_length=20, blank=True)
+    amount = models.DecimalField(max_digits=12, decimal_places=2)
+    status = models.CharField(max_length=10, choices=STATUS_CHOICES, default='PENDING')
+    notes = models.TextField(blank=True)
+    date = models.DateField(auto_now_add=True)
+    time = models.TimeField(auto_now_add=True)
+    created_at = models.DateTimeField(auto_now_add=True)
+
+    # Link to original sale (optional)
+    sale_type = models.CharField(max_length=20, blank=True, help_text="RETAIL, WHOLESALE, MULTICHOICE, TELECOM")
+    sale_id = models.IntegerField(null=True, blank=True)
+
+    class Meta:
+        ordering = ['-created_at']
+        indexes = [
+            models.Index(fields=['branch', 'date']),
+            models.Index(fields=['status']),
+            models.Index(fields=['transaction_id']),
+        ]
+
+    def __str__(self):
+        return f"Moniepoint {self.transaction_id} — ₦{self.amount} ({self.status})"
+
+
+# ────────────────────────────────────────────
+# Loyalty & Rewards Program
+# ────────────────────────────────────────────
+
+class LoyaltyPoint(models.Model):
+    """Tracks points earned per customer per branch."""
+    customer = models.ForeignKey(Customer, on_delete=models.CASCADE, related_name='loyalty_points')
+    branch = models.ForeignKey(Branch, on_delete=models.CASCADE)
+    points_balance = models.PositiveIntegerField(default=0)
+    total_earned = models.PositiveIntegerField(default=0)
+    total_redeemed = models.PositiveIntegerField(default=0)
+    tier = models.CharField(max_length=20, default='BRONZE', choices=(
+        ('BRONZE', 'Bronze'),
+        ('SILVER', 'Silver'),
+        ('GOLD', 'Gold'),
+        ('PLATINUM', 'Platinum'),
+    ))
+    updated_at = models.DateTimeField(auto_now=True)
+
+    class Meta:
+        unique_together = ('customer', 'branch')
+
+    def __str__(self):
+        return f"{self.customer.phone_number} — {self.points_balance} pts ({self.tier})"
+
+    def update_tier(self):
+        """Auto-update tier based on total earned."""
+        if self.total_earned >= 50000:
+            self.tier = 'PLATINUM'
+        elif self.total_earned >= 20000:
+            self.tier = 'GOLD'
+        elif self.total_earned >= 5000:
+            self.tier = 'SILVER'
+        else:
+            self.tier = 'BRONZE'
+        self.save(update_fields=['tier'])
+
+
+class LoyaltyTransaction(models.Model):
+    """Individual point earn/redeem transactions."""
+    TYPE_CHOICES = (
+        ('EARN', 'Earned'),
+        ('REDEEM', 'Redeemed'),
+        ('ADJUST', 'Adjustment'),
+        ('EXPIRE', 'Expired'),
+    )
+
+    loyalty_point = models.ForeignKey(LoyaltyPoint, on_delete=models.CASCADE, related_name='transactions')
+    transaction_type = models.CharField(max_length=10, choices=TYPE_CHOICES)
+    points = models.PositiveIntegerField()
+    amount_spent = models.DecimalField(max_digits=12, decimal_places=2, default=0)
+    description = models.CharField(max_length=255, blank=True)
+    sale_type = models.CharField(max_length=20, blank=True)
+    sale_id = models.IntegerField(null=True, blank=True)
+    created_by = models.ForeignKey(User, on_delete=models.SET_NULL, null=True)
+    created_at = models.DateTimeField(auto_now_add=True)
+
+    class Meta:
+        ordering = ['-created_at']
+
+    def __str__(self):
+        return f"{self.transaction_type} {self.points} pts — {self.loyalty_point.customer.phone_number}"
