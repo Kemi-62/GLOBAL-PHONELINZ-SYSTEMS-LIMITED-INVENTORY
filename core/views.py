@@ -25,7 +25,8 @@ from .models import (
     MultiChoiceSale, MultiChoiceWeeklyReport, MultiChoiceBalance,
     Expense, StockRequest, Attendance, DirectorSafeStock,
     CheckInOutLog, SimInventory, SimInventoryLog,
-    Customer, StockAlert, DeviceTagCommission, CommissionPayment
+    Customer, StockAlert, DeviceTagCommission, CommissionPayment,
+    Invoice, WholesaleDeviceSale
 )
 from .models import log_action
 from .utils.decorators import role_required
@@ -953,6 +954,9 @@ def manage_branch_locations(request):
             branch.latitude = float(request.POST.get("latitude"))
             branch.longitude = float(request.POST.get("longitude"))
             branch.allowed_radius = int(request.POST.get("allowed_radius", 100))
+            branch.street_address = request.POST.get("street_address", "")
+            branch.city = request.POST.get("city", "")
+            branch.state = request.POST.get("state", "")
             branch.location_locked = True
             branch.save()
             messages.success(request, f"Location saved for {branch.name}.")
@@ -4633,3 +4637,275 @@ def director_multichoice_balance(request):
         "date_to": date_to,
         "branch_flt": branch_flt,
     })
+
+
+# ─────────────────────────────────────────
+# INVOICE GENERATION
+# ─────────────────────────────────────────
+
+from django.core.mail import EmailMessage
+
+
+@login_required
+def invoice_preview(request, sale_type, sale_id):
+    """Preview and manage invoice for any sale. Click-to-generate (not automatic)."""
+    # Resolve the actual sale record
+    if sale_type == 'RETAIL':
+        sale = get_object_or_404(RetailSale, id=sale_id)
+    elif sale_type == 'MULTICHOICE':
+        sale = get_object_or_404(MultiChoiceSale, id=sale_id)
+    elif sale_type == 'TELECOM':
+        sale = get_object_or_404(ServiceActivity, id=sale_id)
+    elif sale_type == 'WHOLESALE':
+        sale = get_object_or_404(WholesaleDeviceSale, id=sale_id)
+    else:
+        return HttpResponseForbidden("Invalid sale type")
+
+    # Permission: same branch or superuser
+    if sale.branch != request.user.branch and not request.user.is_superuser:
+        return HttpResponseForbidden()
+
+    # Build or retrieve invoice record
+    staff = getattr(sale, 'staff', None) or getattr(sale, 'sold_by', None)
+    invoice, created = Invoice.objects.get_or_create(
+        sale_type=sale_type,
+        sale_id=sale_id,
+        defaults={
+            'invoice_number': f"GPSL-{sale_type[:3].upper()}-{sale_id:06d}-{timezone.now().strftime('%Y%m%d')}",
+            'branch': sale.branch,
+            'staff': staff,
+            'customer_name': getattr(sale, 'customer_name', '') or '',
+            'customer_phone': getattr(sale, 'customer_phone', '') or '',
+            'quantity': getattr(sale, 'quantity', 1) or 1,
+            'unit_price': (
+                getattr(sale, 'selling_price', None) or
+                getattr(sale, 'amount', None) or
+                getattr(sale, 'unit_price', None) or
+                getattr(sale, 'price', None) or
+                0
+            ),
+            'total_amount': (
+                getattr(sale, 'total_amount', None) or
+                getattr(sale, 'total_revenue', None) or
+                getattr(sale, 'amount', None) or
+                getattr(sale, 'price', None) or
+                0
+            ),
+            'payment_method': getattr(sale, 'payment_method', 'CASH') or 'CASH',
+        }
+    )
+
+    # Update description based on sale type
+    desc = ""
+    if sale_type == 'RETAIL':
+        desc = f"{sale.product.model_name} ({sale.product.subcategory.name})"
+    elif sale_type == 'MULTICHOICE':
+        desc = f"{sale.service_type} - {sale.package_type} ({sale.get_transaction_type_display()})"
+    elif sale_type == 'TELECOM':
+        tag = sale.device_tag.tag_name if sale.device_tag else ""
+        desc = f"{sale.service_type} {tag}".strip()
+    elif sale_type == 'WHOLESALE':
+        desc = f"{sale.device.product_name} ({sale.device.network_type})"
+
+    if not invoice.product_description:
+        invoice.product_description = desc
+        invoice.save(update_fields=['product_description'])
+
+    # Handle email send
+    if request.method == 'POST':
+        email_to = request.POST.get('email', '').strip()
+        if email_to:
+            try:
+                pdf_buffer = _build_invoice_pdf(invoice)
+                email = EmailMessage(
+                    subject=f"Invoice {invoice.invoice_number} — GLOBAL PHONELINZ SYSTEMS LIMITED",
+                    body=(
+                        f"Dear {invoice.customer_name or 'Customer'},\n\n"
+                        f"Please find attached your invoice {invoice.invoice_number}.\n\n"
+                        f"Total Amount: ₦{invoice.total_amount:,.2f}\n\n"
+                        f"Thank you for your business.\n\n"
+                        f"Best regards,\nGLOBAL PHONELINZ SYSTEMS LIMITED"
+                    ),
+                    from_email=None,
+                    to=[email_to],
+                )
+                email.attach(f"Invoice_{invoice.invoice_number}.pdf", pdf_buffer.getvalue(), 'application/pdf')
+                email.send()
+                invoice.emailed_to = email_to
+                invoice.save(update_fields=['emailed_to'])
+                messages.success(request, f"Invoice emailed to {email_to}")
+            except Exception as e:
+                messages.error(request, f"Failed to send email: {e}")
+        return redirect('invoice_preview', sale_type=sale_type, sale_id=sale_id)
+
+    return render(request, 'invoice_preview.html', {
+        'invoice': invoice,
+        'sale': sale,
+        'sale_type': sale_type,
+        'sale_id': sale_id,
+    })
+
+
+@login_required
+def invoice_download_pdf(request, sale_type, sale_id):
+    """Download invoice as PDF."""
+    invoice = get_object_or_404(Invoice, sale_type=sale_type, sale_id=sale_id)
+    # Permission check
+    if invoice.branch != request.user.branch and not request.user.is_superuser:
+        return HttpResponseForbidden()
+    pdf_buffer = _build_invoice_pdf(invoice)
+    response = HttpResponse(pdf_buffer.getvalue(), content_type='application/pdf')
+    response['Content-Disposition'] = f'attachment; filename="Invoice_{invoice.invoice_number}.pdf"'
+    return response
+
+
+def _build_invoice_pdf(invoice):
+    """Build a professional invoice PDF using ReportLab."""
+    from reportlab.platypus import SimpleDocTemplate, Table, TableStyle, Paragraph, Spacer
+    from reportlab.lib import colors
+    from reportlab.lib.styles import getSampleStyleSheet, ParagraphStyle
+    from reportlab.lib.units import inch
+    from reportlab.lib.enums import TA_CENTER, TA_RIGHT
+
+    buffer = io.BytesIO()
+    doc = SimpleDocTemplate(
+        buffer,
+        rightMargin=0.6*inch,
+        leftMargin=0.6*inch,
+        topMargin=0.6*inch,
+        bottomMargin=0.6*inch,
+    )
+
+    styles = getSampleStyleSheet()
+    BLUE = colors.HexColor("#004F9F")
+
+    title_style = ParagraphStyle(
+        'Title',
+        parent=styles['Heading1'],
+        fontSize=18,
+        textColor=BLUE,
+        alignment=TA_CENTER,
+        spaceAfter=6,
+    )
+    subtitle_style = ParagraphStyle(
+        'Subtitle',
+        parent=styles['Normal'],
+        fontSize=10,
+        textColor=colors.grey,
+        alignment=TA_CENTER,
+        spaceAfter=12,
+    )
+    section_style = ParagraphStyle(
+        'Section',
+        parent=styles['Heading3'],
+        fontSize=11,
+        textColor=BLUE,
+        spaceAfter=4,
+        spaceBefore=8,
+    )
+    normal_style = ParagraphStyle(
+        'NormalCustom',
+        parent=styles['Normal'],
+        fontSize=10,
+        spaceAfter=4,
+    )
+
+    elements = []
+
+    # Header
+    elements.append(Paragraph("GLOBAL PHONELINZ SYSTEMS LIMITED", title_style))
+    elements.append(Paragraph("Telecom & Retail Solutions", subtitle_style))
+    elements.append(Spacer(1, 6))
+
+    # Invoice meta
+    elements.append(Paragraph(f"<b>INVOICE</b>  —  {invoice.invoice_number}", section_style))
+    elements.append(Spacer(1, 4))
+
+    meta_data = [
+        ['Branch:', str(invoice.branch.name)],
+        ['Address:', str(invoice.branch.full_address)],
+        ['Date:', f"{invoice.date.strftime('%d %B %Y')} {invoice.time.strftime('%H:%M')}"],
+        ['Payment Method:', str(invoice.payment_method or '—')],
+    ]
+    meta_table = Table(meta_data, colWidths=[1.8*inch, 4*inch])
+    meta_table.setStyle(TableStyle([
+        ('FONTNAME', (0,0), (0,-1), 'Helvetica-Bold'),
+        ('FONTSIZE', (0,0), (-1,-1), 10),
+        ('TEXTCOLOR', (0,0), (0,-1), BLUE),
+        ('VALIGN', (0,0), (-1,-1), 'TOP'),
+        ('BOTTOMPADDING', (0,0), (-1,-1), 4),
+    ]))
+    elements.append(meta_table)
+    elements.append(Spacer(1, 8))
+
+    # Customer info
+    elements.append(Paragraph("Bill To", section_style))
+    customer_lines = []
+    if invoice.customer_name:
+        customer_lines.append(f"Name: {invoice.customer_name}")
+    if invoice.customer_phone:
+        customer_lines.append(f"Phone: {invoice.customer_phone}")
+    if not customer_lines:
+        customer_lines.append("Walk-in Customer")
+
+    cust_data = [[line] for line in customer_lines]
+    cust_table = Table(cust_data, colWidths=[5.8*inch])
+    cust_table.setStyle(TableStyle([
+        ('FONTSIZE', (0,0), (-1,-1), 10),
+        ('BOTTOMPADDING', (0,0), (-1,-1), 3),
+    ]))
+    elements.append(cust_table)
+    elements.append(Spacer(1, 12))
+
+    # Product table
+    elements.append(Paragraph("Item(s)", section_style))
+    product_data = [
+        ['Description', 'Qty', 'Unit Price (₦)', 'Total (₦)'],
+        [
+            invoice.product_description or 'Service / Product',
+            str(invoice.quantity),
+            f"{invoice.unit_price:,.2f}",
+            f"{invoice.total_amount:,.2f}",
+        ],
+    ]
+    product_table = Table(product_data, colWidths=[3.2*inch, 0.8*inch, 1.4*inch, 1.4*inch])
+    product_table.setStyle(TableStyle([
+        ('BACKGROUND', (0,0), (-1,0), BLUE),
+        ('TEXTCOLOR', (0,0), (-1,0), colors.whitesmoke),
+        ('FONTNAME', (0,0), (-1,0), 'Helvetica-Bold'),
+        ('FONTSIZE', (0,0), (-1,0), 10),
+        ('ALIGN', (1,0), (-1,-1), 'CENTER'),
+        ('ALIGN', (-1,1), (-1,-1), 'RIGHT'),
+        ('FONTNAME', (0,1), (0,1), 'Helvetica-Bold'),
+        ('FONTSIZE', (0,1), (-1,1), 10),
+        ('BOTTOMPADDING', (0,0), (-1,-1), 8),
+        ('TOPPADDING', (0,0), (-1,-1), 8),
+        ('GRID', (0,0), (-1,-1), 0.5, colors.grey),
+    ]))
+    elements.append(product_table)
+    elements.append(Spacer(1, 8))
+
+    # Total
+    total_data = [['', '', 'Total Amount (₦):', f"{invoice.total_amount:,.2f}"]]
+    total_table = Table(total_data, colWidths=[3.2*inch, 0.8*inch, 1.4*inch, 1.4*inch])
+    total_table.setStyle(TableStyle([
+        ('FONTNAME', (2,0), (3,0), 'Helvetica-Bold'),
+        ('FONTSIZE', (0,0), (-1,0), 11),
+        ('TEXTCOLOR', (2,0), (3,0), BLUE),
+        ('ALIGN', (2,0), (3,0), 'RIGHT'),
+        ('BOTTOMPADDING', (0,0), (-1,0), 8),
+        ('TOPPADDING', (0,0), (-1,0), 8),
+    ]))
+    elements.append(total_table)
+    elements.append(Spacer(1, 20))
+
+    # Footer
+    staff_name = invoice.staff.get_full_name() or invoice.staff.username
+    elements.append(Paragraph(f"<b>Attended to by:</b> {staff_name}", normal_style))
+    elements.append(Paragraph(f"<b>Branch:</b> {invoice.branch.name}", normal_style))
+    elements.append(Spacer(1, 12))
+    elements.append(Paragraph("Thank you for your patronage. For enquiries, contact your branch manager.", subtitle_style))
+
+    doc.build(elements)
+    buffer.seek(0)
+    return buffer

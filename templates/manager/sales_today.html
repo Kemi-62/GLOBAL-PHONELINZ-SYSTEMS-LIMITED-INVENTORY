@@ -133,6 +133,7 @@
           </td>
           <td>
             {% if not sale.is_voided %}
+            <a href="{% url 'invoice_preview' sale_type='RETAIL' sale_id=sale.id %}" class="btn-sm btn-outline" style="font-size:.72rem;padding:.25rem .55rem;">🧾 Invoice</a>
             <button onclick="openVoidModal({{ sale.id }}, '{{ sale.product.model_name }}')"
                     class="btn-sm btn-danger" style="font-size:.72rem;padding:.25rem .55rem;">Void</button>
             {% else %}

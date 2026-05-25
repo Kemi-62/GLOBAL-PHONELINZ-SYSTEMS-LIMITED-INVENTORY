@@ -12,6 +12,9 @@ import json
 # -----------------------
 class Branch(models.Model):
     name = models.CharField(max_length=100)
+    street_address = models.CharField(max_length=255, blank=True)
+    city = models.CharField(max_length=100, blank=True)
+    state = models.CharField(max_length=100, blank=True)
     latitude = models.FloatField(null=True, blank=True)
     longitude = models.FloatField(null=True, blank=True)
     allowed_radius = models.IntegerField(default=300)
@@ -19,6 +22,11 @@ class Branch(models.Model):
 
     def __str__(self):
         return str(self.name)
+
+    @property
+    def full_address(self):
+        parts = [p for p in [self.street_address, self.city, self.state] if p]
+        return ", ".join(parts) if parts else "Address not set"
 
 
 # -----------------------
@@ -691,6 +699,42 @@ class WholesaleDevice(models.Model):
     @property
     def total_value(self):
         return self.quantity * self.selling_price
+
+
+class Invoice(models.Model):
+    SALE_TYPES = (
+        ('RETAIL', 'Retail Sale'),
+        ('MULTICHOICE', 'MultiChoice Subscription'),
+        ('TELECOM', 'Telecom Service'),
+        ('WHOLESALE', 'Wholesale Device'),
+    )
+
+    invoice_number = models.CharField(max_length=50, unique=True)
+    sale_type      = models.CharField(max_length=20, choices=SALE_TYPES)
+    sale_id        = models.PositiveIntegerField()
+
+    branch         = models.ForeignKey(Branch, on_delete=models.CASCADE)
+    staff          = models.ForeignKey(User, on_delete=models.CASCADE)
+
+    customer_name  = models.CharField(max_length=200, blank=True)
+    customer_phone = models.CharField(max_length=20, blank=True)
+
+    product_description = models.CharField(max_length=300, blank=True)
+    quantity       = models.PositiveIntegerField(default=1)
+    unit_price     = models.DecimalField(max_digits=12, decimal_places=2, default=0)
+    total_amount   = models.DecimalField(max_digits=12, decimal_places=2, default=0)
+    payment_method = models.CharField(max_length=20, blank=True)
+
+    date           = models.DateField(auto_now_add=True)
+    time           = models.TimeField(auto_now_add=True)
+    generated_at   = models.DateTimeField(auto_now_add=True)
+    emailed_to     = models.EmailField(blank=True, null=True)
+
+    class Meta:
+        ordering = ['-generated_at']
+
+    def __str__(self):
+        return f"{self.invoice_number} — {self.sale_type} — ₦{self.total_amount}"
 
 
 class WholesaleDeviceSale(models.Model):

@@ -1,0 +1,185 @@
+{% extends "base.html" %}
+{% block content %}
+<style>
+.invoice-box {
+  max-width: 720px;
+  margin: 0 auto;
+  background: #fff;
+  border: 1px solid #e5e7eb;
+  border-radius: 10px;
+  padding: 2rem;
+}
+.invoice-header {
+  text-align: center;
+  border-bottom: 2px solid #004F9F;
+  padding-bottom: 1rem;
+  margin-bottom: 1.5rem;
+}
+.invoice-header h1 {
+  color: #004F9F;
+  font-size: 1.5rem;
+  margin: 0;
+}
+.invoice-header p {
+  color: #6b7280;
+  font-size: .85rem;
+  margin: .3rem 0 0;
+}
+.invoice-section {
+  margin-bottom: 1.2rem;
+}
+.invoice-section h3 {
+  color: #004F9F;
+  font-size: .95rem;
+  margin: 0 0 .5rem;
+  text-transform: uppercase;
+  letter-spacing: .03em;
+}
+.invoice-table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: .9rem;
+}
+.invoice-table th {
+  background: #004F9F;
+  color: #fff;
+  padding: .6rem .8rem;
+  text-align: left;
+}
+.invoice-table td {
+  padding: .6rem .8rem;
+  border-bottom: 1px solid #e5e7eb;
+}
+.invoice-table td:nth-child(2),
+.invoice-table td:nth-child(3),
+.invoice-table td:nth-child(4) {
+  text-align: center;
+}
+.invoice-total {
+  text-align: right;
+  font-size: 1.1rem;
+  font-weight: 700;
+  color: #004F9F;
+  margin-top: 1rem;
+  padding-top: .5rem;
+  border-top: 2px solid #e5e7eb;
+}
+.invoice-meta {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 1rem;
+  font-size: .85rem;
+  color: #374151;
+}
+.invoice-meta div {
+  background: #f9fafb;
+  border-radius: 6px;
+  padding: .8rem;
+}
+.invoice-actions {
+  display: flex;
+  gap: .6rem;
+  flex-wrap: wrap;
+  margin-top: 1.5rem;
+  padding-top: 1rem;
+  border-top: 1px solid #e5e7eb;
+}
+.btn-sm {
+  padding: .5rem 1rem;
+  font-size: .85rem;
+  border-radius: 6px;
+  border: none;
+  cursor: pointer;
+  font-weight: 600;
+  display: inline-block;
+  text-decoration: none;
+  color: #fff;
+}
+.btn-primary { background: #004F9F; }
+.btn-success { background: #10b981; }
+.btn-outline { background: transparent; border: 1px solid #d1d5db; color: #374151; }
+@media print {
+  .no-print { display: none !important; }
+  .invoice-box { border: none; box-shadow: none; }
+  body { background: #fff; }
+}
+</style>
+
+<div class="no-print" style="margin-bottom:1rem;">
+  <a href="javascript:history.back()" class="btn-sm btn-outline">← Back</a>
+</div>
+
+<div class="invoice-box" id="invoice">
+  <div class="invoice-header">
+    <h1>GLOBAL PHONELINZ SYSTEMS LIMITED</h1>
+    <p>Telecom &amp; Retail Solutions</p>
+    <p style="font-size:1.2rem;font-weight:700;color:#111;margin-top:.8rem;">INVOICE</p>
+    <p style="font-size:.9rem;color:#6b7280;">{{ invoice.invoice_number }}</p>
+  </div>
+
+  <div class="invoice-meta">
+    <div>
+      <p style="margin:0 0 .3rem;font-weight:600;">Branch</p>
+      <p style="margin:0;">{{ invoice.branch.name }}</p>
+      <p style="margin:.2rem 0 0;font-size:.78rem;color:#6b7280;">{{ invoice.branch.full_address }}</p>
+    </div>
+    <div>
+      <p style="margin:0 0 .3rem;font-weight:600;">Date &amp; Time</p>
+      <p style="margin:0;">{{ invoice.date|date:"d M Y" }} {{ invoice.time|time:"H:i" }}</p>
+    </div>
+    <div>
+      <p style="margin:0 0 .3rem;font-weight:600;">Payment Method</p>
+      <p style="margin:0;">{{ invoice.payment_method|default:"—" }}</p>
+    </div>
+    <div>
+      <p style="margin:0 0 .3rem;font-weight:600;">Attended By</p>
+      <p style="margin:0;">{{ invoice.staff.get_full_name|default:invoice.staff.username }}</p>
+    </div>
+  </div>
+
+  <div class="invoice-section" style="margin-top:1.5rem;">
+    <h3>Bill To</h3>
+    <p style="margin:0;color:#374151;">
+      {% if invoice.customer_name %}{{ invoice.customer_name }}<br>{% endif %}
+      {% if invoice.customer_phone %}Phone: {{ invoice.customer_phone }}{% else %}Walk-in Customer{% endif %}
+    </p>
+  </div>
+
+  <div class="invoice-section">
+    <h3>Item(s)</h3>
+    <table class="invoice-table">
+      <thead>
+        <tr>
+          <th>Description</th>
+          <th>Qty</th>
+          <th>Unit Price (₦)</th>
+          <th>Total (₦)</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr>
+          <td>{{ invoice.product_description|default:"Service / Product" }}</td>
+          <td>{{ invoice.quantity }}</td>
+          <td>{{ invoice.unit_price|floatformat:2 }}</td>
+          <td>{{ invoice.total_amount|floatformat:2 }}</td>
+        </tr>
+      </tbody>
+    </table>
+    <div class="invoice-total">
+      Total Amount: ₦{{ invoice.total_amount|floatformat:2 }}
+    </div>
+  </div>
+
+  <div class="no-print invoice-actions">
+    <button onclick="window.print()" class="btn-sm btn-primary">🖨️ Print</button>
+    <a href="{% url 'invoice_download_pdf' sale_type=sale_type sale_id=sale_id %}" class="btn-sm btn-success">📥 Download PDF</a>
+
+    <form method="POST" style="display:flex;gap:.5rem;align-items:center;flex:1;min-width:250px;">
+      {% csrf_token %}
+      <input type="email" name="email" placeholder="customer@email.com" required
+             style="flex:1;padding:.4rem .7rem;border:1px solid #d1d5db;border-radius:6px;font-size:.85rem;">
+      <button type="submit" class="btn-sm btn-primary">📧 Email Invoice</button>
+    </form>
+  </div>
+</div>
+{% endblock %}

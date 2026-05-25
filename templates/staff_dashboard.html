@@ -219,6 +219,7 @@
             <th>Customer Phone</th>
             <th>Status</th>
             <th>Recorded By</th>
+            <th>Action</th>
           </tr>
         </thead>
         <tbody>
@@ -235,9 +236,12 @@
               {% else %}<span class="badge badge-blue">Logged</span>{% endif %}
             </td>
             <td>{{ act.staff.username }}</td>
+            <td>
+              <a href="{% url 'invoice_preview' sale_type='TELECOM' sale_id=act.id %}" class="btn-sm btn-outline" style="font-size:.72rem;padding:.25rem .55rem;">🧾 Invoice</a>
+            </td>
           </tr>
           {% empty %}
-          <tr><td colspan="7" style="text-align:center;color:#9ca3af;padding:1.5rem 0;">No activities this month.</td></tr>
+          <tr><td colspan="8" style="text-align:center;color:#9ca3af;padding:1.5rem 0;">No activities this month.</td></tr>
           {% endfor %}
         </tbody>
       </table>
