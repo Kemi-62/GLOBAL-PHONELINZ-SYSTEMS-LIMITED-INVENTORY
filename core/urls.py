@@ -126,6 +126,7 @@ urlpatterns = [
     path('telecom/activity-history/', views.telecom_activity_history, name='telecom_activity_history'),
     path('invoice/<str:sale_type>/<int:sale_id>/', views.invoice_preview, name='invoice_preview'),
     path('invoice/<str:sale_type>/<int:sale_id>/pdf/', views.invoice_download_pdf, name='invoice_download_pdf'),
+    path('invoice/<str:sale_type>/<int:sale_id>/receipt/', views.invoice_receipt, name='invoice_receipt'),
     path('wholesale/', views.wholesale_catalog, name='wholesale_catalog'),
     path('wholesale/add-device/', views.wholesale_add_device, name='wholesale_add_device'),
     path('wholesale/record-sale/', views.wholesale_record_sale, name='wholesale_record_sale'),

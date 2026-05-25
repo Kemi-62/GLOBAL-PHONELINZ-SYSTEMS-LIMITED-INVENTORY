@@ -4750,13 +4750,25 @@ def invoice_preview(request, sale_type, sale_id):
 def invoice_download_pdf(request, sale_type, sale_id):
     """Download invoice as PDF."""
     invoice = get_object_or_404(Invoice, sale_type=sale_type, sale_id=sale_id)
-    # Permission check
     if invoice.branch != request.user.branch and not request.user.is_superuser:
         return HttpResponseForbidden()
     pdf_buffer = _build_invoice_pdf(invoice)
     response = HttpResponse(pdf_buffer.getvalue(), content_type='application/pdf')
     response['Content-Disposition'] = f'attachment; filename="Invoice_{invoice.invoice_number}.pdf"'
     return response
+
+
+@login_required
+def invoice_receipt(request, sale_type, sale_id):
+    """Compact thermal receipt view optimized for 58mm/80mm printers and mobile."""
+    invoice = get_object_or_404(Invoice, sale_type=sale_type, sale_id=sale_id)
+    if invoice.branch != request.user.branch and not request.user.is_superuser:
+        return HttpResponseForbidden()
+    return render(request, 'invoice_receipt.html', {
+        'invoice': invoice,
+        'sale_type': sale_type,
+        'sale_id': sale_id,
+    })
 
 
 def _build_invoice_pdf(invoice):

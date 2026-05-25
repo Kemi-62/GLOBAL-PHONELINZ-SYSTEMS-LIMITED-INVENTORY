@@ -1,0 +1,305 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+<title>Receipt {{ invoice.invoice_number }}</title>
+<style>
+  * { margin:0; padding:0; box-sizing:border-box; }
+  body {
+    font-family: 'Courier New', Courier, monospace;
+    font-size: 13px;
+    line-height: 1.35;
+    color: #000;
+    background: #fff;
+    width: 100%;
+    max-width: 320px;
+    margin: 0 auto;
+    padding: 8px;
+  }
+  .receipt {
+    width: 100%;
+  }
+  .center { text-align: center; }
+  .bold { font-weight: bold; }
+  .divider {
+    border-top: 1px dashed #000;
+    margin: 6px 0;
+    height: 0;
+  }
+  .line {
+    display: flex;
+    justify-content: space-between;
+    margin: 2px 0;
+  }
+  .line .left { flex:1; text-align: left; }
+  .line .right { flex-shrink:0; text-align: right; white-space: nowrap; }
+  .total {
+    font-size: 15px;
+    font-weight: bold;
+    margin-top: 4px;
+  }
+  .qr-wrap {
+    text-align: center;
+    margin: 8px 0;
+  }
+  #qr-canvas {
+    display: inline-block;
+    image-rendering: pixelated;
+  }
+  .actions {
+    margin-top: 12px;
+    padding-top: 8px;
+    border-top: 2px solid #000;
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+  }
+  .btn {
+    display: block;
+    width: 100%;
+    padding: 12px;
+    border: none;
+    border-radius: 6px;
+    font-size: 14px;
+    font-weight: bold;
+    text-align: center;
+    cursor: pointer;
+    text-decoration: none;
+  }
+  .btn-print { background: #004F9F; color: #fff; }
+  .btn-bt { background: #10b981; color: #fff; }
+  .btn-back { background: #f3f4f6; color: #374151; }
+  .status { font-size: 12px; color: #666; text-align: center; margin-top: 4px; }
+  @media print {
+    body { max-width: 100%; padding: 0; }
+    .actions, .status, #qr-canvas { display: none !important; }
+  }
+</style>
+</head>
+<body>
+
+<div class="receipt" id="receipt">
+  <div class="center">
+    <p class="bold" style="font-size:15px;">GLOBAL PHONELINZ</p>
+    <p class="bold" style="font-size:15px;">SYSTEMS LIMITED</p>
+    <p style="font-size:11px;">Telecom & Retail Solutions</p>
+  </div>
+
+  <div class="divider"></div>
+
+  <div class="center" style="font-size:11px;">
+    <p>{{ invoice.branch.name }}</p>
+    <p>{{ invoice.branch.full_address }}</p>
+  </div>
+
+  <div class="divider"></div>
+
+  <div class="line"><span class="left">Receipt No:</span><span class="right">{{ invoice.invoice_number }}</span></div>
+  <div class="line"><span class="left">Date:</span><span class="right">{{ invoice.date|date:"d M Y" }} {{ invoice.time|time:"H:i" }}</span></div>
+  <div class="line"><span class="left">Attended By:</span><span class="right">{{ invoice.staff.get_full_name|default:invoice.staff.username }}</span></div>
+  <div class="line"><span class="left">Payment:</span><span class="right">{{ invoice.payment_method|default:"CASH" }}</span></div>
+
+  <div class="divider"></div>
+
+  <div class="center bold" style="margin-bottom:4px;">BILL TO</div>
+  <div class="center">
+    {% if invoice.customer_name %}{{ invoice.customer_name }}<br>{% endif %}
+    {% if invoice.customer_phone %}{{ invoice.customer_phone }}{% else %}Walk-in{% endif %}
+  </div>
+
+  <div class="divider"></div>
+
+  <div class="center bold" style="margin-bottom:4px;">ITEM(S)</div>
+  <div class="line bold">
+    <span class="left">Description</span>
+    <span class="right">Amt</span>
+  </div>
+  <div class="line">
+    <span class="left">{{ invoice.product_description|default:"Service" }} x{{ invoice.quantity }}</span>
+    <span class="right">N{{ invoice.total_amount|floatformat:2 }}</span>
+  </div>
+
+  <div class="divider"></div>
+
+  <div class="line total">
+    <span class="left">TOTAL</span>
+    <span class="right">N{{ invoice.total_amount|floatformat:2 }}</span>
+  </div>
+
+  <div class="divider"></div>
+
+  <div class="center" style="font-size:11px; margin-top:4px;">
+    <p>Thank you for your patronage!</p>
+    <p>For enquiries, contact your branch.</p>
+  </div>
+</div>
+
+<!-- Actions -->
+<div class="actions">
+  <button class="btn btn-print" onclick="printReceipt()">🖨️ Print Receipt</button>
+  <button class="btn btn-bt" onclick="connectBluetoothPrinter()">🔗 Print via Bluetooth</button>
+  <a href="javascript:history.back()" class="btn btn-back">← Back</a>
+</div>
+
+<p class="status" id="bt-status">Tap "Print via Bluetooth" to pair a thermal printer (58mm/80mm).</p>
+
+<script>
+function printReceipt() {
+  window.print();
+}
+
+// Simple ESC/POS encoder for thermal printers
+class EscPosEncoder {
+  constructor() {
+    this._buffer = [];
+  }
+  _write(data) {
+    if (typeof data === 'string') {
+      for (let i = 0; i < data.length; i++) {
+        this._buffer.push(data.charCodeAt(i));
+      }
+    } else if (Array.isArray(data)) {
+      this._buffer.push(...data);
+    }
+  }
+  init() { this._write([0x1B, 0x40]); return this; }
+  align(v) {
+    let n = v === 'center' ? 1 : v === 'right' ? 2 : 0;
+    this._write([0x1B, 0x61, n]); return this;
+  }
+  bold(on) { this._write([0x1B, 0x45, on ? 1 : 0]); return this; }
+  size(w, h) {
+    let v = ((w - 1) & 0x03) | (((h - 1) & 0x03) << 4);
+    this._write([0x1D, 0x21, v]); return this;
+  }
+  text(str) { this._write(str); return this; }
+  newline() { this._write([0x0A]); return this; }
+  cut() { this._write([0x1D, 0x56, 0x01]); return this; }
+  get bytes() { return new Uint8Array(this._buffer); }
+}
+
+async function connectBluetoothPrinter() {
+  const status = document.getElementById('bt-status');
+  status.textContent = 'Scanning for Bluetooth printers...';
+
+  try {
+    // Check if Web Bluetooth is available
+    if (!navigator.bluetooth) {
+      status.textContent = 'Web Bluetooth not supported. Use Chrome/Android, or use "Print Receipt" for phone share-print.';
+      return;
+    }
+
+    const device = await navigator.bluetooth.requestDevice({
+      filters: [
+        { namePrefix: 'MP' },
+        { namePrefix: 'POS' },
+        { namePrefix: 'Thermal' },
+        { namePrefix: 'Printer' },
+        { namePrefix: 'BT' },
+        { namePrefix: '58' },
+        { namePrefix: '80' },
+      ],
+      optionalServices: ['000018f0-0000-1000-8000-00805f9b34fb', '49535343-fe7d-4ae5-8fa9-9fafd205e455', 'e7810a71-73ae-499d-8c15-faa9aef0c3f2']
+    });
+
+    status.textContent = 'Connecting to ' + device.name + '...';
+    const server = await device.gatt.connect();
+
+    // Try common thermal printer services
+    let service;
+    const svcUUIDs = [
+      '000018f0-0000-1000-8000-00805f9b34fb',
+      '49535343-fe7d-4ae5-8fa9-9fafd205e455',
+      'e7810a71-73ae-499d-8c15-faa9aef0c3f2',
+      '0000ff00-0000-1000-8000-00805f9b34fb'
+    ];
+    for (const u of svcUUIDs) {
+      try { service = await server.getPrimaryService(u); break; } catch(e) {}
+    }
+
+    if (!service) {
+      status.textContent = 'Connected, but no printer service found. Use "Print Receipt" and share to your printer app instead.';
+      return;
+    }
+
+    // Find characteristic
+    let char;
+    const charUUIDs = [
+      '00002af1-0000-1000-8000-00805f9b34fb',
+      '49535343-8841-43f4-a8d4-ecbe34729bb3',
+      'bffac0d5-1d99-4159-bc34-c4813861d200',
+      '0000ff02-0000-1000-8000-00805f9b34fb'
+    ];
+    for (const u of charUUIDs) {
+      try { char = await service.getCharacteristic(u); break; } catch(e) {}
+    }
+
+    if (!char) {
+      // Fallback: enumerate characteristics
+      const chars = await service.getCharacteristics();
+      for (const c of chars) {
+        if (c.properties.write || c.properties.writeWithoutResponse) {
+          char = c; break;
+        }
+      }
+    }
+
+    if (!char) {
+      status.textContent = 'No writable characteristic found. Use "Print Receipt" instead.';
+      return;
+    }
+
+    // Build ESC/POS receipt
+    const e = new EscPosEncoder().init();
+    e.align('center').bold(true).size(2,2).text('GLOBAL PHONELINZ').newline()
+     .text('SYSTEMS LIMITED').newline()
+     .bold(false).size(1,1).text('Telecom & Retail Solutions').newline()
+     .align('left');
+
+    e.text('------------------------------').newline();
+    e.align('center').text('{{ invoice.branch.name|escapejs }}').newline();
+    e.text('{{ invoice.branch.full_address|escapejs }}').newline();
+    e.align('left').text('------------------------------').newline();
+
+    e.text('Receipt: {{ invoice.invoice_number|escapejs }}').newline();
+    e.text('Date:    {{ invoice.date|date:"d M Y"|escapejs }} {{ invoice.time|time:"H:i"|escapejs }}').newline();
+    e.text('Staff:   {{ invoice.staff.get_full_name|default:invoice.staff.username|escapejs }}').newline();
+    e.text('Pay:     {{ invoice.payment_method|default:"CASH"|escapejs }}').newline();
+    e.text('------------------------------').newline();
+
+    e.align('center').bold(true).text('BILL TO').newline().bold(false);
+    {% if invoice.customer_name %}e.text('{{ invoice.customer_name|escapejs }}').newline();{% endif %}
+    {% if invoice.customer_phone %}e.text('{{ invoice.customer_phone|escapejs }}').newline();{% endif %}
+    e.text('------------------------------').newline();
+
+    e.align('center').bold(true).text('ITEM').newline().bold(false);
+    e.text('{{ invoice.product_description|default:"Service"|escapejs }} x{{ invoice.quantity }}').newline();
+    e.align('right').bold(true).text('TOTAL: N{{ invoice.total_amount|floatformat:2 }}').newline().bold(false);
+    e.align('left').text('------------------------------').newline();
+
+    e.align('center').text('Thank you!').newline().text('For enquiries, contact branch.').newline();
+    e.align('left').newline().newline().newline().cut();
+
+    status.textContent = 'Sending to printer...';
+    const data = e.bytes;
+
+    if (char.properties.writeWithoutResponse) {
+      await char.writeValueWithoutResponse(data);
+    } else {
+      await char.writeValueWithResponse(data);
+    }
+    status.textContent = 'Receipt sent to ' + device.name + ' successfully!';
+
+  } catch (err) {
+    if (err.name === 'NotFoundError') {
+      status.textContent = 'No printer selected. Tap again to scan.';
+    } else {
+      status.textContent = 'Bluetooth error: ' + err.message + '. Use "Print Receipt" for share-print instead.';
+    }
+  }
+}
+</script>
+
+</body>
+</html>

@@ -173,6 +173,7 @@
   <div class="no-print invoice-actions">
     <button onclick="window.print()" class="btn-sm btn-primary">🖨️ Print</button>
     <a href="{% url 'invoice_download_pdf' sale_type=sale_type sale_id=sale_id %}" class="btn-sm btn-success">📥 Download PDF</a>
+    <a href="{% url 'invoice_receipt' sale_type=sale_type sale_id=sale_id %}" class="btn-sm btn-outline" style="background:#f97316;color:#fff;border:none;">🧻 Thermal Receipt</a>
 
     <form method="POST" style="display:flex;gap:.5rem;align-items:center;flex:1;min-width:250px;">
       {% csrf_token %}
