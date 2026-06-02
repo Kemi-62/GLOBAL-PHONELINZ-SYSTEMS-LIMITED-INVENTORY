@@ -146,9 +146,10 @@ WSGI_APPLICATION = 'django_project.wsgi.application'
 # DATABASE
 # ═══════════════════════════════════════════════════════
 
-# Render DATABASE_URL (PostgreSQL) takes priority unless explicitly overridden
+# Render DATABASE_URL (PostgreSQL) takes priority only when IS_PRODUCTION=True
+# Local/Replit development uses SQLite to preserve existing user data
 DATABASE_URL = os.environ.get('DATABASE_URL')
-if DATABASE_URL and config('DB_ENGINE', default='auto') != 'sqlite':
+if DATABASE_URL and IS_PRODUCTION:
     import dj_database_url
     DATABASES = {
         'default': dj_database_url.parse(DATABASE_URL, conn_max_age=60)
