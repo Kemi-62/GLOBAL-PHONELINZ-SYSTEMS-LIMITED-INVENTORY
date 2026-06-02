@@ -1,12 +1,20 @@
-#!/bin/bash
+#!/usr/bin/env bash
+# Build script for Render (also used for local deployment)
 
-# Build script for deployment
+set -e
 
-# Install requirements
+echo "==> Installing dependencies..."
 pip install -r requirements.txt
 
-# Run migrations
+echo "==> Collecting static files..."
+python manage.py collectstatic --noinput
+
+echo "==> Running migrations..."
 python manage.py migrate
 
-# Collect static files
-python manage.py collectstatic --noinput
+echo "==> Loading initial data (if available)..."
+if [ -f "core/fixtures/initial_data.json" ]; then
+    python manage.py loaddata core/fixtures/initial_data.json
+fi
+
+echo "==> Build complete!"

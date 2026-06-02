@@ -3,18 +3,35 @@
 version: 2
 
 services:
-  web:
-    type: python
+  - type: web
     name: gpsl-app
     env: python
     plan: free
     buildCommand: |
       pip install -r requirements.txt
-      python manage.py migrate
-      python manage.py loaddata data.json
-      python manage.py seed_roles
       python manage.py collectstatic --noinput
+      python manage.py migrate
+      python manage.py loaddata core/fixtures/initial_data.json
     startCommand: gunicorn django_project.wsgi:application
     envVars:
       - key: PYTHON_VERSION
-        value: 3.11.9
+        value: 3.11
+      - key: SECRET_KEY
+        generateValue: true
+      - key: DEBUG
+        value: false
+      - key: IS_PRODUCTION
+        value: true
+      - key: ADMIN_URL
+        value: system-admin/
+      - key: DATABASE_URL
+        fromDatabase:
+          name: gpsl-db
+          property: connectionString
+      - key: RENDER
+        value: true
+
+  - type: postgres
+    name: gpsl-db
+    plan: free
+    ipAllowList: []
