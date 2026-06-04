@@ -146,10 +146,10 @@ WSGI_APPLICATION = 'django_project.wsgi.application'
 # DATABASE
 # ═══════════════════════════════════════════════════════
 
-# Render DATABASE_URL (PostgreSQL) takes priority only when IS_PRODUCTION=True
-# Local/Replit development uses SQLite to preserve existing user data
+# Render DATABASE_URL (Supabase PostgreSQL) — Render only
+# Replit keeps SQLite to preserve existing db.sqlite3 data
 DATABASE_URL = os.environ.get('DATABASE_URL')
-if DATABASE_URL and IS_PRODUCTION:
+if IS_RENDER and DATABASE_URL:
     import dj_database_url
     DATABASES = {
         'default': dj_database_url.parse(DATABASE_URL, conn_max_age=60)
@@ -167,7 +167,7 @@ elif config('DB_ENGINE', default='sqlite') == 'postgresql':
         }
     }
 else:
-    # DEFAULT: SQLite for local development and Replit
+    # DEFAULT: SQLite for Replit and local development
     DATABASES = {
         'default': {
             'ENGINE': 'django.db.backends.sqlite3',

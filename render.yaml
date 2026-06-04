@@ -24,14 +24,7 @@ services:
         value: true
       - key: ADMIN_URL
         value: system-admin/
-      - key: DATABASE_URL
-        fromDatabase:
-          name: gpsl-db
-          property: connectionString
+      # DATABASE_URL: set manually in Render Dashboard with your Supabase connection string
+      # Example: postgresql://postgres:[password]@db.[project-ref].supabase.co:5432/postgres
       - key: RENDER
         value: true
-
-  - type: postgres
-    name: gpsl-db
-    plan: free
-    ipAllowList: []
