@@ -258,12 +258,13 @@
         <p class="card-title">📦 Safe Stock Levels</p>
         <div style="overflow-x:auto;">
           <table class="data-table">
-            <thead><tr><th>Product</th><th>Category</th><th style="text-align:center;">Qty</th></tr></thead>
+            <thead><tr><th>Product</th><th>Category</th><th>Description</th><th style="text-align:center;">Qty</th></tr></thead>
             <tbody>
               {% for s in safe_stocks %}
               <tr>
                 <td>{{ s.product.model_name }}</td>
                 <td>{{ s.product.subcategory.name }}</td>
+                <td style="font-size:.75rem;color:#9ca3af;max-width:120px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;" title="{{ s.product.description|default:"" }}">{{ s.product.description|default:"—" }}</td>
                 <td style="text-align:center;">
                   <span class="badge {% if s.quantity == 0 %}badge-red{% elif s.quantity < 3 %}badge-amber{% else %}badge-green{% endif %}">
                     {{ s.quantity }}

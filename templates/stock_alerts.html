@@ -10,6 +10,7 @@
         <thead>
             <tr>
                 <th>Product</th>
+                <th>Description</th>
                 <th>Current Stock</th>
                 <th>Threshold</th>
                 <th>Alert Type</th>
@@ -20,13 +21,14 @@
             {% for alert in alerts %}
             <tr>
                 <td>{{ alert.product.model_name }}</td>
+                <td style="font-size:.75rem;color:#666;max-width:120px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;" title="{{ alert.product.description|default:"" }}">{{ alert.product.description|default:"—" }}</td>
                 <td>{{ alert.current_quantity }}</td>
                 <td>{{ alert.threshold }}</td>
                 <td><span class="badge badge-warning">{{ alert.get_alert_type_display }}</span></td>
                 <td>{% if alert.current_quantity <= alert.threshold %}<span class="badge badge-danger">Active</span>{% else %}<span class="badge badge-success">OK</span>{% endif %}</td>
             </tr>
             {% empty %}
-            <tr><td colspan="5" style="text-align:center;">No active alerts</td></tr>
+            <tr><td colspan="6" style="text-align:center;">No active alerts</td></tr>
             {% endfor %}
         </tbody>
     </table>

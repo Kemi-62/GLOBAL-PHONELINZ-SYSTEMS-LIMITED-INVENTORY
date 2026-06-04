@@ -156,6 +156,7 @@ pre{background:#f5f5f5;padding:.8rem;border-radius:6px;font-size:.75rem;overflow
           <tr>
             <th>Product</th>
             <th>Category</th>
+            <th>Description</th>
             <th>Added At</th>
             <th>Added By</th>
             <th style="text-align:center;">Qty in Stock</th>
@@ -168,6 +169,7 @@ pre{background:#f5f5f5;padding:.8rem;border-radius:6px;font-size:.75rem;overflow
           <tr>
             <td><strong>{{ stock.product.model_name }}</strong></td>
             <td style="color:#9ca3af;">{{ stock.product.subcategory.name }}</td>
+            <td style="font-size:.75rem;color:#9ca3af;max-width:150px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;" title="{{ stock.product.description|default:"" }}">{{ stock.product.description|default:"—" }}</td>
             <td style="color:#9ca3af;white-space:nowrap;">{{ stock.added_at|date:"d M Y H:i" }}</td>
             <td style="color:#9ca3af;">{{ stock.added_by.username|default:"—" }}</td>
             <td style="text-align:center;">
