@@ -12,6 +12,7 @@ services:
       python manage.py collectstatic --noinput
       python manage.py migrate
       python manage.py loaddata core/fixtures/initial_data.json
+      python manage.py seed_supabase
     startCommand: gunicorn django_project.wsgi:application
     envVars:
       - key: PYTHON_VERSION
