@@ -156,7 +156,7 @@ pre{background:#f5f5f5;padding:.8rem;border-radius:6px;font-size:.75rem;overflow
           <tr>
             <th>Product</th>
             <th>Category</th>
-            <th>Description</th>
+            <th>Color</th>
             <th>Added At</th>
             <th>Added By</th>
             <th style="text-align:center;">Qty in Stock</th>
@@ -169,7 +169,7 @@ pre{background:#f5f5f5;padding:.8rem;border-radius:6px;font-size:.75rem;overflow
           <tr>
             <td><strong>{{ stock.product.model_name }}</strong></td>
             <td style="color:#9ca3af;">{{ stock.product.subcategory.name }}</td>
-            <td style="font-size:.75rem;color:#9ca3af;max-width:150px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;" title="{{ stock.product.description|default:"" }}">{{ stock.product.description|default:"—" }}</td>
+            <td style="font-size:.75rem;color:#9ca3af;">{{ stock.product.color|default:"—" }}</td>
             <td style="color:#9ca3af;white-space:nowrap;">{{ stock.added_at|date:"d M Y H:i" }}</td>
             <td style="color:#9ca3af;">{{ stock.added_by.username|default:"—" }}</td>
             <td style="text-align:center;">
@@ -221,6 +221,10 @@ pre{background:#f5f5f5;padding:.8rem;border-radius:6px;font-size:.75rem;overflow
           <input type="text" name="model_name" placeholder="e.g. iPhone 15 Pro" required>
         </div>
         <div class="form-group">
+          <label>Color (Optional)</label>
+          <input type="text" name="color" placeholder="e.g. Black, Blue, Gold">
+        </div>
+        <div class="form-group">
           <label>IMEI / Serial (Optional)</label>
           <input type="text" name="imei" placeholder="Full IMEI or Serial Number">
         </div>
@@ -252,10 +256,10 @@ pre{background:#f5f5f5;padding:.8rem;border-radius:6px;font-size:.75rem;overflow
       </form>
       <div>
         <p style="font-size:.78rem;font-weight:600;color:#374151;margin-bottom:.4rem;">CSV Format (columns):</p>
-        <pre>product_name,model_name,category,subcategory,selling_price,quantity,imei_serial
-Apple iPhone,iPhone 15,Phones,Smartphones,850000,2,
-Samsung,S24 Ultra,Phones,Android,700000,1,356938035643809
-Generic Cable,Type-C Cable,Accessories,Cables,2500,10,</pre>
+        <pre>product_name,model_name,category,subcategory,selling_price,quantity,imei_serial,color
+Apple iPhone,iPhone 15,Phones,Smartphones,850000,2,,Black
+Samsung,S24 Ultra,Phones,Android,700000,1,356938035643809,Blue
+Generic Cable,Type-C Cable,Accessories,Cables,2500,10,,</pre>
         <p style="font-size:.75rem;color:#9ca3af;margin-top:.4rem;">
           • <strong>model_name</strong> is required for every row<br>
           • If the product already exists, quantity is added to existing stock<br>

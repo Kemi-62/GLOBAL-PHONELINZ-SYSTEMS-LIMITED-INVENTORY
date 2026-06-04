@@ -488,6 +488,7 @@ def staff_create_product(request):
                 product_name=request.POST.get("product_name", ""),
                 model_name=request.POST.get("model_name"),
                 description=request.POST.get("description", ""),
+                color=request.POST.get("color", ""),
                 imei_serial=request.POST.get("imei", ""),
                 cost_price=0,
                 selling_price=float(request.POST.get("selling_price", 0)) or 0,
@@ -923,6 +924,7 @@ def create_director_product(request):
                 product_name=request.POST.get("product_name"),
                 model_name=request.POST.get("model_name"),
                 description=request.POST.get("description"),
+                color=request.POST.get("color") or None,
                 imei_serial=request.POST.get("imei_serial") or None,
                 cost_price=request.POST.get("cost_price"),
                 selling_price=request.POST.get("selling_price"),
@@ -1450,6 +1452,7 @@ def upload_retail_csv(request):
                     selling_price = float(row.get("selling_price") or 0)
                     quantity = int(row.get("quantity") or 1)
                     imei = (row.get("imei_serial") or "").strip() or None
+                    color = (row.get("color") or "").strip() or None
 
                     category, _ = RetailCategory.objects.get_or_create(name=category_name)
                     subcategory, _ = RetailSubCategory.objects.get_or_create(
@@ -1463,6 +1466,7 @@ def upload_retail_csv(request):
                             "subcategory": subcategory,
                             "product_name": row.get("product_name") or model_name,
                             "description": row.get("description") or "",
+                            "color": color,
                             "imei_serial": imei,
                             "cost_price": float(row.get("cost_price") or 0),
                             "selling_price": selling_price,
@@ -1472,7 +1476,9 @@ def upload_retail_csv(request):
                         # Update price if provided
                         if selling_price:
                             product.selling_price = selling_price
-                            product.save(update_fields=["selling_price"])
+                        if color:
+                            product.color = color
+                        product.save(update_fields=["selling_price", "color"])
 
                     with transaction.atomic():
                         stock, _ = StaffStock.objects.get_or_create(
@@ -1529,6 +1535,7 @@ def upload_manager_csv(request):
                     cost_price = float(row.get("cost_price") or 0)
                     selling_price = float(row.get("selling_price") or 0)
                     imei = (row.get("imei_serial") or "").strip() or None
+                    color = (row.get("color") or "").strip() or None
 
                     category, _ = RetailCategory.objects.get_or_create(name=category_name)
                     subcategory, _ = RetailSubCategory.objects.get_or_create(
@@ -1541,17 +1548,20 @@ def upload_manager_csv(request):
                             "subcategory": subcategory,
                             "product_name": row.get("product_name") or model_name,
                             "description": row.get("description") or "",
+                            "color": color,
                             "imei_serial": imei,
                             "cost_price": cost_price,
                             "selling_price": selling_price,
                         }
                     )
-                    if not created and (cost_price or selling_price):
+                    if not created:
                         if cost_price:
                             product.cost_price = cost_price
                         if selling_price:
                             product.selling_price = selling_price
-                        product.save(update_fields=["cost_price", "selling_price"])
+                        if color:
+                            product.color = color
+                        product.save(update_fields=["cost_price", "selling_price", "color"])
 
                     with transaction.atomic():
                         safe_stock, _ = BranchSafeStock.objects.get_or_create(
@@ -1612,6 +1622,7 @@ def upload_director_csv(request):
                     cost_price = float(row.get("cost_price") or 0)
                     selling_price = float(row.get("selling_price") or 0)
                     imei = (row.get("imei_serial") or "").strip() or None
+                    color = (row.get("color") or "").strip() or None
 
                     category, _ = RetailCategory.objects.get_or_create(name=category_name)
                     subcategory, _ = RetailSubCategory.objects.get_or_create(
@@ -1624,17 +1635,20 @@ def upload_director_csv(request):
                             "subcategory": subcategory,
                             "product_name": row.get("product_name") or model_name,
                             "description": row.get("description") or "",
+                            "color": color,
                             "imei_serial": imei,
                             "cost_price": cost_price,
                             "selling_price": selling_price,
                         }
                     )
-                    if not created and (cost_price or selling_price):
+                    if not created:
                         if cost_price:
                             product.cost_price = cost_price
                         if selling_price:
                             product.selling_price = selling_price
-                        product.save(update_fields=["cost_price", "selling_price"])
+                        if color:
+                            product.color = color
+                        product.save(update_fields=["cost_price", "selling_price", "color"])
 
                     # Update or create director safe stock - just add to quantity
                     with transaction.atomic():
@@ -1827,6 +1841,7 @@ def director_all_branch_stock(request):
                 "branch": s.branch.name,
                 "product": s.product.model_name,
                 "category": s.product.subcategory.name if s.product.subcategory else "—",
+                "color": s.product.color,
                 "quantity": s.quantity,
                 "held_by": "Branch Safe (Manager)",
                 "holder_name": "Branch Safe",
@@ -1840,6 +1855,7 @@ def director_all_branch_stock(request):
                 "branch": s.staff.branch.name if s.staff.branch else "—",
                 "product": s.product.model_name,
                 "category": s.product.subcategory.name if s.product.subcategory else "—",
+                "color": s.product.color,
                 "quantity": s.quantity,
                 "held_by": "Staff",
                 "holder_name": s.staff.username,
