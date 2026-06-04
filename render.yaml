@@ -26,6 +26,7 @@ services:
       - key: ADMIN_URL
         value: system-admin/
       # DATABASE_URL: set manually in Render Dashboard with your Supabase connection string
-      # Example: postgresql://postgres:[password]@db.[project-ref].supabase.co:5432/postgres
+      # Use the Session Pooler (IPv4) connection string from Supabase Dashboard
+      # Example: postgresql://postgres.[project-ref]:[password]@aws-0-eu-west-1.pooler.supabase.com:5432/postgres
       - key: RENDER
         value: true
