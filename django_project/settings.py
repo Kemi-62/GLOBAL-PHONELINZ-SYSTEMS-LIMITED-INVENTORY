@@ -167,6 +167,7 @@ elif config('DB_ENGINE', default='sqlite') == 'postgresql':
         }
     }
 else:
+    # DEFAULT: SQLite for local development and Replit
     DATABASES = {
         'default': {
             'ENGINE': 'django.db.backends.sqlite3',
