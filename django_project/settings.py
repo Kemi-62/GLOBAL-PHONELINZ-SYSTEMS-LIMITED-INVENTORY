@@ -151,8 +151,13 @@ WSGI_APPLICATION = 'django_project.wsgi.application'
 DATABASE_URL = os.environ.get('DATABASE_URL')
 if IS_RENDER and DATABASE_URL:
     import dj_database_url
+    from decouple import config
+
     DATABASES = {
-        'default': dj_database_url.parse(DATABASE_URL, conn_max_age=60)
+        'default': dj_database_url.parse(
+            config('DATABASE_URL', default=''),
+            conn_max_age=600,
+        )
     }
 elif config('DB_ENGINE', default='sqlite') == 'postgresql':
     DATABASES = {
@@ -301,3 +306,6 @@ LOGGING = {
 
 DEFAULT_AUTO_FIELD = 'django.db.models.BigAutoField'
 CONN_MAX_AGE = 60
+
+CSRF_COOKIE_SAMESITE = 'Lax'
+SESSION_COOKIE_SAMESITE = 'Lax'

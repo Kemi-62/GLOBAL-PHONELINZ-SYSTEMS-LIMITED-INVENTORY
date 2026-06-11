@@ -1,57 +1,226 @@
 {% extends "base.html" %}
-
 {% block content %}
-<div style="max-width:420px;margin:auto;padding:20px">
-<h2>Morning Attendance Check-In</h2>
-<div id="error-msg" style="display:none;background:#f8d7da;color:#721c24;padding:12px;border-radius:4px;margin-bottom:15px;"></div>
-<form method="POST" enctype="multipart/form-data" action="{% url 'check_in' %}" id="attendance-form">
-{% csrf_token %}
-<input type="hidden" id="lat" name="latitude">
-<input type="hidden" id="lon" name="longitude">
-<label>Take Selfie</label>
-<input type="file" name="selfie" accept="image/*" capture="user" required>
-<button type="submit" id="check-in-btn" style="width:100%;padding:14px;background:#28a745;color:white;border:none;margin-top:20px;border-radius:4px;cursor:pointer;font-weight:600;">Check In</button>
-</form>
-<p style="margin-top:20px;text-align:center;color:#666;font-size:0.9rem;">
-<a href="{% url 'attendance_history' %}" style="color:#004F9F;text-decoration:none;">View Attendance History</a>
-</p>
+<style>
+.page-title{font-size:1.3rem;font-weight:700;color:#004F9F;margin:0 0 1.5rem}
+.kpi-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(140px,1fr));gap:1rem;margin-bottom:1.5rem}
+.kpi{background:#fff;border-radius:10px;border:1px solid #e5e7eb;padding:1rem 1.2rem}
+.kpi-label{font-size:.72rem;text-transform:uppercase;letter-spacing:.05em;color:#6b7280;margin:0 0 .3rem}
+.kpi-value{font-size:1.5rem;font-weight:700;color:#111827;margin:0}
+.kpi.blue{border-left:4px solid #004F9F}.kpi.amber{border-left:4px solid #f59e0b}
+.kpi.red{border-left:4px solid #ef4444}.kpi.green{border-left:4px solid #10b981}
+.card{background:#fff;border:1px solid #e5e7eb;border-radius:10px;padding:1.2rem 1.4rem;margin-bottom:1.2rem}
+.badge{display:inline-block;padding:.25rem .65rem;border-radius:999px;font-size:.75rem;font-weight:700}
+.badge-green{background:#d1fae5;color:#065f46}
+.badge-amber{background:#fef3c7;color:#92400e}
+.badge-red{background:#fee2e2;color:#991b1b}
+.badge-blue{background:#dbeafe;color:#1e40af}
+.data-table{width:100%;border-collapse:collapse;font-size:.85rem}
+.data-table th{background:#004F9F;color:#fff;font-weight:600;padding:.75rem 1rem;text-align:left}
+.data-table td{padding:.7rem 1rem;border-bottom:1px solid #f3f4f6;vertical-align:middle}
+.data-table tr:hover td{background:#f9fafb}
+.selfie-thumb{width:52px;height:52px;border-radius:50%;object-fit:cover;border:2px solid #e5e7eb;cursor:pointer;transition:transform .2s}
+.selfie-thumb:hover{transform:scale(1.1);border-color:#004F9F}
+.selfie-placeholder{width:52px;height:52px;border-radius:50%;background:#f3f4f6;display:flex;align-items:center;justify-content:center;font-size:1.3rem;color:#9ca3af}
+.filter-bar{display:flex;gap:.6rem;flex-wrap:wrap;align-items:flex-end;margin-bottom:1.2rem}
+.filter-bar input,.filter-bar select{padding:.45rem .7rem;border:1px solid #d1d5db;border-radius:6px;font-size:.83rem}
+.btn-sm{padding:.45rem .9rem;font-size:.82rem;border-radius:6px;border:none;cursor:pointer;font-weight:600;text-decoration:none;display:inline-block}
+.btn-primary{background:#004F9F;color:#fff}.btn-success{background:#10b981;color:#fff}.btn-outline{background:transparent;border:1px solid #d1d5db;color:#374151}
+
+/* Selfie Modal */
+.modal-overlay{display:none;position:fixed;inset:0;background:rgba(0,0,0,.75);z-index:9999;align-items:center;justify-content:center}
+.modal-overlay.show{display:flex}
+.modal-img{max-width:90vw;max-height:85vh;border-radius:12px;box-shadow:0 20px 60px rgba(0,0,0,.5)}
+.modal-info{position:fixed;bottom:2rem;left:50%;transform:translateX(-50%);background:rgba(0,0,0,.7);color:#fff;padding:.6rem 1.2rem;border-radius:8px;font-size:.85rem;text-align:center}
+</style>
+
+<!-- Image Lightbox Modal -->
+<div id="selfie-modal" class="modal-overlay" onclick="closeSelfie()">
+  <img id="selfie-modal-img" class="modal-img" src="" alt="Attendance Selfie">
+  <div id="selfie-modal-info" class="modal-info"></div>
+</div>
+
+<div style="display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:.8rem;margin-bottom:1.5rem;">
+  <div>
+    <h1 class="page-title" style="margin:0;">📅 Staff Attendance</h1>
+    <p style="font-size:.85rem;color:#6b7280;margin:.2rem 0 0;">{{ selected_date|date:"D, d M Y" }}</p>
+  </div>
+  <div style="display:flex;gap:.5rem;flex-wrap:wrap;">
+    <a href="{% url 'export_monthly_attendance_pdf' %}?date={{ selected_date|date:'Y-m-d' }}" class="btn-sm btn-success">📥 Download Full PDF</a>
+    <a href="{% url 'director_dashboard' %}" class="btn-sm btn-outline">← Dashboard</a>
+  </div>
+</div>
+
+<!-- Date Filter -->
+<div class="card">
+  <form method="GET" class="filter-bar">
+    <div>
+      <label style="font-size:.75rem;font-weight:600;color:#374151;display:block;margin-bottom:.2rem;">Date</label>
+      <input type="date" name="date" value="{{ selected_date|date:'Y-m-d' }}">
+    </div>
+    <div>
+      <label style="font-size:.75rem;font-weight:600;color:#374151;display:block;margin-bottom:.2rem;">Branch</label>
+      <select name="branch">
+        <option value="">All Branches</option>
+        {% for b in branches %}
+        <option value="{{ b.id }}" {% if selected_branch == b.id|stringformat:"s" %}selected{% endif %}>{{ b.name }}</option>
+        {% endfor %}
+      </select>
+    </div>
+    <div>
+      <label style="font-size:.75rem;font-weight:600;color:#374151;display:block;margin-bottom:.2rem;">Staff Member</label>
+      <select name="staff">
+        <option value="">All Staff</option>
+        {% for s in all_staff %}
+        <option value="{{ s.id }}" {% if selected_staff == s.id|stringformat:"s" %}selected{% endif %}>{{ s.username }} ({{ s.branch.name }})</option>
+        {% endfor %}
+      </select>
+    </div>
+    <div>
+      <label style="font-size:.75rem;font-weight:600;color:#374151;display:block;margin-bottom:.2rem;">Staff Member</label>
+      <select name="staff">
+        <option value="">All Staff</option>
+        {% for s in all_staff %}
+        <option value="{{ s.id }}" {% if selected_staff == s.id|stringformat:"s" %}selected{% endif %}>{{ s.username }} ({{ s.branch.name }})</option>
+        {% endfor %}
+      </select>
+    </div>
+    <button type="submit" class="btn-sm btn-primary" style="align-self:flex-end;">Filter</button>
+    <a href="{% url 'director_attendance_dashboard' %}" class="btn-sm btn-outline" style="align-self:flex-end;">Clear</a>
+  </form>
+</div>
+
+{% if not is_current_week %}
+<div style="background:#fef9c3;border:1px solid #fcd34d;border-radius:8px;padding:.75rem 1rem;font-size:.83rem;color:#854d0e;margin-bottom:1.2rem;">
+  📅 You are viewing a past date. Selfie photos are hidden to save bandwidth.
+  <a href="{% url 'export_monthly_attendance_pdf' %}?date={{ selected_date|date:'Y-m-d' }}" style="color:#854d0e;font-weight:700;text-decoration:underline;margin-left:.5rem;">Download PDF to see selfies →</a>
+</div>
+{% endif %}
+
+<!-- KPI Cards -->
+<div class="kpi-grid">
+  <div class="kpi blue">
+    <p class="kpi-label">Total Present</p>
+    <p class="kpi-value">{{ records.count }}</p>
+  </div>
+  <div class="kpi green">
+    <p class="kpi-label">On Time</p>
+    <p class="kpi-value">{{ total_ontime }}</p>
+  </div>
+  <div class="kpi amber">
+    <p class="kpi-label">Late</p>
+    <p class="kpi-value">{{ total_late }}</p>
+  </div>
+  <div class="kpi red">
+    <p class="kpi-label">Absent</p>
+    <p class="kpi-value">{{ total_absent }}</p>
+  </div>
+  <div class="kpi red">
+    <p class="kpi-label">Total Deductions</p>
+    <p class="kpi-value">₦{{ total_deductions }}</p>
+  </div>
+</div>
+
+<!-- Attendance Table -->
+<div class="card">
+  <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:1rem;flex-wrap:wrap;gap:.5rem;">
+    <p style="font-size:1rem;font-weight:700;color:#111827;margin:0;">Attendance Records</p>
+    {% if is_current_week %}
+    <span style="font-size:.82rem;color:#6b7280;">Current week — click selfie to view full size</span>
+    {% else %}
+    <span style="font-size:.82rem;background:#eff6ff;color:#1e40af;padding:.25rem .6rem;border-radius:5px;">📷 Selfie captured — download PDF to view photos</span>
+    {% endif %}
+  </div>
+  <div style="overflow-x:auto;">
+    <table class="data-table">
+      <thead>
+        <tr>
+          <th>Selfie</th>
+          <th>Staff</th>
+          <th>Branch</th>
+          <th>Check In</th>
+          <th>Check Out</th>
+          <th>Distance</th>
+          <th>Status</th>
+          <th>Deduction</th>
+        </tr>
+      </thead>
+      <tbody>
+        {% for record in records %}
+        <tr>
+          <td>
+            {% if is_current_week %}
+              {% if record.selfie %}
+              <img src="{{ record.selfie.url }}" alt="{{ record.user.username }}" class="selfie-thumb" onclick="openSelfie(this.src, this.alt)">
+              {% else %}
+              <div class="selfie-placeholder">👤</div>
+              {% endif %}
+            {% else %}
+              {% if record.selfie %}
+              <div class="selfie-placeholder" title="Selfie captured — download PDF to view" style="background:#d1fae5;color:#065f46;font-size:.9rem;">📷</div>
+              {% else %}
+              <div class="selfie-placeholder">👤</div>
+              {% endif %}
+            {% endif %}
+          </td>
+          <td><strong>{{ record.user.username }}</strong></td>
+          <td style="color:#9ca3af;">{{ record.branch.name }}</td>
+          <td>
+            {% if record.check_in_time %}
+            <strong>{{ record.check_in_time|time:"H:i" }}</strong>
+            {% else %}—{% endif %}
+          </td>
+          <td>
+            {% if record.check_out_time %}
+            {{ record.check_out_time|time:"H:i" }}
+            {% else %}
+            <span style="color:#9ca3af;">Not checked out</span>
+            {% endif %}
+          </td>
+          <td style="font-size:.8rem;color:#9ca3af;">
+            {% if record.distance_from_branch %}
+            {{ record.distance_from_branch|floatformat:0 }}m
+            {% else %}—{% endif %}
+          </td>
+          <td>
+            {% if record.is_absent %}
+            <span class="badge badge-red">Absent</span>
+            {% elif record.is_late %}
+            <span class="badge badge-amber">Late</span>
+            {% else %}
+            <span class="badge badge-green">On Time</span>
+            {% endif %}
+          </td>
+          <td>
+            {% if record.deduction_amount %}
+            <strong style="color:#ef4444;">₦{{ record.deduction_amount }}</strong>
+            {% else %}—{% endif %}
+          </td>
+        </tr>
+        {% empty %}
+        <tr>
+          <td colspan="8" style="text-align:center;color:#9ca3af;padding:2.5rem 0;">
+            No attendance records for {{ selected_date|date:'d M Y' }}.
+          </td>
+        </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
 </div>
 
 <script>
-navigator.geolocation.getCurrentPosition(function(position){
-    document.getElementById("lat").value = position.coords.latitude;
-    document.getElementById("lon").value = position.coords.longitude;
-});
-
-document.getElementById('attendance-form').addEventListener('submit', function(e) {
-    e.preventDefault();
-    
-    const formData = new FormData(this);
-    const btn = document.getElementById('check-in-btn');
-    btn.disabled = true;
-    btn.textContent = 'Submitting...';
-    
-    fetch('{% url "check_in" %}', {
-        method: 'POST',
-        body: formData
-    })
-    .then(r => r.json())
-    .then(data => {
-        if(data.success) {
-            alert(data.success);
-            window.location.href = '{% url "attendance_history" %}';
-        } else if(data.error) {
-            document.getElementById('error-msg').style.display = 'block';
-            document.getElementById('error-msg').textContent = data.error;
-            btn.disabled = false;
-            btn.textContent = 'Check In';
-        }
-    })
-    .catch(err => {
-        alert('Error: ' + err);
-        btn.disabled = false;
-        btn.textContent = 'Check In';
-    });
+function openSelfie(url, info) {
+  document.getElementById('selfie-modal-img').src = url;
+  document.getElementById('selfie-modal-info').textContent = info;
+  document.getElementById('selfie-modal').classList.add('show');
+}
+function closeSelfie() {
+  document.getElementById('selfie-modal').classList.remove('show');
+  document.getElementById('selfie-modal-img').src = '';
+}
+document.addEventListener('keydown', function(e) {
+  if (e.key === 'Escape') closeSelfie();
 });
 </script>
 {% endblock %}
+-- ../partials/attendance_widget.html

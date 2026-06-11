@@ -77,12 +77,11 @@ class Command(BaseCommand):
                 }
             )
             # Always set raw password hash (loaddata creates blank passwords)
-            obj.password = u["password"]
+            obj.set_password("Password@123")
             obj.save()
             if created:
                 user_count += 1
         self.stdout.write(self.style.SUCCESS(f"Users created: {user_count}/{len(USERS)}"))
-
         self.stdout.write(self.style.SUCCESS(
-            "\nAll 8 users seeded with same passwords. Login credentials unchanged."
+            "\nAll 8 users seeded. Temporary password for all: Password@123"
         ))
