@@ -99,6 +99,27 @@ function openAttModal(type) {
 function closeAttModal() {
   document.getElementById('att-modal').style.display = 'none';
 }
+
+function showToast(type, title, message) {
+  const toast = document.getElementById('att-toast');
+  const icon = document.getElementById('att-toast-icon');
+  const titleEl = document.getElementById('att-toast-title');
+  const msgEl = document.getElementById('att-toast-msg');
+  if (!toast) return;
+  toast.style.background = type === 'success' ? '#d1fae5' : '#fee2e2';
+  toast.style.color = type === 'success' ? '#065f46' : '#991b1b';
+  toast.style.border = '1px solid ' + (type === 'success' ? '#6ee7b7' : '#fecaca');
+  icon.textContent = type === 'success' ? '✅' : '❌';
+  titleEl.textContent = title;
+  msgEl.textContent = message;
+  toast.style.display = 'block';
+  setTimeout(function() { toast.style.display = 'none'; }, 5000);
+}
+
+function closeToast() {
+  const toast = document.getElementById('att-toast');
+  if (toast) toast.style.display = 'none';
+}
 document.getElementById('att-form').addEventListener('submit', function(e) {
   e.preventDefault();
   const form = this;
