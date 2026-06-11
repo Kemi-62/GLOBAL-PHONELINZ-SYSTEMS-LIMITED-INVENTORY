@@ -139,8 +139,4 @@ urlpatterns = [
     # Loyalty
     path('loyalty/customer/<str:phone>/', views.loyalty_customer_lookup, name='loyalty_customer_lookup'),
     path('loyalty/redeem/', views.loyalty_redeem, name='loyalty_redeem'),
-    path('system/keepalive/', views.keepalive_ping, name='keepalive_ping'),
-    path('system/daily-summary/', views.daily_summary_trigger, name='daily_summary_trigger'),
-   # path('offline/', templates.offline.html, name='offline_page'),
-    #path('manifest.json', views.pwa_manifest, name='pwa_manifest'),
 ]
