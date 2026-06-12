@@ -253,6 +253,7 @@ def staff_dashboard(request):
         "monthly_total": activities.filter(approved=True).aggregate(total=Sum("quantity"))["total"] or 0,
         "categories": RetailCategory.objects.all(),
         "check_logs": check_logs,
+        "checkinout_logs": check_logs,
     })
 
 
@@ -489,6 +490,7 @@ def staff_create_product(request):
                 model_name=request.POST.get("model_name"),
                 description=request.POST.get("description", ""),
                 imei_serial=request.POST.get("imei", ""),
+                color=request.POST.get("color", ""),
                 cost_price=0,
                 selling_price=float(request.POST.get("selling_price", 0)) or 0,
             )
@@ -618,6 +620,7 @@ def multichoice_dashboard(request):
         "balance_history": balance_history,
         "current_balance": current_balance,
         "check_logs": CheckInOutLog.objects.filter(staff=request.user).order_by("-date", "-check_in_time")[:20],
+        "checkinout_logs": CheckInOutLog.objects.filter(staff=request.user).order_by("-date", "-check_in_time")[:20],
         "search_query": search_query,
         "selected_month": selected_month,
     })
@@ -1847,6 +1850,7 @@ def director_all_branch_stock(request):
             stock_items.append({
                 "branch": s.branch.name,
                 "product": s.product.model_name,
+                "color": s.product.color,
                 "category": s.product.subcategory.name if s.product.subcategory else "—",
                 "quantity": s.quantity,
                 "held_by": "Branch Safe (Manager)",
@@ -1860,6 +1864,7 @@ def director_all_branch_stock(request):
             stock_items.append({
                 "branch": s.staff.branch.name if s.staff.branch else "—",
                 "product": s.product.model_name,
+                "color": s.product.color,
                 "category": s.product.subcategory.name if s.product.subcategory else "—",
                 "quantity": s.quantity,
                 "held_by": "Staff",
@@ -2792,6 +2797,7 @@ def multichoice_dashboard(request):
         "date_from": date_from,
         "date_to": date_to,
         "check_logs": CheckInOutLog.objects.filter(staff=request.user).order_by("-date", "-check_in_time")[:20],
+        "checkinout_logs": CheckInOutLog.objects.filter(staff=request.user).order_by("-date", "-check_in_time")[:20],
     })
 
 
@@ -4273,6 +4279,7 @@ def retail_dashboard(request):
         "staff_stock": staff_stock,
         "categories": RetailCategory.objects.all(),
         "check_logs": check_logs,
+        "checkinout_logs": check_logs,
         "sales_history": sales_history,
         "low_stock_items": low_stock_items,
         "out_of_stock": out_of_stock,
@@ -5293,4 +5300,53 @@ def manage_price_floors(request):
         "remaining_balance": lp.points_balance,
         "message": f"Redeemed {points} points. Remaining: {lp.points_balance}",
     })
+
+# ─────────────────────────────────────────────
+# BARCODE SCANNING API
+# ─────────────────────────────────────────────
+
+from django.http import JsonResponse
+from django.views.decorators.csrf import csrf_exempt
+import json
+
+@csrf_exempt
+@login_required
+def scan_barcode(request):
+    if request.method != 'POST':
+        return JsonResponse({'error': 'POST only'}, status=405)
+    try:
+        data = json.loads(request.body)
+        barcode = data.get('barcode', '').strip()
+        if not barcode:
+            return JsonResponse({'error': 'No barcode provided'}, status=400)
+
+        # Try to find product by IMEI/Serial
+        product = Product.objects.filter(imei_serial=barcode).first()
+        if product:
+            return JsonResponse({
+                'found': True,
+                'id': product.id,
+                'name': product.model_name,
+                'price': str(product.selling_price),
+                'color': product.color,
+                'imei': product.imei_serial,
+                'source': 'imei',
+            })
+
+        # Try partial IMEI match
+        product = Product.objects.filter(imei_serial__contains=barcode).first()
+        if product:
+            return JsonResponse({
+                'found': True,
+                'id': product.id,
+                'name': product.model_name,
+                'price': str(product.selling_price),
+                'color': product.color,
+                'imei': product.imei_serial,
+                'source': 'partial_imei',
+            })
+
+        return JsonResponse({'found': False, 'message': 'No product found with this barcode/IMEI.'})
+    except Exception as e:
+        return JsonResponse({'error': str(e)}, status=500)
 

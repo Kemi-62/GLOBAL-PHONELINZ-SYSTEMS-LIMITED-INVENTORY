@@ -222,6 +222,7 @@ class Product(models.Model):
     description = models.TextField(null=True, blank=True)
     imei_serial = models.CharField(max_length=100, unique=True, null=True, blank=True)
 
+    color = models.CharField(max_length=50, blank=True, null=True, help_text="Product color variant")
     cost_price = models.DecimalField(max_digits=12, decimal_places=2)
     selling_price = models.DecimalField(max_digits=12, decimal_places=2)
 

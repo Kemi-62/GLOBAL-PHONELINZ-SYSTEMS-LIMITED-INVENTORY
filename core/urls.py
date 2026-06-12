@@ -149,4 +149,7 @@ urlpatterns = [
 
     # Price Floor
     path('director/price-floors/', views.manage_price_floors, name='manage_price_floors'),
+
+    # Barcode Scanning
+    path('api/scan-barcode/', views.scan_barcode, name='scan_barcode'),
 ]

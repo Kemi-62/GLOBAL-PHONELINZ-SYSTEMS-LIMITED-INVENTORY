@@ -83,6 +83,7 @@ pre{background:#f5f5f5;padding:.8rem;border-radius:6px;font-size:.75rem;overflow
   <button class="tab-btn" onclick="switchTab('add',this)">➕ Add Products</button>
   <button class="tab-btn" onclick="switchTab('history',this)">📋 Sales History</button>
   <button class="tab-btn" onclick="switchTab('attendance',this)">📍 Attendance</button>
+  <button class="tab-btn" onclick="switchTab('checkinout',this)">🚶 Check In/Out</button>
   <button class="tab-btn" onclick="switchTab('requests',this)">📬 Stock Requests</button>
 </div>
 
@@ -162,6 +163,7 @@ pre{background:#f5f5f5;padding:.8rem;border-radius:6px;font-size:.75rem;overflow
         <thead>
           <tr>
             <th>Product</th>
+            <th>Color</th>
             <th>Category</th>
             <th>Added At</th>
             <th>Added By</th>
@@ -174,6 +176,7 @@ pre{background:#f5f5f5;padding:.8rem;border-radius:6px;font-size:.75rem;overflow
           {% for stock in staff_stock %}
           <tr>
             <td><strong>{{ stock.product.model_name }}</strong></td>
+            <td><span style="display:inline-block;width:14px;height:14px;border-radius:50%;border:1px solid #d1d5db;background:{{ stock.product.color|default:'#e5e7eb' }};vertical-align:middle;margin-right:.3rem;"></span>{{ stock.product.color|default:"—" }}</td>
             <td style="color:#9ca3af;">{{ stock.product.subcategory.name }}</td>
             <td style="color:#9ca3af;white-space:nowrap;">{{ stock.added_at|date:"d M Y H:i" }}</td>
             <td style="color:#9ca3af;">{{ stock.added_by.username|default:"—" }}</td>
@@ -224,6 +227,10 @@ pre{background:#f5f5f5;padding:.8rem;border-radius:6px;font-size:.75rem;overflow
         <div class="form-group">
           <label>Model Name *</label>
           <input type="text" name="model_name" placeholder="e.g. iPhone 15 Pro" required>
+        </div>
+        <div class="form-group">
+          <label>Color</label>
+          <input type="color" name="color" value="#e5e7eb" style="width:100%;height:42px;padding:0;border:1px solid #d1d5db;border-radius:6px;cursor:pointer;">
         </div>
         <div class="form-group">
           <label>IMEI / Serial (Optional)</label>
@@ -282,6 +289,7 @@ Generic Cable,Type-C Cable,Accessories,Cables,2500,10,</pre>
           <tr>
             <th>Date</th>
             <th>Product</th>
+            <th>Color</th>
             <th style="text-align:center;">Qty</th>
             <th style="text-align:right;">Price</th>
             <th style="text-align:right;">Total</th>
@@ -294,6 +302,7 @@ Generic Cable,Type-C Cable,Accessories,Cables,2500,10,</pre>
           <tr>
             <td style="color:#9ca3af;white-space:nowrap;">{{ sale.date|date:"d M Y" }}</td>
             <td><strong>{{ sale.product.model_name }}</strong></td>
+            <td><span style="display:inline-block;width:14px;height:14px;border-radius:50%;border:1px solid #d1d5db;background:{{ sale.product.color|default:'#e5e7eb' }};vertical-align:middle;"></span></td>
             <td style="text-align:center;">{{ sale.quantity }}</td>
             <td style="text-align:right;">₦{{ sale.selling_price|floatformat:0 }}</td>
             <td style="text-align:right;">₦{{ sale.total_revenue|floatformat:0 }}</td>
@@ -391,6 +400,28 @@ Generic Cable,Type-C Cable,Accessories,Cables,2500,10,</pre>
   </div>
 </div>
 
+<!-- ══════════ TAB: CHECK IN/OUT ══════════ -->
+<div id="tab-checkinout" class="tab-panel">
+  <div class="card">
+    <p class="card-title">🚶 Check In / Out Log</p>
+    <table class="data-table">
+      <thead><tr><th>Date</th><th>Check In</th><th>Check Out</th><th>Purpose</th></tr></thead>
+      <tbody>
+        {% for log in checkinout_logs %}
+        <tr>
+          <td>{{ log.date|date:"d M Y" }}</td>
+          <td>{{ log.check_in_time|time:"H:i"|default:"—" }}</td>
+          <td>{{ log.check_out_time|time:"H:i"|default:"—" }}</td>
+          <td>{{ log.purpose|default:"—" }}</td>
+        </tr>
+        {% empty %}
+        <tr><td colspan="4" style="text-align:center;color:#9ca3af;">No check-in/out records yet.</td></tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+</div>
+
 <!-- ══════════ TAB: STOCK REQUESTS ══════════ -->
 <div id="tab-requests" class="tab-panel">
   <div class="card">
@@ -443,10 +474,10 @@ function addSaleRow() {
   tr.id = 'sale-row-' + rowCount;
   tr.innerHTML = `
     <td style="padding:.35rem .5rem;">
-      <select name="product" required class="sale-product" onchange="rowPrice(${rowCount})" style="width:100%;padding:.3rem .4rem;border:1px solid #d1d5db;border-radius:4px;font-size:.82rem;">
-        <option value="">— Select —</option>
+      <select name="product" required class="sale-product tom-select" onchange="rowPrice(${rowCount})" style="width:100%;padding:.3rem .4rem;border:1px solid #d1d5db;border-radius:4px;font-size:.82rem;" data-placeholder="Search product...">
+        <option value=""></option>
         {% for stock in staff_stock %}
-        <option value="{{ stock.product.id }}">{{ stock.product.model_name }} — {{ stock.quantity }} avail — ₦{{ stock.product.selling_price|floatformat:0 }}</option>
+        <option value="{{ stock.product.id }}" data-color="{{ stock.product.color|default:'#e5e7eb' }}">{{ stock.product.model_name }} — {{ stock.quantity }} avail — ₦{{ stock.product.selling_price|floatformat:0 }}{% if stock.product.color %} — {{ stock.product.color }}{% endif %}</option>
         {% endfor %}
       </select>
     </td>

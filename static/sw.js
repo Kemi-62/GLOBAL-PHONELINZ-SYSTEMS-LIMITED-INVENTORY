@@ -3,8 +3,8 @@ const CACHE_NAME = 'gpsl-v2';
 const STATIC_ASSETS = [
   '/',
   '/static/manifest.json',
-  '/static/css/base.css',
-  '/static/js/app.js',
+  '/static/offline.html',
+  '/static/js/offline.js',
   '/static/icons/icon-192.png',
   '/static/icons/icon-512.png',
 ];

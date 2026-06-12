@@ -8,12 +8,21 @@
     <meta name="apple-mobile-web-app-capable" content="yes">
     <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
     <link rel="manifest" href="/static/manifest.json">
+    <link rel="apple-touch-icon" href="/static/icons/icon-192.png">
+    <link href="https://cdn.jsdelivr.net/npm/tom-select@2.3.1/dist/css/tom-select.min.css" rel="stylesheet">
     <title>GPSL ERP</title>
+    <script src="https://cdn.jsdelivr.net/npm/tom-select@2.3.1/dist/js/tom-select.complete.min.js"></script>
     <script>
       // Register Service Worker for PWA
       if ('serviceWorker' in navigator) {
         navigator.serviceWorker.register('/static/sw.js').catch(console.error);
       }
+      // Initialize Tom Select on all .tom-select elements
+      document.addEventListener('DOMContentLoaded', function() {
+        document.querySelectorAll('.tom-select').forEach(function(el) {
+          new TomSelect(el, { placeholder: el.dataset.placeholder || 'Search...', allowEmptyOption: true, maxOptions: 500 });
+        });
+      });
     </script>
     <style>
         :root {
