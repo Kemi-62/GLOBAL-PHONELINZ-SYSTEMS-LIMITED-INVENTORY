@@ -31,18 +31,11 @@
       window.addEventListener('beforeinstallprompt', (e) => {
         e.preventDefault();
         deferredPrompt = e;
-        const btn = document.getElementById('pwa-install-btn');
-        if (btn) btn.style.display = 'flex';
       });
-      window.addEventListener('appinstalled', () => {
-        deferredPrompt = null;
-        const btn = document.getElementById('pwa-install-btn');
-        if (btn) btn.style.display = 'none';
-      });
+      window.addEventListener('appinstalled', () => { deferredPrompt = null; });
       function installPWA() {
-        if (!deferredPrompt) return;
-        deferredPrompt.prompt();
-        deferredPrompt.userChoice.then(() => { deferredPrompt = null; });
+        if (deferredPrompt) { deferredPrompt.prompt(); deferredPrompt.userChoice.then(() => { deferredPrompt = null; }); return; }
+        alert('Add this page to your home screen:\n\nChrome (Android): Menu → Add to Home Screen\nSafari (iOS): Share → Add to Home Screen\nChrome (Desktop): Menu → Install GPSL Automation Solutions');
       }
     </script>
     <style>
@@ -465,7 +458,7 @@
             <span class="icon">🔔</span> Notifications
         </a>
     <div class="sidebar-divider"></div>
-    <a id="pwa-install-btn" class="sidebar-link" style="display:none;" onclick="installPWA();return false;">
+    <a id="pwa-install-btn" class="sidebar-link" onclick="installPWA();return false;">
         <span class="icon">📱</span> Install GPSL
     </a>
     <a href="{% url 'logout' %}" class="sidebar-logout">
