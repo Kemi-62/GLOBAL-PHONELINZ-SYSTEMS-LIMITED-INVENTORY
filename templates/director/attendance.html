@@ -75,26 +75,10 @@
         {% endfor %}
       </select>
     </div>
-    <div>
-      <label style="font-size:.75rem;font-weight:600;color:#374151;display:block;margin-bottom:.2rem;">Staff Member</label>
-      <select name="staff">
-        <option value="">All Staff</option>
-        {% for s in all_staff %}
-        <option value="{{ s.id }}" {% if selected_staff == s.id|stringformat:"s" %}selected{% endif %}>{{ s.username }} ({{ s.branch.name }})</option>
-        {% endfor %}
-      </select>
-    </div>
     <button type="submit" class="btn-sm btn-primary" style="align-self:flex-end;">Filter</button>
     <a href="{% url 'director_attendance_dashboard' %}" class="btn-sm btn-outline" style="align-self:flex-end;">Clear</a>
   </form>
 </div>
-
-{% if not is_current_week %}
-<div style="background:#fef9c3;border:1px solid #fcd34d;border-radius:8px;padding:.75rem 1rem;font-size:.83rem;color:#854d0e;margin-bottom:1.2rem;">
-  📅 You are viewing a past date. Selfie photos are hidden to save bandwidth.
-  <a href="{% url 'export_monthly_attendance_pdf' %}?date={{ selected_date|date:'Y-m-d' }}" style="color:#854d0e;font-weight:700;text-decoration:underline;margin-left:.5rem;">Download PDF to see selfies →</a>
-</div>
-{% endif %}
 
 <!-- KPI Cards -->
 <div class="kpi-grid">
@@ -124,11 +108,7 @@
 <div class="card">
   <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:1rem;flex-wrap:wrap;gap:.5rem;">
     <p style="font-size:1rem;font-weight:700;color:#111827;margin:0;">Attendance Records</p>
-    {% if is_current_week %}
-    <span style="font-size:.82rem;color:#6b7280;">Current week — click selfie to view full size</span>
-    {% else %}
-    <span style="font-size:.82rem;background:#eff6ff;color:#1e40af;padding:.25rem .6rem;border-radius:5px;">📷 Selfie captured — download PDF to view photos</span>
-    {% endif %}
+    <span style="font-size:.82rem;color:#6b7280;">Click a selfie to view full size</span>
   </div>
   <div style="overflow-x:auto;">
     <table class="data-table">
@@ -148,18 +128,15 @@
         {% for record in records %}
         <tr>
           <td>
-            {% if is_current_week %}
-              {% if record.selfie %}
-              <img src="{{ record.selfie.url }}" alt="{{ record.user.username }}" class="selfie-thumb" onclick="openSelfie(this.src, this.alt)">
-              {% else %}
-              <div class="selfie-placeholder">👤</div>
-              {% endif %}
+            {% if record.selfie %}
+            <img
+              src="{{ record.selfie.url }}"
+              alt="{{ record.user.username }}"
+              class="selfie-thumb"
+              onclick="openSelfie(this.src, this.alt)"
+            >
             {% else %}
-              {% if record.selfie %}
-              <div class="selfie-placeholder" title="Selfie captured — download PDF to view" style="background:#d1fae5;color:#065f46;font-size:.9rem;">📷</div>
-              {% else %}
-              <div class="selfie-placeholder">👤</div>
-              {% endif %}
+            <div class="selfie-placeholder">👤</div>
             {% endif %}
           </td>
           <td><strong>{{ record.user.username }}</strong></td>

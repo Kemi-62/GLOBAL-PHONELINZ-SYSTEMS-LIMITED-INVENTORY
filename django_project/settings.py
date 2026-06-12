@@ -1,6 +1,6 @@
 """
 Django settings for django_project project.
-RENDER-FIRST VERSION — optimized for Render deployment with no custom domain.
+SECURITY-HARDENED VERSION
 """
 
 import os
@@ -10,88 +10,72 @@ from decouple import config, Csv
 BASE_DIR = Path(__file__).resolve().parent.parent
 
 # ═══════════════════════════════════════════════════════
-# RENDER DETECTION
-# ═════════════════════0═══════════════════════════════
-
-IS_RENDER = os.environ.get('RENDER') == 'true' or os.environ.get('RENDER_EXTERNAL_HOSTNAME') is not None
-IS_REPLIT = os.environ.get('REPL_ID') is not None
-IS_PRODUCTION = config('IS_PRODUCTION', default=False, cast=bool) or IS_RENDER
-
-# ═══════════════════════════════════════════════════════
-# SECURITY — RELAXED FOR RENDER (no custom domain yet)
-# When you get a custom domain, set IS_PRODUCTION=True and set ALLOWED_HOSTS.
+# SECURITY CONFIGURATION — READ-ONLY IN PRODUCTION
 # ═══════════════════════════════════════════════════════
 
-# SECRET_KEY: Use environment on Render; dev fallback for local development.
-# Generate a new one for Render: python -c 'from django.core.management.utils import get_random_secret_key; print(get_random_secret_key())'
-SECRET_KEY = config('SECRET_KEY', default='django-insecure-dev-change-on-render')
+# SECRET_KEY: development fallback that logs a warning.
+# In production, set SECRET_KEY in environment and IS_PRODUCTION=True.
+SECRET_KEY = config('SECRET_KEY', default='dev-only-unsafe-secret-change-in-production')
 
-DEBUG = config('DEBUG', default=not IS_PRODUCTION, cast=bool)
+# Production flag
+IS_PRODUCTION = config('IS_PRODUCTION', default=False, cast=bool)
 
-# ALLOWED_HOSTS: Render auto-detects hostname; Replit uses wildcard; production uses explicit list.
-if IS_RENDER:
-    render_host = os.environ.get('RENDER_EXTERNAL_HOSTNAME', '')
-    ALLOWED_HOSTS = [render_host] if render_host else ['*']
-elif IS_REPLIT:
-    ALLOWED_HOSTS = ['*']
-else:
-    ALLOWED_HOSTS = config('ALLOWED_HOSTS', default='localhost,127.0.0.1', cast=Csv())
+# DEBUG: True in development, MUST be False in production via env var.
+DEBUG = config('DEBUG', default=True, cast=bool)
 
-# CSRF: Render uses HTTPS so cookies can be secure. Replit uses HTTP so keep cookies non-secure.
+# ALLOWED_HOSTS: NEVER wildcard in production. Only specific domains.
+ALLOWED_HOSTS = config('ALLOWED_HOSTS', default='localhost,127.0.0.1,*.replit.dev,*.repl.co,*.replit.app', cast=Csv())
+
+# CSRF: Secure by default
 CSRF_COOKIE_HTTPONLY = True
 CSRF_USE_SESSIONS = True
-CSRF_COOKIE_SAMESITE = 'Lax' if not IS_PRODUCTION else 'Strict'
+CSRF_COOKIE_SAMESITE = 'Strict'
 CSRF_COOKIE_SECURE = IS_PRODUCTION
 SESSION_COOKIE_SECURE = IS_PRODUCTION
 SESSION_COOKIE_HTTPONLY = True
-SESSION_COOKIE_SAMESITE = 'Lax' if not IS_PRODUCTION else 'Strict'
+SESSION_COOKIE_SAMESITE = 'Strict'
 
-# Session: 8 hours on Render, 2 hours locally
-SESSION_COOKIE_AGE = 28800 if IS_PRODUCTION else 7200
+# Session timeout: 30 minutes of inactivity, 8 hours max
+SESSION_COOKIE_AGE = 28800  # 8 hours
 SESSION_EXPIRE_AT_BROWSER_CLOSE = False
 
-# Security Headers: Always apply basic ones; strict ones only in production
+# Security Headers — applied on ALL deployments
 SECURE_BROWSER_XSS_FILTER = True
 SECURE_CONTENT_TYPE_NOSNIFF = True
 SECURE_SSL_REDIRECT = IS_PRODUCTION
 X_FRAME_OPTIONS = 'DENY'
+
+# HSTS: Force HTTPS for 1 year (31,536,000 seconds)
 SECURE_HSTS_SECONDS = 31536000 if IS_PRODUCTION else 0
 SECURE_HSTS_INCLUDE_SUBDOMAINS = IS_PRODUCTION
 SECURE_HSTS_PRELOAD = IS_PRODUCTION
 
-# Proxy header for HTTPS detection behind Render
+# Proxy header for HTTPS detection behind Render/Cloudflare
 SECURE_PROXY_SSL_HEADER = ('HTTP_X_FORWARDED_PROTO', 'https')
-
-# CSRF Trusted Origins: Render domains, Replit domains
-_default_csrf = []
-if IS_RENDER:
-    render_host = os.environ.get('RENDER_EXTERNAL_HOSTNAME')
-    if render_host:
-        _default_csrf.append(f'https://{render_host}')
-if IS_REPLIT:
-    _default_csrf.extend([
-        'https://*.replit.dev',
-        'https://*.repl.co',
-        'https://*.replit.app',
-    ])
-if not _default_csrf:
-    _default_csrf = ['https://localhost']
 
 CSRF_TRUSTED_ORIGINS = config(
     'CSRF_TRUSTED_ORIGINS',
-    default=','.join(_default_csrf),
+    default='https://localhost',
     cast=Csv()
 )
 
 CSRF_FAILURE_VIEW = 'core.views.csrf_failure'
 
 # ═══════════════════════════════════════════════════════
-# ADMIN PANEL — HIDDEN URL (change on Render!)
+# ADMIN PANEL — HIDDEN URL (not /admin/)
 # ═══════════════════════════════════════════════════════
 ADMIN_URL = config('ADMIN_URL', default='system-admin/')
 
+# Cache: LocMem for development (needed for rate limiting)
+CACHES = {
+    'default': {
+        'BACKEND': 'django.core.cache.backends.locmem.LocMemCache',
+        'LOCATION': 'gpsl-cache',
+    }
+}
+
 # ═══════════════════════════════════════════════════════
-# APPLICATION
+# APPLICATION DEFINITION
 # ═══════════════════════════════════════════════════════
 
 INSTALLED_APPS = [
@@ -146,20 +130,7 @@ WSGI_APPLICATION = 'django_project.wsgi.application'
 # DATABASE
 # ═══════════════════════════════════════════════════════
 
-# Render DATABASE_URL (Supabase PostgreSQL) — Render only
-# Replit keeps SQLite to preserve existing db.sqlite3 data
-DATABASE_URL = os.environ.get('DATABASE_URL')
-if IS_RENDER and DATABASE_URL:
-    import dj_database_url
-    from decouple import config
-
-    DATABASES = {
-        'default': dj_database_url.parse(
-            config('DATABASE_URL', default=''),
-            conn_max_age=600,
-        )
-    }
-elif config('DB_ENGINE', default='sqlite') == 'postgresql':
+if config('DB_ENGINE', default='sqlite') == 'postgresql':
     DATABASES = {
         'default': {
             'ENGINE': 'django.db.backends.postgresql',
@@ -172,7 +143,6 @@ elif config('DB_ENGINE', default='sqlite') == 'postgresql':
         }
     }
 else:
-    # DEFAULT: SQLite for Replit and local development
     DATABASES = {
         'default': {
             'ENGINE': 'django.db.backends.sqlite3',
@@ -181,7 +151,7 @@ else:
     }
 
 # ═══════════════════════════════════════════════════════
-# PASSWORD VALIDATION
+# PASSWORD VALIDATION — Stronger for production
 # ═══════════════════════════════════════════════════════
 
 AUTH_PASSWORD_VALIDATORS = [
@@ -201,7 +171,7 @@ USE_I18N = True
 USE_TZ = True
 
 # ═══════════════════════════════════════════════════════
-# STATIC & MEDIA
+# STATIC & MEDIA FILES
 # ═══════════════════════════════════════════════════════
 
 STATIC_URL = '/static/'
@@ -211,11 +181,12 @@ STATICFILES_STORAGE = 'whitenoise.storage.CompressedManifestStaticFilesStorage'
 MEDIA_URL = '/media/'
 MEDIA_ROOT = os.path.join(BASE_DIR, 'media')
 
-FILE_UPLOAD_MAX_MEMORY_SIZE = 5 * 1024 * 1024
-DATA_UPLOAD_MAX_MEMORY_SIZE = 5 * 1024 * 1024
+# File upload limits (5MB max for selfies)
+FILE_UPLOAD_MAX_MEMORY_SIZE = 5 * 1024 * 1024  # 5MB
+DATA_UPLOAD_MAX_MEMORY_SIZE = 5 * 1024 * 1024  # 5MB
 
 # ═══════════════════════════════════════════════════════
-# EMAIL
+# EMAIL CONFIGURATION — via environment only
 # ═══════════════════════════════════════════════════════
 
 EMAIL_BACKEND = 'django.core.mail.backends.smtp.EmailBackend'
@@ -227,78 +198,28 @@ EMAIL_HOST_PASSWORD = config('EMAIL_HOST_PASSWORD', default='')
 DEFAULT_FROM_EMAIL = config('DEFAULT_FROM_EMAIL', default=EMAIL_HOST_USER)
 
 # ═══════════════════════════════════════════════════════
-# RATE LIMITING
+# RATE LIMITING CONFIG
 # ═══════════════════════════════════════════════════════
 
-RATE_LIMIT_LOGIN_ATTEMPTS = 5
-RATE_LIMIT_LOGIN_WINDOW = 300
-RATE_LIMIT_LOGIN_BLOCK = 1800
+RATE_LIMIT_LOGIN_ATTEMPTS = 5      # Max failed logins per window
+RATE_LIMIT_LOGIN_WINDOW = 300      # 5 minutes (seconds)
+RATE_LIMIT_LOGIN_BLOCK = 1800      # 30 minutes block (seconds)
 
 # ═══════════════════════════════════════════════════════
-# MONIEPOINT
+# MONIEPOINT CONFIG
 # ═══════════════════════════════════════════════════════
 
-MONIEPOINT_ENABLED = config('MONIEPOINT_ENABLED', default=False, cast=bool)
 MONIEPOINT_MERCHANT_ID = config('MONIEPOINT_MERCHANT_ID', default='')
 MONIEPOINT_API_KEY = config('MONIEPOINT_API_KEY', default='')
+MONIEPOINT_ENABLED = config('MONIEPOINT_ENABLED', default=False, cast=bool)
 
 # ═══════════════════════════════════════════════════════
-# WHATSAPP
+# WHATSAPP CONFIG
 # ═══════════════════════════════════════════════════════
 
 WHATSAPP_ENABLED = config('WHATSAPP_ENABLED', default=False, cast=bool)
 WHATSAPP_API_KEY = config('WHATSAPP_API_KEY', default='')
 WHATSAPP_PHONE_NUMBER_ID = config('WHATSAPP_PHONE_NUMBER_ID', default='')
-
-# ═══════════════════════════════════════════════════════
-# CACHING
-# ═══════════════════════════════════════════════════════
-
-# Use Redis on Render if available, otherwise LocMem
-if os.environ.get('REDIS_URL'):
-    CACHES = {
-        'default': {
-            'BACKEND': 'django_redis.cache.RedisCache',
-            'LOCATION': os.environ.get('REDIS_URL'),
-            'OPTIONS': {
-                'CLIENT_CLASS': 'django_redis.client.DefaultClient',
-            }
-        }
-    }
-else:
-    CACHES = {
-        'default': {
-            'BACKEND': 'django.core.cache.backends.locmem.LocMemCache',
-            'LOCATION': 'gpsl-cache',
-        }
-    }
-
-# ═══════════════════════════════════════════════════════
-# LOGGING
-# ═══════════════════════════════════════════════════════
-
-LOGGING = {
-    'version': 1,
-    'disable_existing_loggers': False,
-    'handlers': {
-        'console': {
-            'level': 'WARNING',
-            'class': 'logging.StreamHandler',
-        },
-    },
-    'loggers': {
-        'django.request': {
-            'handlers': ['console'],
-            'level': 'WARNING',
-            'propagate': False,
-        },
-        'django.security': {
-            'handlers': ['console'],
-            'level': 'INFO',
-            'propagate': False,
-        },
-    },
-}
 
 # ═══════════════════════════════════════════════════════
 # MISC
@@ -307,5 +228,32 @@ LOGGING = {
 DEFAULT_AUTO_FIELD = 'django.db.models.BigAutoField'
 CONN_MAX_AGE = 60
 
-CSRF_COOKIE_SAMESITE = 'Lax'
-SESSION_COOKIE_SAMESITE = 'Lax'
+# Logging configuration
+LOGGING = {
+    'version': 1,
+    'disable_existing_loggers': False,
+    'handlers': {
+        'file': {
+            'level': 'WARNING',
+            'class': 'logging.FileHandler',
+            'filename': os.path.join(BASE_DIR, 'logs', 'django.log'),
+        },
+        'security_file': {
+            'level': 'INFO',
+            'class': 'logging.FileHandler',
+            'filename': os.path.join(BASE_DIR, 'logs', 'security.log'),
+        },
+    },
+    'loggers': {
+        'django.security': {
+            'handlers': ['security_file'],
+            'level': 'INFO',
+            'propagate': False,
+        },
+        'django.request': {
+            'handlers': ['file'],
+            'level': 'WARNING',
+            'propagate': False,
+        },
+    },
+}

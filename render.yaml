@@ -3,30 +3,18 @@
 version: 2
 
 services:
-  - type: web
+  web:
+    type: python
     name: gpsl-app
     env: python
     plan: free
     buildCommand: |
       pip install -r requirements.txt
-      python manage.py collectstatic --noinput
       python manage.py migrate
-      python manage.py loaddata core/fixtures/initial_data.json
-      python manage.py seed_supabase
+      python manage.py loaddata data.json
+      python manage.py seed_roles
+      python manage.py collectstatic --noinput
     startCommand: gunicorn django_project.wsgi:application
     envVars:
       - key: PYTHON_VERSION
-        value: 3.11
-      - key: SECRET_KEY
-        generateValue: true
-      - key: DEBUG
-        value: false
-      - key: IS_PRODUCTION
-        value: true
-      - key: ADMIN_URL
-        value: system-admin/
-      # DATABASE_URL: set manually in Render Dashboard with your Supabase connection string
-      # Use the Session Pooler (IPv4) connection string from Supabase Dashboard
-      # Example: postgresql://postgres.[project-ref]:[password]@aws-0-eu-west-1.pooler.supabase.com:5432/postgres
-      - key: RENDER
-        value: true
+        value: 3.11.9

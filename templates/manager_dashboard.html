@@ -247,6 +247,7 @@
     </form>
   </div>
 </div>
+</div>
 
 <!-- ══════════ TAB: RETAIL & STOCK ══════════ -->
 <div id="tab-retail" class="tab-panel">
@@ -257,13 +258,12 @@
         <p class="card-title">📦 Safe Stock Levels</p>
         <div style="overflow-x:auto;">
           <table class="data-table">
-            <thead><tr><th>Product</th><th>Category</th><th>Color</th><th style="text-align:center;">Qty</th></tr></thead>
+            <thead><tr><th>Product</th><th>Category</th><th style="text-align:center;">Qty</th></tr></thead>
             <tbody>
               {% for s in safe_stocks %}
               <tr>
                 <td>{{ s.product.model_name }}</td>
                 <td>{{ s.product.subcategory.name }}</td>
-                <td style="font-size:.75rem;color:#9ca3af;">{{ s.product.color|default:"—" }}</td>
                 <td style="text-align:center;">
                   <span class="badge {% if s.quantity == 0 %}badge-red{% elif s.quantity < 3 %}badge-amber{% else %}badge-green{% endif %}">
                     {{ s.quantity }}

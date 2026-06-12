@@ -220,7 +220,6 @@ class Product(models.Model):
     product_name = models.CharField(max_length=200, null=True, blank=True)
     model_name = models.CharField(max_length=100)
     description = models.TextField(null=True, blank=True)
-    color = models.CharField(max_length=50, null=True, blank=True)
     imei_serial = models.CharField(max_length=100, unique=True, null=True, blank=True)
 
     cost_price = models.DecimalField(max_digits=12, decimal_places=2)

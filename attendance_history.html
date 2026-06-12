@@ -1,0 +1,118 @@
+{% extends "base.html" %}
+{% block content %}
+<style>
+.page-title{font-size:1.3rem;font-weight:700;color:#004F9F;margin:0 0 1.5rem}
+.kpi-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(140px,1fr));gap:1rem;margin-bottom:1.5rem}
+.kpi{background:#fff;border-radius:10px;border:1px solid #e5e7eb;padding:1rem 1.2rem}
+.kpi-label{font-size:.72rem;text-transform:uppercase;color:#6b7280;margin:0 0 .3rem}
+.kpi-value{font-size:1.4rem;font-weight:700;color:#111827;margin:0}
+.kpi.green{border-left:4px solid #10b981}.kpi.amber{border-left:4px solid #f59e0b}.kpi.red{border-left:4px solid #ef4444}
+.card{background:#fff;border:1px solid #e5e7eb;border-radius:10px;padding:1.2rem 1.4rem;margin-bottom:1.2rem}
+.badge{display:inline-block;padding:.25rem .65rem;border-radius:999px;font-size:.75rem;font-weight:700}
+.badge-green{background:#d1fae5;color:#065f46}.badge-amber{background:#fef3c7;color:#92400e}.badge-red{background:#fee2e2;color:#991b1b}
+.data-table{width:100%;border-collapse:collapse;font-size:.85rem}
+.data-table th{background:#004F9F;color:#fff;font-weight:600;padding:.7rem 1rem;text-align:left}
+.data-table td{padding:.65rem 1rem;border-bottom:1px solid #f3f4f6}
+.data-table tr:hover td{background:#fafafa}
+.filter-bar{display:flex;gap:.6rem;flex-wrap:wrap;align-items:flex-end;margin-bottom:1rem}
+.filter-bar input,.filter-bar select{padding:.45rem .7rem;border:1px solid #d1d5db;border-radius:6px;font-size:.83rem}
+.filter-label{font-size:.75rem;font-weight:600;color:#374151;display:block;margin-bottom:.2rem}
+.btn-sm{padding:.45rem .9rem;font-size:.82rem;border-radius:6px;border:none;cursor:pointer;font-weight:600;text-decoration:none;display:inline-block}
+.btn-primary{background:#004F9F;color:#fff}.btn-success{background:#10b981;color:#fff}.btn-outline{background:transparent;border:1px solid #d1d5db;color:#374151}
+</style>
+
+<div style="display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:.8rem;margin-bottom:1.5rem;">
+  <h1 class="page-title" style="margin:0;">📅 My Attendance History</h1>
+  <a href="javascript:history.back()" class="btn-sm btn-outline">← Back</a>
+</div>
+
+<!-- KPIs -->
+<div class="kpi-grid">
+  <div class="kpi green">
+    <p class="kpi-label">Records Shown</p>
+    <p class="kpi-value">{{ records.paginator.count }}</p>
+  </div>
+  <div class="kpi amber">
+    <p class="kpi-label">Late Days</p>
+    <p class="kpi-value">{{ total_late }}</p>
+  </div>
+  <div class="kpi red">
+    <p class="kpi-label">Absent Days</p>
+    <p class="kpi-value">{{ total_absent }}</p>
+  </div>
+  <div class="kpi red">
+    <p class="kpi-label">Total Deductions</p>
+    <p class="kpi-value">₦{{ total_deductions }}</p>
+  </div>
+</div>
+
+<div class="card">
+  <!-- Filter Bar -->
+  <form method="GET" class="filter-bar">
+    <div>
+      <span class="filter-label">From Date</span>
+      <input type="date" name="date_from" value="{{ date_from }}">
+    </div>
+    <div>
+      <span class="filter-label">To Date</span>
+      <input type="date" name="date_to" value="{{ date_to }}">
+    </div>
+    <button type="submit" class="btn-sm btn-primary" style="align-self:flex-end;">Filter</button>
+    <a href="{% url 'attendance_history' %}" class="btn-sm btn-outline" style="align-self:flex-end;">Clear</a>
+    <a href="{% url 'attendance_history' %}?date_from={{ date_from }}&date_to={{ date_to }}&export=pdf"
+       class="btn-sm btn-success" style="align-self:flex-end;" title="Download filtered period as PDF">
+      📥 Download PDF
+    </a>
+  </form>
+
+  {% if date_from or date_to %}
+  <div style="background:#eff6ff;border:1px solid #93c5fd;border-radius:6px;padding:.5rem .9rem;font-size:.82rem;color:#1e40af;margin-bottom:1rem;">
+    Showing
+    {% if date_from %}from <strong>{{ date_from }}</strong>{% endif %}
+    {% if date_to %}to <strong>{{ date_to }}</strong>{% endif %}
+    &nbsp;·&nbsp; <a href="{% url 'attendance_history' %}" style="color:#1e40af;">Clear filter</a>
+  </div>
+  {% endif %}
+
+  <div style="overflow-x:auto;">
+    <table class="data-table">
+      <thead>
+        <tr>
+          <th>Date</th>
+          <th>Check In</th>
+          <th>Check Out</th>
+          <th>Status</th>
+          <th>Distance</th>
+          <th>Deduction</th>
+        </tr>
+      </thead>
+      <tbody>
+        {% for r in records %}
+        <tr>
+          <td><strong>{{ r.date|date:"d M Y" }}</strong></td>
+          <td>{% if r.check_in_time %}{{ r.check_in_time|time:"H:i" }}{% else %}—{% endif %}</td>
+          <td>{% if r.check_out_time %}{{ r.check_out_time|time:"H:i" }}{% else %}<span style="color:#9ca3af;">Not out</span>{% endif %}</td>
+          <td>
+            {% if r.is_absent %}<span class="badge badge-red">Absent</span>
+            {% elif r.is_late %}<span class="badge badge-amber">Late</span>
+            {% else %}<span class="badge badge-green">On Time</span>{% endif %}
+          </td>
+          <td style="color:#9ca3af;">{% if r.distance_from_branch %}{{ r.distance_from_branch|floatformat:0 }}m{% else %}—{% endif %}</td>
+          <td>{% if r.deduction_amount %}<strong style="color:#ef4444;">₦{{ r.deduction_amount }}</strong>{% else %}—{% endif %}</td>
+        </tr>
+        {% empty %}
+        <tr><td colspan="6" style="text-align:center;color:#9ca3af;padding:2rem 0;">No attendance records found.</td></tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+
+  {% if records.has_other_pages %}
+  <div style="display:flex;justify-content:center;gap:.5rem;margin-top:1rem;flex-wrap:wrap;">
+    {% if records.has_previous %}<a href="?page={{ records.previous_page_number }}&date_from={{ date_from }}&date_to={{ date_to }}" class="btn-sm btn-outline">← Prev</a>{% endif %}
+    <span style="padding:.5rem 1rem;font-size:.85rem;color:#6b7280;">Page {{ records.number }} of {{ records.paginator.num_pages }}</span>
+    {% if records.has_next %}<a href="?page={{ records.next_page_number }}&date_from={{ date_from }}&date_to={{ date_to }}" class="btn-sm btn-outline">Next →</a>{% endif %}
+  </div>
+  {% endif %}
+</div>
+{% endblock %}

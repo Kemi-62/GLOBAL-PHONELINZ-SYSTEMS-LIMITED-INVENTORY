@@ -86,179 +86,62 @@ pre{background:#f5f5f5;padding:.8rem;border-radius:6px;font-size:.75rem;overflow
   <button class="tab-btn" onclick="switchTab('requests',this)">📬 Stock Requests</button>
 </div>
 
-<!-- ══ RECORD SALE ══ -->
+<!-- ══════════ TAB: RECORD SALE ══════════ -->
 <div id="tab-sales" class="tab-panel active">
   <div class="card">
-    <p class="card-title">🛍️ Record Sales</p>
-    <p style="font-size:.82rem;color:#6b7280;margin:-0.5rem 0 1rem;">Add multiple products in one transaction. Total updates live.</p>
-
-    <form method="POST" action="{% url 'record_retail_sale' %}" id="multi-sale-form">
+    <p class="card-title">🛍️ Record a Sale</p>
+    <form method="POST" action="{% url 'record_retail_sale' %}">
       {% csrf_token %}
-
-      <div class="form-row" style="margin-bottom:.8rem;">
-        <div class="form-group">
-          <label>Customer Name</label>
-          <input type="text" name="customer_name" placeholder="Optional">
-        </div>
+      <div class="form-group">
+        <label>Product *</label>
+        <select name="product" id="product_select" required onchange="updatePrice()">
+          <option value="">— Select Product —</option>
+          {% for stock in staff_stock %}
+          <option value="{{ stock.product.id }}" data-price="{{ stock.product.selling_price }}" data-qty="{{ stock.quantity }}">
+            {{ stock.product.model_name }} — {{ stock.quantity }} available
+          </option>
+          {% endfor %}
+        </select>
+      </div>
+      <div id="stock-info" style="display:none;background:#f0fdf4;padding:.6rem .9rem;border-radius:6px;font-size:.83rem;color:#065f46;margin-bottom:.8rem;"></div>
+      <div class="form-row">
         <div class="form-group">
           <label>Customer Phone</label>
           <input type="tel" name="customer_phone" placeholder="080xxxxxxxx">
         </div>
         <div class="form-group">
+          <label>Quantity *</label>
+          <input type="number" name="quantity" min="1" required id="qty_input">
+        </div>
+      </div>
+      <div class="form-row">
+        <div class="form-group">
+          <label>Selling Price (₦) *</label>
+          <input type="number" step="0.01" name="selling_price" id="selling_price_input" required>
+        </div>
+        <div class="form-group">
           <label>Payment Method *</label>
-          <select name="payment_method" required>
+          <select name="payment_method" required id="pay-method-rd">
             <option value="CASH">Cash</option>
             <option value="TRANSFER">Transfer</option>
             <option value="POS">POS</option>
           </select>
         </div>
-      </div>
-
-      <!-- Sale lines -->
-      <div id="sale-lines">
-        <div class="sale-line" style="background:#f9fafb;border:1px solid #e5e7eb;border-radius:8px;padding:.8rem;margin-bottom:.6rem;">
-          <div style="display:grid;grid-template-columns:2fr 1fr auto;gap:.6rem;align-items:end;">
-            <div class="form-group" style="margin:0;">
-              <label style="font-size:.75rem;">Product *</label>
-              <select name="product[]" class="product-select" required>
-                <option value="">Search product…</option>
-                {% for stock in staff_stock %}
-                <option value="{{ stock.product.id }}"
-                        data-price="{{ stock.product.selling_price }}"
-                        data-qty="{{ stock.quantity }}"
-                        {% if stock.quantity == 0 %}disabled{% endif %}>
-                  {{ stock.product.model_name }} — ₦{{ stock.product.selling_price|floatformat:0 }} ({{ stock.quantity }} in stock)
-                </option>
-                {% endfor %}
-              </select>
-            </div>
-            <div class="form-group" style="margin:0;">
-              <label style="font-size:.75rem;">Qty *</label>
-              <input type="number" name="quantity[]" min="1" value="1" required class="qty-input" oninput="updateGrandTotal()">
-            </div>
-            <div style="padding-bottom:.1rem;">
-              <label style="visibility:hidden;display:block;font-size:.75rem;">Del</label>
-              <button type="button" onclick="removeLine(this)" style="padding:.45rem .7rem;background:#fee2e2;color:#991b1b;border:none;border-radius:6px;cursor:pointer;font-weight:700;">✕</button>
-            </div>
-          </div>
-          <div class="line-info" style="font-size:.78rem;color:#065f46;margin-top:.3rem;display:none;"></div>
+        <div class="form-group" id="moniepoint-field-rd" style="display:none;">
+          <label>Moniepoint Transaction ID</label>
+          <input type="text" name="moniepoint_txn_id" placeholder="Enter Moniepoint TID" style="font-family:monospace;">
+        </div>
+        <div class="form-group">
+          <label>&nbsp;</label>
+          <button type="button" onclick="lookupLoyalty()" class="btn-sm btn-outline" style="width:100%;margin-top:.2rem;">💛 Check Loyalty</button>
         </div>
       </div>
-
-      <button type="button" onclick="addLine()" class="btn-sm btn-outline" style="margin-bottom:1rem;width:100%;">+ Add Another Product</button>
-
-      <!-- Grand total -->
-      <div id="grand-total-box" style="display:none;background:#004F9F;color:#FFCB05;border-radius:8px;padding:.8rem 1rem;font-size:1rem;font-weight:700;margin-bottom:.8rem;text-align:center;">
-        Total: <span id="grand-total">₦0</span>
-      </div>
-
-      <button type="submit" class="btn-sm btn-success" style="width:100%;">✔ Record Sale(s)</button>
+      <button type="submit" class="btn-sm btn-success" style="width:100%;margin-top:.5rem;">✔ Record Sale</button>
     </form>
   </div>
 </div>
 
-<script>
-  // Build product options string once for reuse in addLine()
-const productOptions = Array.from(
-  document.querySelector('.product-select').options
-).map(o => `<option value="${o.value}" data-price="${o.dataset.price||''}" data-qty="${o.dataset.qty||''}" ${o.disabled?'disabled':''}>${o.text}</option>`).join('');
-  
-// Initialise Tom Select on all product dropdowns
-function initTomSelect(el) {
-  new TomSelect(el, {
-    placeholder: 'Search product…',
-    searchField: ['text'],
-    render: {
-      option: function(data, escape) {
-        return '<div>' + escape(data.text) + '</div>';
-      }
-    },
-    onChange: function(val) {
-      updateLineInfo(el.closest('.sale-line'));
-      updateGrandTotal();
-    }
-  });
-}
-
-document.querySelectorAll('.product-select').forEach(initTomSelect);
-
-function addLine() {
-  const container = document.getElementById('sale-lines');
-  const newLine = document.createElement('div');
-  newLine.className = 'sale-line';
-  newLine.style.cssText = 'background:#f9fafb;border:1px solid #e5e7eb;border-radius:8px;padding:.8rem;margin-bottom:.6rem;';
-  newLine.innerHTML = `
-    <div style="display:grid;grid-template-columns:2fr 1fr auto;gap:.6rem;align-items:end;">
-      <div class="form-group" style="margin:0;">
-        <label style="font-size:.75rem;">Product *</label>
-        <select name="product[]" class="product-select" required onchange="updateLineInfo(this.closest('.sale-line')); updateGrandTotal();">
-          <option value="">Search product…</option>
-          ${productOptions}
-        </select>
-      </div>
-      <div class="form-group" style="margin:0;">
-        <label style="font-size:.75rem;">Qty *</label>
-        <input type="number" name="quantity[]" min="1" value="1" required class="qty-input" oninput="updateGrandTotal()">
-      </div>
-      <div style="padding-bottom:.1rem;">
-        <label style="visibility:hidden;display:block;font-size:.75rem;">Del</label>
-        <button type="button" onclick="removeLine(this)" style="padding:.45rem .7rem;background:#fee2e2;color:#991b1b;border:none;border-radius:6px;cursor:pointer;font-weight:700;">✕</button>
-      </div>
-    </div>
-    <div class="line-info" style="font-size:.78rem;color:#065f46;margin-top:.3rem;display:none;"></div>
-  `;
-  container.appendChild(newLine);
-  const sel = newLine.querySelector('select');
-  initTomSelect(sel);
-}
-
-function removeLine(btn) {
-  const lines = document.querySelectorAll('.sale-line');
-  if (lines.length > 1) {
-    btn.closest('.sale-line').remove();
-    updateGrandTotal();
-  }
-}
-
-function updateLineInfo(line) {
-  const sel = line.querySelector('select[name="product[]"]');
-  const opt = sel.options[sel.selectedIndex];
-  const info = line.querySelector('.line-info');
-  const price = opt ? opt.dataset.price : null;
-  const qty_avail = opt ? opt.dataset.qty : null;
-  if (price && opt.value) {
-    info.style.display = 'block';
-    info.textContent = '₦' + parseFloat(price).toLocaleString() + ' per unit · ' + qty_avail + ' available';
-  } else {
-    info.style.display = 'none';
-  }
-}
-
-function updateGrandTotal() {
-  let total = 0;
-  document.querySelectorAll('.sale-line').forEach(line => {
-    const sel = line.querySelector('select[name="product[]"]');
-    const qtyInput = line.querySelector('input[name="quantity[]"]');
-    const opt = sel ? sel.options[sel.selectedIndex] : null;
-    const price = opt ? parseFloat(opt.dataset.price) || 0 : 0;
-    const qty = parseInt(qtyInput ? qtyInput.value : 0) || 0;
-    total += price * qty;
-  });
-  const box = document.getElementById('grand-total-box');
-  const span = document.getElementById('grand-total');
-  if (total > 0) {
-    box.style.display = 'block';
-    span.textContent = '₦' + total.toLocaleString();
-  } else {
-    box.style.display = 'none';
-  }
-}
-
-</script> 
-
-
 <!-- ══════════ TAB: MY CATALOG ══════════ -->
-
 <div id="tab-catalog" class="tab-panel">
   <div class="card">
     <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:1rem;flex-wrap:wrap;gap:.5rem;">
@@ -273,7 +156,6 @@ function updateGrandTotal() {
           <tr>
             <th>Product</th>
             <th>Category</th>
-            <th>Color</th>
             <th>Added At</th>
             <th>Added By</th>
             <th style="text-align:center;">Qty in Stock</th>
@@ -286,7 +168,6 @@ function updateGrandTotal() {
           <tr>
             <td><strong>{{ stock.product.model_name }}</strong></td>
             <td style="color:#9ca3af;">{{ stock.product.subcategory.name }}</td>
-            <td style="font-size:.75rem;color:#9ca3af;">{{ stock.product.color|default:"—" }}</td>
             <td style="color:#9ca3af;white-space:nowrap;">{{ stock.added_at|date:"d M Y H:i" }}</td>
             <td style="color:#9ca3af;">{{ stock.added_by.username|default:"—" }}</td>
             <td style="text-align:center;">
@@ -338,10 +219,6 @@ function updateGrandTotal() {
           <input type="text" name="model_name" placeholder="e.g. iPhone 15 Pro" required>
         </div>
         <div class="form-group">
-          <label>Color (Optional)</label>
-          <input type="text" name="color" placeholder="e.g. Black, Blue, Gold">
-        </div>
-        <div class="form-group">
           <label>IMEI / Serial (Optional)</label>
           <input type="text" name="imei" placeholder="Full IMEI or Serial Number">
         </div>
@@ -373,10 +250,10 @@ function updateGrandTotal() {
       </form>
       <div>
         <p style="font-size:.78rem;font-weight:600;color:#374151;margin-bottom:.4rem;">CSV Format (columns):</p>
-        <pre>product_name,model_name,category,subcategory,selling_price,quantity,imei_serial,color
-Apple iPhone,iPhone 15,Phones,Smartphones,850000,2,,Black
-Samsung,S24 Ultra,Phones,Android,700000,1,356938035643809,Blue
-Generic Cable,Type-C Cable,Accessories,Cables,2500,10,,</pre>
+        <pre>product_name,model_name,category,subcategory,selling_price,quantity,imei_serial
+Apple iPhone,iPhone 15,Phones,Smartphones,850000,2,
+Samsung,S24 Ultra,Phones,Android,700000,1,356938035643809
+Generic Cable,Type-C Cable,Accessories,Cables,2500,10,</pre>
         <p style="font-size:.75rem;color:#9ca3af;margin-top:.4rem;">
           • <strong>model_name</strong> is required for every row<br>
           • If the product already exists, quantity is added to existing stock<br>

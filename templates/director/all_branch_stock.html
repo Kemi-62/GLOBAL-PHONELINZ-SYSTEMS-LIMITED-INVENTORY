@@ -68,7 +68,6 @@
         <tr>
           <th>Product</th>
           <th>Category</th>
-          <th>Color</th>
           <th>Held By</th>
           <th>Staff/Location</th>
           <th style="text-align:center;">Quantity</th>
@@ -82,7 +81,6 @@
         <tr>
           <td><strong>{{ item.product }}</strong></td>
           <td style="color:#9ca3af;">{{ item.category }}</td>
-          <td style="font-size:.75rem;color:#9ca3af;">{{ item.color|default:"—" }}</td>
           <td>
             {% if item.type == "safe" %}
             <span class="badge badge-blue">🔒 Branch Safe</span>

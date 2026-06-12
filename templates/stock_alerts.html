@@ -10,7 +10,6 @@
         <thead>
             <tr>
                 <th>Product</th>
-                <th>Color</th>
                 <th>Current Stock</th>
                 <th>Threshold</th>
                 <th>Alert Type</th>
@@ -21,7 +20,6 @@
             {% for alert in alerts %}
             <tr>
                 <td>{{ alert.product.model_name }}</td>
-                <td style="font-size:.75rem;color:#666;">{{ alert.product.color|default:"—" }}</td>
                 <td>{{ alert.current_quantity }}</td>
                 <td>{{ alert.threshold }}</td>
                 <td><span class="badge badge-warning">{{ alert.get_alert_type_display }}</span></td>

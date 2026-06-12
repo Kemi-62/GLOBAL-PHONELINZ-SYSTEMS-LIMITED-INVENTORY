@@ -1,7 +1,6 @@
 asgiref==3.7.2
 charset-normalizer==3.4.5
 Django==5.0.2
-dj-database-url==2.3.0
 gunicorn==25.1.0
 packaging==26.0
 pillow==12.1.1
