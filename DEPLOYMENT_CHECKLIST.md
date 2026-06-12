@@ -1,44 +1,46 @@
-# GPSL Automation - Deployment Checklist
+# GPSL Automation — Deployment Checklist
 
-## Pre-Deployment
-- [x] requirements.txt generated with all dependencies
-- [x] settings.py configured for production
-- [x] Database supports both SQLite and PostgreSQL
-- [x] Static files configuration with WhiteNoise
-- [x] WSGI application ready
-- [x] Environment variable support via python-decouple
-- [x] CSRF and CORS settings updated for production domains
+## Pre-Deployment (Render)
+- [x] `requirements.txt` with all dependencies
+- [x] `settings.py` supports Render auto-detection (`DATABASE_URL`, `RENDER_EXTERNAL_HOSTNAME`)
+- [x] PostgreSQL supported via `dj-database-url`
+- [x] Static files with WhiteNoise
+- [x] WSGI ready for Gunicorn
+- [x] Environment variables via `python-decouple`
+- [x] `render.yaml` with auto-generated `SECRET_KEY`
+- [x] `build.sh` for manual builds
+- [x] `core/fixtures/initial_data.json` for initial data
 
-## Production Settings
-- [x] DEBUG = False (via environment variable)
-- [x] SECRET_KEY = from environment (via decouple)
-- [x] ALLOWED_HOSTS = '*' (production should specify)
-- [x] CSRF_TRUSTED_ORIGINS includes *.onrender.com
-- [x] DATABASES support PostgreSQL
-- [x] STATIC_ROOT and STATICFILES_STORAGE configured
-- [x] WhiteNoiseMiddleware added
+## Render Setup (UI Steps)
+1. Push code to GitHub
+2. In Render Dashboard → New Web Service → Connect to GitHub repo
+3. Render auto-detects `render.yaml` → uses Python environment
+4. Render auto-creates PostgreSQL database (`gpsl-db`)
+5. Render auto-generates `SECRET_KEY` and sets `DATABASE_URL`
+6. **Important**: Set `IS_PRODUCTION=True` if you want strict security
+7. **Optional**: Set `ADMIN_URL` to a custom path (default: `system-admin/`)
+8. Deploy
 
-## Render Deployment Steps
-1. [ ] Create PostgreSQL database on Render
-2. [ ] Create Web Service connected to GitHub
-3. [ ] Set environment variables in Render
-4. [ ] Configure build command: `pip install -r requirements.txt && python manage.py collectstatic --noinput && python manage.py migrate`
-5. [ ] Configure start command: `gunicorn django_project.wsgi:application`
-6. [ ] Deploy and verify logs
-7. [ ] Create superuser via Django admin or SSH
-8. [ ] Test all features in production
-
-## Post-Deployment Verification
+## Post-Deploy
 - [ ] Login page loads
-- [ ] CSS/static files displaying
+- [ ] CSS/static files working
 - [ ] Dashboard accessible
-- [ ] Database tables migrated
-- [ ] Admin panel working
-- [ ] All user roles functioning
-- [ ] File uploads working (media files)
+- [ ] Admin panel at `/{ADMIN_URL}/` working
+- [ ] Create superuser via `seed_roles` or admin panel
+- [ ] Create staff users with proper passwords
+- [ ] Test all user roles
+- [ ] Test file uploads (media files need Cloudinary/AWS on Render free tier)
 
-## Important Notes
-- Generate new SECRET_KEY: `python -c 'from django.core.management.utils import get_random_secret_key; print(get_random_secret_key())'`
-- Install Gunicorn before deployment: `pip install gunicorn`
-- Keep .env file secure (not in git)
-- Use RENDER_DEPLOY.md as reference
+## Environment Variables for Render
+| Variable | Default | Description |
+|----------|---------|-------------|
+| `SECRET_KEY` | auto-generated | Django secret key |
+| `DEBUG` | false | Enable debug mode |
+| `IS_PRODUCTION` | false | Enable strict security headers |
+| `ADMIN_URL` | `system-admin/` | Hidden admin URL path |
+| `DATABASE_URL` | auto-set | PostgreSQL connection string |
+| `EMAIL_HOST_USER` | — | SMTP email address |
+| `EMAIL_HOST_PASSWORD` | — | SMTP password |
+| `MONIEPOINT_ENABLED` | false | Enable POS integration |
+| `WHATSAPP_ENABLED` | false | Enable WhatsApp buttons |
+| `REDIS_URL` | — | Redis cache (optional) |
