@@ -24,7 +24,7 @@ IS_PRODUCTION = config('IS_PRODUCTION', default=False, cast=bool)
 DEBUG = config('DEBUG', default=True, cast=bool)
 
 # ALLOWED_HOSTS: NEVER wildcard in production. Only specific domains.
-ALLOWED_HOSTS = config('ALLOWED_HOSTS', default='localhost,127.0.0.1,*.replit.dev,*.repl.co,*.replit.app', cast=Csv())
+ALLOWED_HOSTS = config('ALLOWED_HOSTS', default='localhost,127.0.0.1,.replit.dev,.repl.co,.replit.app,.worf.replit.dev,.pike.replit.dev,.riker.replit.dev', cast=Csv())
 
 # CSRF: Secure by default
 CSRF_COOKIE_HTTPONLY = True
