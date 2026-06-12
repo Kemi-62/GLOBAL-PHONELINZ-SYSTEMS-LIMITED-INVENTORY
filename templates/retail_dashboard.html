@@ -493,6 +493,11 @@ function addSaleRow() {
     </td>
   `;
   tbody.appendChild(tr);
+  // Initialize Tom Select on the new select element
+  const newSelect = tr.querySelector('select.tom-select');
+  if (newSelect && typeof initTomSelect === 'function') {
+    initTomSelect(newSelect);
+  }
 }
 function removeRow(id) {
   const row = document.getElementById('sale-row-' + id);

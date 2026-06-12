@@ -18,11 +18,34 @@
         navigator.serviceWorker.register('/static/sw.js').catch(console.error);
       }
       // Initialize Tom Select on all .tom-select elements
+      function initTomSelect(el) {
+        if (el.tomSelectInstance) return;
+        el.tomSelectInstance = new TomSelect(el, { placeholder: el.dataset.placeholder || 'Search...', allowEmptyOption: true, maxOptions: 500 });
+      }
       document.addEventListener('DOMContentLoaded', function() {
-        document.querySelectorAll('.tom-select').forEach(function(el) {
-          new TomSelect(el, { placeholder: el.dataset.placeholder || 'Search...', allowEmptyOption: true, maxOptions: 500 });
-        });
+        document.querySelectorAll('.tom-select').forEach(initTomSelect);
       });
+
+      // PWA install prompt
+      let deferredPrompt;
+      window.addEventListener('beforeinstallprompt', (e) => {
+        e.preventDefault();
+        deferredPrompt = e;
+        const toast = document.createElement('div');
+        toast.id = 'pwa-install-toast';
+        toast.style.cssText = 'position:fixed;bottom:1rem;right:1rem;z-index:9999;background:#004F9F;color:#fff;padding:1rem 1.2rem;border-radius:10px;box-shadow:0 4px 20px rgba(0,0,0,.2);font-size:.88rem;max-width:320px;animation:slideUp .3s ease;cursor:pointer;';
+        toast.innerHTML = '<div style="display:flex;align-items:center;gap:.6rem;"><span style="font-size:1.5rem;">🛎️</span><div><strong>Install GPSL App</strong><br>Add to your home screen for offline access.</div><button style="background:#FFCB05;color:#004F9F;border:none;border-radius:6px;padding:.4rem .9rem;font-size:.82rem;font-weight:600;cursor:pointer;margin-left:.5rem;white-space:nowrap;">Install</button></div>';
+        toast.querySelector('button').onclick = function(ev) {
+          ev.stopPropagation();
+          if (deferredPrompt) { deferredPrompt.prompt(); deferredPrompt.userChoice.then(() => { deferredPrompt = null; toast.remove(); }); }
+        };
+        toast.onclick = function() { toast.remove(); };
+        document.body.appendChild(toast);
+      });
+      // Add slideUp animation
+      const style = document.createElement('style');
+      style.textContent = '@keyframes slideUp{from{transform:translateY(20px);opacity:0}to{transform:translateY(0);opacity:1}}';
+      document.head.appendChild(style);
     </script>
     <style>
         :root {
