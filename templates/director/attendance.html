@@ -42,10 +42,12 @@
 <div style="display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:.8rem;margin-bottom:1.5rem;">
   <div>
     <h1 class="page-title" style="margin:0;">📅 Staff Attendance</h1>
-    <p style="font-size:.85rem;color:#6b7280;margin:.2rem 0 0;">{{ selected_date|date:"D, d M Y" }}</p>
+    <p style="font-size:.85rem;color:#6b7280;margin:.2rem 0 0;">{{ date_range_label }}</p>
   </div>
   <div style="display:flex;gap:.5rem;flex-wrap:wrap;">
-    <a href="{% url 'export_monthly_attendance_pdf' %}?date={{ selected_date|date:'Y-m-d' }}" class="btn-sm btn-success">📥 Download Full PDF</a>
+    <a href="{% url 'director_attendance_dashboard' %}?view=week" class="btn-sm btn-primary {% if view_mode == 'week' %}active{% endif %}">📅 This Week</a>
+    <a href="{% url 'director_attendance_dashboard' %}?view=archive" class="btn-sm btn-outline {% if view_mode == 'archive' %}active{% endif %}">📁 Archive</a>
+    <a href="{% url 'export_monthly_attendance_pdf' %}" class="btn-sm btn-success">📥 Download PDF</a>
     <a href="{% url 'director_dashboard' %}" class="btn-sm btn-outline">← Dashboard</a>
   </div>
 </div>
@@ -53,10 +55,13 @@
 <!-- Date Filter -->
 <div class="card">
   <form method="GET" class="filter-bar">
+    {% if view_mode == 'archive' %}
     <div>
       <label style="font-size:.75rem;font-weight:600;color:#374151;display:block;margin-bottom:.2rem;">Date</label>
       <input type="date" name="date" value="{{ selected_date|date:'Y-m-d' }}">
     </div>
+    {% endif %}
+    <input type="hidden" name="view" value="{{ view_mode }}">
     <div>
       <label style="font-size:.75rem;font-weight:600;color:#374151;display:block;margin-bottom:.2rem;">Branch</label>
       <select name="branch">
@@ -76,7 +81,7 @@
       </select>
     </div>
     <button type="submit" class="btn-sm btn-primary" style="align-self:flex-end;">Filter</button>
-    <a href="{% url 'director_attendance_dashboard' %}" class="btn-sm btn-outline" style="align-self:flex-end;">Clear</a>
+    <a href="{% url 'director_attendance_dashboard' %}?view={{ view_mode }}" class="btn-sm btn-outline" style="align-self:flex-end;">Clear</a>
   </form>
 </div>
 

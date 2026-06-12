@@ -139,4 +139,14 @@ urlpatterns = [
     # Loyalty
     path('loyalty/customer/<str:phone>/', views.loyalty_customer_lookup, name='loyalty_customer_lookup'),
     path('loyalty/redeem/', views.loyalty_redeem, name='loyalty_redeem'),
+
+    # Change Log
+    path('director/change-log/', views.change_log_view, name='change_log_view'),
+
+    # Backup
+    path('director/backups/', views.backup_history_view, name='backup_history_view'),
+    path('director/backups/trigger/', views.trigger_backup, name='trigger_backup'),
+
+    # Price Floor
+    path('director/price-floors/', views.manage_price_floors, name='manage_price_floors'),
 ]

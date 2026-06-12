@@ -238,11 +238,20 @@
             <span class="icon">📍</span> Branch Locations
         </a>
         <a href="{% url 'audit_log_view' %}" class="sidebar-link">
-    <span class="icon">🔍</span> Audit Log
-</a>
-<a href="{% url 'payroll_deduction_summary' %}" class="sidebar-link">
-    <span class="icon">💸</span> Payroll Deductions
-</a>
+            <span class="icon">🔍</span> Audit Log
+        </a>
+        <a href="{% url 'change_log_view' %}" class="sidebar-link">
+            <span class="icon">📋</span> Change Log
+        </a>
+        <a href="{% url 'payroll_deduction_summary' %}" class="sidebar-link">
+            <span class="icon">💸</span> Payroll Deductions
+        </a>
+        <a href="{% url 'manage_price_floors' %}" class="sidebar-link">
+            <span class="icon">🛡️</span> Price Floors
+        </a>
+        <a href="{% url 'backup_history_view' %}" class="sidebar-link">
+            <span class="icon">📤</span> Backups
+        </a>
 <a href="{% url 'supplier_list' %}" class="sidebar-link">
     <span class="icon">🏭</span> Suppliers
 </a>

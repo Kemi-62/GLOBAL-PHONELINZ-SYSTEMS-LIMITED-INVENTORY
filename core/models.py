@@ -872,3 +872,146 @@ class LoyaltyTransaction(models.Model):
 
     def __str__(self):
         return f"{self.transaction_type} {self.points} pts — {self.loyalty_point.customer.phone_number}"
+
+
+# ─────────────────────────────────────────
+# PRICE FLOOR — prevents selling below minimum
+# ─────────────────────────────────────────
+
+class PriceFloor(models.Model):
+    product = models.ForeignKey(Product, on_delete=models.CASCADE, related_name='price_floors')
+    branch = models.ForeignKey(Branch, on_delete=models.CASCADE, related_name='price_floors')
+    min_selling_price = models.DecimalField(max_digits=12, decimal_places=2)
+    created_at = models.DateTimeField(auto_now_add=True)
+    updated_at = models.DateTimeField(auto_now=True)
+    created_by = models.ForeignKey(User, on_delete=models.SET_NULL, null=True, blank=True)
+
+    class Meta:
+        unique_together = [['product', 'branch']]
+        ordering = ['-updated_at']
+
+    def __str__(self):
+        return f"{self.product.model_name} @ {self.branch.name} — min ₦{self.min_selling_price}"
+
+
+# ─────────────────────────────────────────
+# CHANGE LOG — every data change recorded
+# ─────────────────────────────────────────
+
+class ChangeLog(models.Model):
+    ACTION_CHOICES = (
+        ('CREATE', 'Created'),
+        ('UPDATE', 'Updated'),
+        ('DELETE', 'Deleted'),
+        ('VOID', 'Voided'),
+        ('SALE', 'Sale Recorded'),
+        ('STOCK_IN', 'Stock Added'),
+        ('STOCK_OUT', 'Stock Released'),
+        ('PRICE_CHANGE', 'Price Changed'),
+        ('CHECK_IN', 'Checked In'),
+        ('CHECK_OUT', 'Checked Out'),
+        ('APPROVE', 'Approved'),
+        ('REJECT', 'Rejected'),
+        ('BACKUP', 'Backup Run'),
+        ('RESET', 'Monthly Reset'),
+    )
+    user = models.ForeignKey(User, on_delete=models.SET_NULL, null=True, blank=True)
+    action = models.CharField(max_length=20, choices=ACTION_CHOICES)
+    model_name = models.CharField(max_length=100)
+    object_id = models.IntegerField(null=True, blank=True)
+    description = models.TextField()
+    old_value = models.TextField(blank=True)
+    new_value = models.TextField(blank=True)
+    ip_address = models.GenericIPAddressField(null=True, blank=True)
+    branch = models.ForeignKey(Branch, on_delete=models.SET_NULL, null=True, blank=True)
+    timestamp = models.DateTimeField(auto_now_add=True)
+
+    class Meta:
+        ordering = ['-timestamp']
+        indexes = [
+            models.Index(fields=['model_name', 'timestamp']),
+            models.Index(fields=['action', 'timestamp']),
+            models.Index(fields=['branch', 'timestamp']),
+        ]
+
+    def __str__(self):
+        return f"{self.user or 'System'} — {self.action} {self.model_name} at {self.timestamp:%d %b %H:%M}"
+
+
+# ─────────────────────────────────────────
+# BACKUP LOG — tracks backup runs
+# ─────────────────────────────────────────
+
+class BackupLog(models.Model):
+    STATUS_CHOICES = (
+        ('SUCCESS', 'Success'),
+        ('FAILED', 'Failed'),
+        ('PARTIAL', 'Partial'),
+    )
+    triggered_by = models.CharField(max_length=50, default='auto')  # auto, manual, cron
+    status = models.CharField(max_length=10, choices=STATUS_CHOICES)
+    file_path = models.CharField(max_length=500, blank=True)
+    file_size_bytes = models.BigIntegerField(null=True, blank=True)
+    email_sent = models.BooleanField(default=False)
+    email_recipient = models.EmailField(blank=True)
+    email_error = models.TextField(blank=True)
+    supabase_uploaded = models.BooleanField(default=False)
+    supabase_error = models.TextField(blank=True)
+    record_count = models.IntegerField(null=True, blank=True)
+    started_at = models.DateTimeField(auto_now_add=True)
+    completed_at = models.DateTimeField(null=True, blank=True)
+    notes = models.TextField(blank=True)
+
+    class Meta:
+        ordering = ['-started_at']
+
+    def __str__(self):
+        return f"Backup {self.status} — {self.started_at:%d %b %Y %H:%M}"
+
+
+# ─────────────────────────────────────────
+# DIRECTOR DAILY DIGEST — tracks sent digests
+# ─────────────────────────────────────────
+
+class DirectorDailyDigest(models.Model):
+    date = models.DateField(unique=True)
+    email_sent = models.BooleanField(default=False)
+    email_recipient = models.EmailField(blank=True)
+    email_error = models.TextField(blank=True)
+    total_retail_sales = models.IntegerField(default=0)
+    total_retail_revenue = models.DecimalField(max_digits=14, decimal_places=2, default=0)
+    total_multichoice_sales = models.IntegerField(default=0)
+    total_multichoice_revenue = models.DecimalField(max_digits=14, decimal_places=2, default=0)
+    total_service_activities = models.IntegerField(default=0)
+    total_new_customers = models.IntegerField(default=0)
+    total_stock_alerts = models.IntegerField(default=0)
+    total_attendance_records = models.IntegerField(default=0)
+    total_expenses = models.DecimalField(max_digits=14, decimal_places=2, default=0)
+    total_deductions = models.DecimalField(max_digits=14, decimal_places=2, default=0)
+    sent_at = models.DateTimeField(null=True, blank=True)
+    created_at = models.DateTimeField(auto_now_add=True)
+
+    class Meta:
+        ordering = ['-date']
+
+    def __str__(self):
+        return f"Digest {self.date} — {'Sent' if self.email_sent else 'Pending'}"
+
+
+# ─────────────────────────────────────────
+# MONTHLY RESET LOG — tracks data resets
+# ─────────────────────────────────────────
+
+class MonthlyResetLog(models.Model):
+    year = models.IntegerField()
+    month = models.IntegerField()
+    reset_by = models.ForeignKey(User, on_delete=models.SET_NULL, null=True, blank=True)
+    reset_at = models.DateTimeField(auto_now_add=True)
+    notes = models.TextField(blank=True)
+
+    class Meta:
+        unique_together = [['year', 'month']]
+        ordering = ['-year', '-month']
+
+    def __str__(self):
+        return f"Reset {self.year}-{self.month:02d} — {self.reset_at:%d %b %Y}"

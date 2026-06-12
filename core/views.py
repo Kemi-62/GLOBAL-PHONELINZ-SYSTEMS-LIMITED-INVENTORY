@@ -1168,8 +1168,8 @@ def customer_crm(request):
     })
 
 
-def _compress_image(image_file, max_size_kb=200, max_dimension=800):
-    """Compress uploaded image to reduce storage size."""
+def _compress_image(image_file, max_size_kb=100, max_dimension=600):
+    """Compress uploaded image to reduce storage size aggressively (target ~100KB)."""
     try:
         img = _PILImage.open(image_file)
         # Convert RGBA to RGB if needed
@@ -1179,17 +1179,17 @@ def _compress_image(image_file, max_size_kb=200, max_dimension=800):
         w, h = img.size
         if w > max_dimension or h > max_dimension:
             img.thumbnail((max_dimension, max_dimension), _PILImage.LANCZOS)
-        # Save compressed
+        # Save compressed aggressively
         output = io.BytesIO()
-        quality = 85
+        quality = 70
         while True:
             output.seek(0)
             output.truncate()
             img.save(output, format="JPEG", quality=quality, optimize=True)
             size_kb = output.tell() / 1024
-            if size_kb <= max_size_kb or quality <= 40:
+            if size_kb <= max_size_kb or quality <= 30:
                 break
-            quality -= 10
+            quality -= 5
         output.seek(0)
         from django.core.files.uploadedfile import InMemoryUploadedFile
         return InMemoryUploadedFile(
@@ -1199,6 +1199,49 @@ def _compress_image(image_file, max_size_kb=200, max_dimension=800):
         )
     except Exception:
         return image_file  # fallback to original if PIL fails
+
+
+# ─────────────────────────────────────────
+# CHANGE LOG UTILITY — record every significant data change
+# ─────────────────────────────────────────
+
+def _log_change(user, action, model_name, object_id=None, description="", old_value="", new_value="", request=None):
+    """Log a change to the ChangeLog model."""
+    try:
+        from core.models import ChangeLog
+        ip = None
+        branch = None
+        if request:
+            ip = _get_client_ip(request)
+            if hasattr(request, 'user') and request.user and getattr(request.user, 'branch', None):
+                branch = request.user.branch
+        ChangeLog.objects.create(
+            user=user, action=action, model_name=model_name,
+            object_id=object_id, description=description,
+            old_value=str(old_value) if old_value else "", new_value=str(new_value) if new_value else "",
+            ip_address=ip, branch=branch,
+        )
+    except Exception:
+        pass  # Never fail the main operation for logging
+
+def _get_client_ip(request):
+    """Get the real client IP from request headers."""
+    xff = request.META.get('HTTP_X_FORWARDED_FOR')
+    if xff:
+        return xff.split(',')[0].strip()
+    return request.META.get('REMOTE_ADDR')
+
+
+def _get_price_floor(product, branch):
+    """Get the minimum selling price for a product in a branch."""
+    from core.models import PriceFloor
+    try:
+        floor = PriceFloor.objects.get(product=product, branch=branch)
+        return floor.min_selling_price
+    except PriceFloor.DoesNotExist:
+        return product.selling_price  # default to product selling price
+    except Exception:
+        return product.selling_price
 
 
 @login_required
@@ -2418,18 +2461,32 @@ def manager_sales_today(request):
 
 @role_required("DIRECTOR")
 def director_attendance_dashboard(request):
-    selected_date_str = request.GET.get("date", timezone.now().date().isoformat())
+    # Default to current week view
+    view_mode = request.GET.get("view", "week")  # 'week' or 'archive'
     branch_filter = request.GET.get("branch", "")
-
-    try:
-        from datetime import date as _date
-        selected_date = _date.fromisoformat(selected_date_str)
-    except Exception:
-        selected_date = timezone.now().date()
-
     staff_filter = request.GET.get("staff", "")
+    selected_date_str = request.GET.get("date", "")
 
-    records = Attendance.objects.filter(date=selected_date).select_related("user", "branch").order_by("branch__name", "user__username")
+    today = timezone.now().date()
+    from datetime import date as _date, timedelta
+
+    if view_mode == "week":
+        # Show current week (Monday to Sunday)
+        week_start = today - timedelta(days=today.weekday())
+        week_end = week_start + timedelta(days=6)
+        records = Attendance.objects.filter(
+            date__range=(week_start, week_end)
+        ).select_related("user", "branch").order_by("-date", "branch__name", "user__username")
+        selected_date = week_start
+        date_range_label = f"{week_start.strftime('%d %b')} — {week_end.strftime('%d %b %Y')}"
+    else:
+        # Archive view — specific date or date range
+        try:
+            selected_date = _date.fromisoformat(selected_date_str) if selected_date_str else today
+        except Exception:
+            selected_date = today
+        records = Attendance.objects.filter(date=selected_date).select_related("user", "branch").order_by("branch__name", "user__username")
+        date_range_label = selected_date.strftime("%d %b %Y")
 
     if branch_filter:
         records = records.filter(branch_id=branch_filter)
@@ -2445,6 +2502,8 @@ def director_attendance_dashboard(request):
         "selected_staff": staff_filter,
         "branches": Branch.objects.all(),
         "all_staff": all_staff,
+        "view_mode": view_mode,
+        "date_range_label": date_range_label,
         "total_ontime": records.filter(is_late=False, is_absent=False).count(),
         "total_late": records.filter(is_late=True).count(),
         "total_absent": records.filter(is_absent=True).count(),
@@ -3756,50 +3815,81 @@ def _upsert_customer(phone, name, branch, amount=0, source="RETAIL"):
 @role_required("RETAIL")
 def record_retail_sale(request):
     if request.method == "POST":
-        product_id     = request.POST.get("product")
-        quantity       = int(request.POST.get("quantity", 0))
-        selling_price  = Decimal(request.POST.get("selling_price", 0))
+        product_ids    = request.POST.getlist("product")
+        quantities     = request.POST.getlist("quantity")
+        selling_prices = request.POST.getlist("selling_price")
         payment_method = request.POST.get("payment_method", "CASH")
         customer_name  = request.POST.get("customer_name", "").strip()
         customer_phone = request.POST.get("customer_phone", "").strip()
+        moniepoint_txn_id = request.POST.get("moniepoint_txn_id", "").strip()
 
-        product = get_object_or_404(Product, id=product_id)
-
-        try:
-            staff_stock = StaffStock.objects.get(staff=request.user, product=product)
-        except StaffStock.DoesNotExist:
-            messages.error(request, "You do not have this product in stock.")
+        if not product_ids or not any(product_ids):
+            messages.error(request, "Please select at least one product.")
             return redirect("retail_dashboard")
 
-        if quantity > staff_stock.quantity:
-            messages.error(request, f"Insufficient stock. You have {staff_stock.quantity} unit(s).")
-            return redirect("retail_dashboard")
+        total_amount = Decimal("0")
+        sale_items = []
 
         with transaction.atomic():
-            staff_stock.quantity -= quantity
-            staff_stock.save()
+            for i, product_id in enumerate(product_ids):
+                if not product_id:
+                    continue
+                qty = int(quantities[i]) if i < len(quantities) else 1
+                price = Decimal(selling_prices[i]) if i < len(selling_prices) else Decimal("0")
 
-            sale = RetailSale.objects.create(
-                staff=request.user,
-                branch=request.user.branch,
-                product=product,
-                quantity=quantity,
-                selling_price=selling_price,
-                payment_method=payment_method,
-                customer_phone=customer_phone,
-            )
+                product = get_object_or_404(Product, id=product_id)
 
-            # Update Customer CRM
+                try:
+                    staff_stock = StaffStock.objects.get(staff=request.user, product=product)
+                except StaffStock.DoesNotExist:
+                    messages.error(request, f"You do not have {product.model_name} in stock.")
+                    return redirect("retail_dashboard")
+
+                if qty > staff_stock.quantity:
+                    messages.error(request, f"Insufficient stock for {product.model_name}. You have {staff_stock.quantity} unit(s).")
+                    return redirect("retail_dashboard")
+
+                # PRICE FLOOR CHECK
+                min_price = _get_price_floor(product, request.user.branch)
+                if price < min_price:
+                    messages.error(request, f"Selling price for {product.model_name} too low. Minimum: ₦{min_price:,.0f}. Current: ₦{price:,.0f}.")
+                    return redirect("retail_dashboard")
+
+                staff_stock.quantity -= qty
+                staff_stock.save()
+
+                sale = RetailSale.objects.create(
+                    staff=request.user,
+                    branch=request.user.branch,
+                    product=product,
+                    quantity=qty,
+                    selling_price=price,
+                    payment_method=payment_method,
+                    customer_phone=customer_phone,
+                )
+
+                sale_items.append({"product": product.model_name, "qty": qty, "total": qty * price})
+                total_amount += qty * price
+
+                # Log change
+                _log_change(
+                    user=request.user, action="SALE", model_name="RetailSale",
+                    object_id=sale.id, description=f"Retail sale: {qty}x {product.model_name} @ ₦{price}",
+                    new_value=f"Total: ₦{qty * price}", request=request,
+                )
+
+            # Update Customer CRM (once for the whole transaction)
             if customer_phone:
                 _upsert_customer(
                     phone=customer_phone,
                     name=customer_name,
                     branch=request.user.branch,
-                    amount=quantity * selling_price,
+                    amount=total_amount,
                     source="RETAIL",
                 )
 
-        messages.success(request, f"Sale recorded. ₦{quantity * selling_price:,.0f} — {product.model_name}.")
+        item_summary = ", ".join([f"{s['qty']}x {s['product']}" for s in sale_items])
+        messages.success(request, f"Sale recorded: {item_summary}. Grand Total: ₦{total_amount:,.0f}")
     return redirect("retail_dashboard")
 
 
@@ -5083,6 +5173,106 @@ def loyalty_redeem(request):
     lp = LoyaltyPoint.objects.filter(customer=customer, branch=request.user.branch).first()
     if not lp or lp.points_balance < points:
         return JsonResponse({"error": f"Insufficient points. Balance: {lp.points_balance if lp else 0}"}, status=400)
+
+    # Redeem
+    lp.points_balance -= points
+    lp.total_redeemed += points
+    lp.save()
+    LoyaltyTransaction.objects.create(
+        loyalty_point=lp, transaction_type="REDEEM", points=points,
+        description=description, created_by=request.user,
+    )
+    return JsonResponse({"success": True, "new_balance": lp.points_balance, "tier": lp.tier})
+
+
+# ─────────────────────────────────────────
+# CHANGE LOG VIEW
+# ─────────────────────────────────────────
+
+@role_required("DIRECTOR")
+def change_log_view(request):
+    from core.models import ChangeLog
+    logs = ChangeLog.objects.select_related("user", "branch").order_by("-timestamp")
+    action_filter = request.GET.get("action", "")
+    model_filter = request.GET.get("model", "")
+    branch_filter = request.GET.get("branch", "")
+    if action_filter:
+        logs = logs.filter(action=action_filter)
+    if model_filter:
+        logs = logs.filter(model_name__icontains=model_filter)
+    if branch_filter:
+        logs = logs.filter(branch_id=branch_filter)
+    paginator = Paginator(logs, 50)
+    page = paginator.get_page(request.GET.get("page"))
+    return render(request, "director/change_log.html", {
+        "logs": page,
+        "action_filter": action_filter,
+        "model_filter": model_filter,
+        "branch_filter": branch_filter,
+        "branches": Branch.objects.all(),
+    })
+
+
+# ─────────────────────────────────────────
+# BACKUP VIEWS
+# ─────────────────────────────────────────
+
+@role_required("DIRECTOR")
+def backup_history_view(request):
+    logs = BackupLog.objects.all()
+    return render(request, "director/backup_history.html", {"logs": logs})
+
+
+@role_required("DIRECTOR")
+def trigger_backup(request):
+    """Manual backup trigger via URL."""
+    from django.core.management import call_command
+    from django.utils import timezone
+    email = request.GET.get("email", "")
+    try:
+        call_command("backup_database", trigger="manual", send_email=email)
+        messages.success(request, "Backup completed successfully.")
+    except Exception as e:
+        messages.error(request, f"Backup failed: {e}")
+    return redirect("backup_history_view")
+
+
+# ─────────────────────────────────────────
+# PRICE FLOOR MANAGEMENT
+# ─────────────────────────────────────────
+
+@role_required("DIRECTOR")
+def manage_price_floors(request):
+    from core.models import PriceFloor
+    if request.method == "POST":
+        product_id = request.POST.get("product")
+        branch_id = request.POST.get("branch")
+        min_price = request.POST.get("min_selling_price")
+        try:
+            pf, created = PriceFloor.objects.get_or_create(
+                product_id=product_id, branch_id=branch_id,
+                defaults={"min_selling_price": min_price, "created_by": request.user},
+            )
+            if not created:
+                old = pf.min_selling_price
+                pf.min_selling_price = min_price
+                pf.save()
+                _log_change(
+                    user=request.user, action="PRICE_CHANGE", model_name="PriceFloor",
+                    object_id=pf.id, description=f"Updated price floor for {pf.product.model_name}",
+                    old_value=old, new_value=min_price, request=request,
+                )
+            messages.success(request, "Price floor saved.")
+        except Exception as e:
+            messages.error(request, f"Error: {e}")
+        return redirect("manage_price_floors")
+
+    floors = PriceFloor.objects.select_related("product", "branch").order_by("-updated_at")
+    products = Product.objects.all()
+    branches = Branch.objects.all()
+    return render(request, "director/price_floors.html", {
+        "floors": floors, "products": products, "branches": branches,
+    })
 
     lp.points_balance -= points
     lp.total_redeemed += points

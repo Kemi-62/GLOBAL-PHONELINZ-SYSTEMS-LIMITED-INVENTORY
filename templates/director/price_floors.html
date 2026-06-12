@@ -1,0 +1,72 @@
+{% extends "base.html" %}
+{% block content %}
+<style>
+.page-title{font-size:1.3rem;font-weight:700;color:#004F9F;margin:0 0 1.5rem}
+.card{background:#fff;border:1px solid #e5e7eb;border-radius:10px;padding:1.2rem 1.4rem;margin-bottom:1.2rem}
+.data-table{width:100%;border-collapse:collapse;font-size:.85rem}
+.data-table th{background:#f9fafb;color:#374151;font-weight:600;padding:.65rem .9rem;text-align:left;border-bottom:1px solid #e5e7eb}
+.data-table td{padding:.6rem .9rem;border-bottom:1px solid #f3f4f6;color:#374151}
+.data-table tr:last-child td{border-bottom:none}
+.form-group{margin-bottom:.8rem}
+.form-group label{font-size:.78rem;font-weight:600;color:#374151;display:block;margin-bottom:.3rem}
+.form-group input,.form-group select{padding:.45rem .7rem;border:1px solid #d1d5db;border-radius:6px;font-size:.83rem;width:100%}
+.form-row{display:grid;grid-template-columns:repeat(auto-fit,minmax(160px,1fr));gap:.8rem}
+.btn-sm{padding:.45rem .9rem;font-size:.82rem;border-radius:6px;border:none;cursor:pointer;font-weight:600;text-decoration:none;display:inline-block}
+.btn-primary{background:#004F9F;color:#fff}
+.badge{display:inline-block;padding:.2rem .55rem;border-radius:999px;font-size:.72rem;font-weight:700}
+.badge-green{background:#d1fae5;color:#065f46}
+</style>
+
+<h1 class="page-title">🛡️ Price Floor Management</h1>
+
+<div class="card">
+  <p class="card-title" style="font-size:1rem;font-weight:700;color:#111827;margin:0 0 1rem;">Set Minimum Selling Price</p>
+  <form method="POST">
+    {% csrf_token %}
+    <div class="form-row">
+      <div class="form-group">
+        <label>Product *</label>
+        <select name="product" required>
+          <option value="">— Select —</option>
+          {% for p in products %}<option value="{{ p.id }}">{{ p.model_name }} (₦{{ p.selling_price|floatformat:0 }})</option>{% endfor %}
+        </select>
+      </div>
+      <div class="form-group">
+        <label>Branch *</label>
+        <select name="branch" required>
+          <option value="">— Select —</option>
+          {% for b in branches %}<option value="{{ b.id }}">{{ b.name }}</option>{% endfor %}
+        </select>
+      </div>
+      <div class="form-group">
+        <label>Minimum Selling Price (₦) *</label>
+        <input type="number" step="0.01" name="min_selling_price" required>
+      </div>
+    </div>
+    <button type="submit" class="btn-sm btn-primary" style="margin-top:.5rem;">Save Price Floor</button>
+  </form>
+</div>
+
+<div class="card">
+  <p class="card-title" style="font-size:1rem;font-weight:700;color:#111827;margin:0 0 1rem;">Existing Price Floors</p>
+  <div style="overflow-x:auto;">
+    <table class="data-table">
+      <thead>
+        <tr><th>Product</th><th>Branch</th><th>Min Price</th><th>Last Updated</th></tr>
+      </thead>
+      <tbody>
+        {% for f in floors %}
+        <tr>
+          <td>{{ f.product.model_name }}</td>
+          <td>{{ f.branch.name }}</td>
+          <td><strong>₦{{ f.min_selling_price|floatformat:0 }}</strong></td>
+          <td style="color:#9ca3af;font-size:.78rem;">{{ f.updated_at|date:"d M Y H:i" }}</td>
+        </tr>
+        {% empty %}
+        <tr><td colspan="4" style="text-align:center;color:#9ca3af;padding:2rem 0;">No price floors set yet.</td></tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+</div>
+{% endblock %}

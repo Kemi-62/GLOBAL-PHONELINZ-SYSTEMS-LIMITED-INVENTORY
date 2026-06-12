@@ -1,0 +1,108 @@
+{% extends "base.html" %}
+{% block content %}
+<style>
+.page-title{font-size:1.3rem;font-weight:700;color:#004F9F;margin:0 0 1.5rem}
+.card{background:#fff;border:1px solid #e5e7eb;border-radius:10px;padding:1.2rem 1.4rem;margin-bottom:1.2rem}
+.data-table{width:100%;border-collapse:collapse;font-size:.85rem}
+.data-table th{background:#f9fafb;color:#374151;font-weight:600;padding:.65rem .9rem;text-align:left;border-bottom:1px solid #e5e7eb}
+.data-table td{padding:.6rem .9rem;border-bottom:1px solid #f3f4f6;color:#374151}
+.data-table tr:last-child td{border-bottom:none}
+.badge{display:inline-block;padding:.2rem .55rem;border-radius:999px;font-size:.72rem;font-weight:700}
+.badge-green{background:#d1fae5;color:#065f46}.badge-red{background:#fee2e2;color:#991b1b}
+.badge-amber{background:#fef3c7;color:#92400e}.badge-blue{background:#dbeafe;color:#1e40af}
+.badge-purple{background:#f3e8ff;color:#6b21a8}
+.btn-sm{padding:.45rem .9rem;font-size:.82rem;border-radius:6px;border:none;cursor:pointer;font-weight:600;text-decoration:none;display:inline-block}
+.btn-outline{background:transparent;border:1px solid #d1d5db;color:#374151}
+.filter-bar{display:flex;gap:.6rem;flex-wrap:wrap;align-items:flex-end;margin-bottom:1.2rem}
+.filter-bar input,.filter-bar select{padding:.45rem .7rem;border:1px solid #d1d5db;border-radius:6px;font-size:.83rem}
+</style>
+
+<h1 class="page-title">📋 Change Log</h1>
+
+<div class="card">
+  <form method="GET" class="filter-bar">
+    <div>
+      <label style="font-size:.75rem;font-weight:600;color:#374151;display:block;margin-bottom:.2rem;">Action</label>
+      <select name="action">
+        <option value="">All Actions</option>
+        <option value="SALE" {% if action_filter == 'SALE' %}selected{% endif %}>Sale</option>
+        <option value="STOCK_IN" {% if action_filter == 'STOCK_IN' %}selected{% endif %}>Stock In</option>
+        <option value="STOCK_OUT" {% if action_filter == 'STOCK_OUT' %}selected{% endif %}>Stock Out</option>
+        <option value="PRICE_CHANGE" {% if action_filter == 'PRICE_CHANGE' %}selected{% endif %}>Price Change</option>
+        <option value="UPDATE" {% if action_filter == 'UPDATE' %}selected{% endif %}>Update</option>
+        <option value="DELETE" {% if action_filter == 'DELETE' %}selected{% endif %}>Delete</option>
+        <option value="CREATE" {% if action_filter == 'CREATE' %}selected{% endif %}>Create</option>
+        <option value="CHECK_IN" {% if action_filter == 'CHECK_IN' %}selected{% endif %}>Check In</option>
+        <option value="BACKUP" {% if action_filter == 'BACKUP' %}selected{% endif %}>Backup</option>
+      </select>
+    </div>
+    <div>
+      <label style="font-size:.75rem;font-weight:600;color:#374151;display:block;margin-bottom:.2rem;">Model</label>
+      <input type="text" name="model" value="{{ model_filter }}" placeholder="e.g. RetailSale">
+    </div>
+    <div>
+      <label style="font-size:.75rem;font-weight:600;color:#374151;display:block;margin-bottom:.2rem;">Branch</label>
+      <select name="branch">
+        <option value="">All Branches</option>
+        {% for b in branches %}<option value="{{ b.id }}" {% if branch_filter == b.id|stringformat:"s" %}selected{% endif %}>{{ b.name }}</option>{% endfor %}
+      </select>
+    </div>
+    <button type="submit" class="btn-sm" style="background:#004F9F;color:#fff;">Filter</button>
+    <a href="{% url 'change_log_view' %}" class="btn-sm btn-outline">Clear</a>
+  </form>
+</div>
+
+<div class="card">
+  <div style="overflow-x:auto;">
+    <table class="data-table">
+      <thead>
+        <tr>
+          <th>Time</th>
+          <th>User</th>
+          <th>Action</th>
+          <th>Model</th>
+          <th>Description</th>
+          <th>Branch</th>
+        </tr>
+      </thead>
+      <tbody>
+        {% for log in logs %}
+        <tr>
+          <td style="white-space:nowrap;font-size:.78rem;color:#6b7280;">{{ log.timestamp|date:"d M H:i" }}</td>
+          <td><strong>{{ log.user.username|default:"System" }}</strong></td>
+          <td>
+            <span class="badge
+              {% if log.action == 'SALE' %}badge-green
+              {% elif log.action == 'DELETE' %}badge-red
+              {% elif log.action == 'UPDATE' %}badge-amber
+              {% elif log.action == 'PRICE_CHANGE' %}badge-purple
+              {% else %}badge-blue{% endif %}">
+              {{ log.action }}
+            </span>
+          </td>
+          <td>{{ log.model_name }}</td>
+          <td>{{ log.description }}</td>
+          <td style="color:#9ca3af;font-size:.78rem;">{{ log.branch.name|default:"All" }}</td>
+        </tr>
+        {% empty %}
+        <tr>
+          <td colspan="6" style="text-align:center;color:#9ca3af;padding:2.5rem 0;">No changes recorded yet.</td>
+        </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+  <!-- Pagination -->
+  {% if logs.has_other_pages %}
+  <div style="display:flex;justify-content:center;gap:.5rem;margin-top:1rem;">
+    {% if logs.has_previous %}
+    <a href="?page={{ logs.previous_page_number }}{% if action_filter %}&action={{ action_filter }}{% endif %}{% if model_filter %}&model={{ model_filter }}{% endif %}" class="btn-sm btn-outline">← Prev</a>
+    {% endif %}
+    <span style="padding:.5rem 1rem;font-size:.85rem;color:#6b7280;">Page {{ logs.number }} of {{ logs.paginator.num_pages }}</span>
+    {% if logs.has_next %}
+    <a href="?page={{ logs.next_page_number }}{% if action_filter %}&action={{ action_filter }}{% endif %}{% if model_filter %}&model={{ model_filter }}{% endif %}" class="btn-sm btn-outline">Next →</a>
+    {% endif %}
+  </div>
+  {% endif %}
+</div>
+{% endblock %}
