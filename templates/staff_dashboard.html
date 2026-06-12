@@ -577,20 +577,6 @@ if (document.getElementById('pay-method-sd')) {
   });
 }
 
-// PWA install prompt
-let deferredPrompt;
-window.addEventListener('beforeinstallprompt', (e) => {
-  e.preventDefault();
-  deferredPrompt = e;
-  const btn = document.getElementById('pwa-install-btn');
-  if (btn) btn.style.display = 'inline-block';
-});
-function installPWA() {
-  if (!deferredPrompt) return;
-  deferredPrompt.prompt();
-  deferredPrompt.userChoice.then(() => { deferredPrompt = null; });
-}
-
 // Loyalty lookup
 function lookupLoyalty() {
   const phone = prompt('Enter customer phone number:');
