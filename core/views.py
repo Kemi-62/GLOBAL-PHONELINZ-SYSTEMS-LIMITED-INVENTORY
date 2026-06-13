@@ -5350,3 +5350,65 @@ def scan_barcode(request):
     except Exception as e:
         return JsonResponse({'error': str(e)}, status=500)
 
+
+# ════════════════════════════════════════════
+# CRON JOB ENDPOINTS — for cron-job.org / external schedulers
+# ════════════════════════════════════════════
+
+def _check_cron_secret(request):
+    """Verify cron secret token from header or query param."""
+    token = request.headers.get('X-Cron-Secret') or request.GET.get('secret', '')
+    return token == django_settings.CRON_SECRET
+
+def cron_daily_digest(request):
+    if not _check_cron_secret(request):
+        return JsonResponse({'error': 'Unauthorized'}, status=403)
+    from django.core.management import call_command
+    from core.models import DirectorDailyDigest
+    email = request.GET.get('email', django_settings.DEFAULT_FROM_EMAIL or '')
+    if not email:
+        return JsonResponse({'error': 'No email provided'}, status=400)
+    try:
+        call_command('daily_digest', email=email)
+        return JsonResponse({'ok': True, 'message': 'Daily digest sent'})
+    except Exception as e:
+        return JsonResponse({'ok': False, 'error': str(e)}, status=500)
+
+def cron_backup(request):
+    if not _check_cron_secret(request):
+        return JsonResponse({'error': 'Unauthorized'}, status=403)
+    from django.core.management import call_command
+    email = request.GET.get('email', '')
+    upload_supabase = request.GET.get('upload', '') == 'true'
+    try:
+        args = {'trigger': 'cron', 'send_email': email}
+        if upload_supabase:
+            args['upload_supabase'] = True
+        call_command('backup_database', **args)
+        return JsonResponse({'ok': True, 'message': 'Backup completed'})
+    except Exception as e:
+        return JsonResponse({'ok': False, 'error': str(e)}, status=500)
+
+def cron_stock_alert(request):
+    if not _check_cron_secret(request):
+        return JsonResponse({'error': 'Unauthorized'}, status=403)
+    from django.core.management import call_command
+    email = request.GET.get('email', django_settings.DEFAULT_FROM_EMAIL or '')
+    if not email:
+        return JsonResponse({'error': 'No email provided'}, status=400)
+    try:
+        call_command('stock_alert_email', email=email)
+        return JsonResponse({'ok': True, 'message': 'Stock alerts sent'})
+    except Exception as e:
+        return JsonResponse({'ok': False, 'error': str(e)}, status=500)
+
+def cron_monthly_reset(request):
+    if not _check_cron_secret(request):
+        return JsonResponse({'error': 'Unauthorized'}, status=403)
+    from django.core.management import call_command
+    try:
+        call_command('monthly_reset')
+        return JsonResponse({'ok': True, 'message': 'Monthly reset completed'})
+    except Exception as e:
+        return JsonResponse({'ok': False, 'error': str(e)}, status=500)
+

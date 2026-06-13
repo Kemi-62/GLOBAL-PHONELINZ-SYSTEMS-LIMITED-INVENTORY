@@ -152,4 +152,10 @@ urlpatterns = [
 
     # Barcode Scanning
     path('api/scan-barcode/', views.scan_barcode, name='scan_barcode'),
+
+    # Cron Job Endpoints (for cron-job.org / external schedulers)
+    path('cron/daily-digest/', views.cron_daily_digest, name='cron_daily_digest'),
+    path('cron/backup/', views.cron_backup, name='cron_backup'),
+    path('cron/stock-alert/', views.cron_stock_alert, name='cron_stock_alert'),
+    path('cron/monthly-reset/', views.cron_monthly_reset, name='cron_monthly_reset'),
 ]

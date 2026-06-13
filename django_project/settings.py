@@ -28,6 +28,10 @@ ALLOWED_HOSTS = config('ALLOWED_HOSTS', default='localhost,127.0.0.1,.replit.dev
 
 # CSRF: Secure by default
 CSRF_COOKIE_HTTPONLY = True
+
+# Cron job secret token (for cron-job.org / external schedulers)
+CRON_SECRET = config('CRON_SECRET', default='change-this-in-production')
+
 CSRF_USE_SESSIONS = True
 CSRF_COOKIE_SAMESITE = 'Strict'
 CSRF_COOKIE_SECURE = IS_PRODUCTION
