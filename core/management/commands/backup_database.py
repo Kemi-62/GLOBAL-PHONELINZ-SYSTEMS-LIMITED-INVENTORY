@@ -151,13 +151,17 @@ class Command(BaseCommand):
             if result.get("ok"):
                 log.supabase_uploaded = True
                 self.stdout.write(self.style.SUCCESS("Backup uploaded to Supabase"))
+                return
+            err = result.get("error", "Unknown error")
+            log.supabase_uploaded = False
+            log.supabase_error = err
+            if "not configured" in err.lower() or "not installed" in err.lower():
+                self.stdout.write(self.style.WARNING(f"Supabase upload skipped: {err}"))
             else:
-                log.supabase_uploaded = False
-                log.supabase_error = result.get("error", "Unknown error")
-                self.stderr.write(self.style.ERROR(f"Supabase upload failed: {log.supabase_error}"))
+                self.stderr.write(self.style.ERROR(f"Supabase upload failed: {err}"))
         except ImportError:
             log.supabase_error = "Supabase client not configured"
-            self.stderr.write(self.style.WARNING("Supabase not configured. Skipping upload."))
+            self.stdout.write(self.style.WARNING("Supabase upload skipped: client not configured."))
         except Exception as e:
             log.supabase_error = str(e)
             self.stderr.write(self.style.ERROR(f"Supabase upload failed: {e}"))
