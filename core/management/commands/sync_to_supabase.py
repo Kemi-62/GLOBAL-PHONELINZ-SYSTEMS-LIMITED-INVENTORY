@@ -27,7 +27,7 @@ class Command(BaseCommand):
         parser.add_argument("--password", required=True, help="Supabase database password")
         parser.add_argument("--user", default="postgres", help="Database user (default: postgres)")
         parser.add_argument("--dbname", default="postgres", help="Database name (default: postgres)")
-        parser.add_argument("--port", default="5432", help="Port (default: 5432)")
+        parser.add_argument("--port", default="6543", help="Port (default: 6543 for Supabase pooler, use 5432 for direct)")
         parser.add_argument("--dry-run", action="store_true", help="Show what would be done without writing")
         parser.add_argument("--table", default="", help="Sync only one table (e.g., core_user)")
 

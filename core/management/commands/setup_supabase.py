@@ -28,7 +28,7 @@ class Command(BaseCommand):
         parser.add_argument("--password", required=True, help="Supabase database password")
         parser.add_argument("--user", default="postgres", help="User (default: postgres)")
         parser.add_argument("--dbname", default="postgres", help="DB name (default: postgres)")
-        parser.add_argument("--port", default="5432", help="Port (default: 5432)")
+        parser.add_argument("--port", default="6543", help="Port (default: 6543 for Supabase pooler, use 5432 for direct)")
 
     def handle(self, *args, **options):
         host = options["host"]

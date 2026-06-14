@@ -10,11 +10,11 @@ class Command(BaseCommand):
     help = "Test connection to Supabase PostgreSQL"
 
     def add_arguments(self, parser):
-        parser.add_argument("--host", required=True, help="Supabase host")
+        parser.add_argument("--host", required=True, help="Supabase host (e.g., db.xxx.supabase.co)")
         parser.add_argument("--password", required=True, help="Password")
         parser.add_argument("--user", default="postgres", help="User (default: postgres)")
         parser.add_argument("--dbname", default="postgres", help="DB name (default: postgres)")
-        parser.add_argument("--port", default="5432", help="Port (default: 5432)")
+        parser.add_argument("--port", default="6543", help="Port (default: 6543 for Supabase pooler, use 5432 for direct)")
 
     def handle(self, *args, **options):
         try:
@@ -38,4 +38,6 @@ class Command(BaseCommand):
             self.stdout.write("\nYou can now run:")
             self.stdout.write("  python manage.py sync_to_supabase --host=... --password=...")
         except Exception as e:
+            import traceback
             self.stderr.write(self.style.ERROR(f"Connection failed: {e}"))
+            self.stderr.write(self.style.ERROR(traceback.format_exc()))
