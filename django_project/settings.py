@@ -134,7 +134,20 @@ WSGI_APPLICATION = 'django_project.wsgi.application'
 # DATABASE
 # ═══════════════════════════════════════════════════════
 
-if config('DB_ENGINE', default='sqlite') == 'postgresql':
+import dj_database_url
+from decouple import config
+
+_db_url = config('DATABASE_URL', default='')
+
+if _db_url:
+    DATABASES = {
+        'default': dj_database_url.parse(
+            _db_url,
+            conn_max_age=600,
+            ssl_require=True,
+        )
+    }
+elif config('DB_ENGINE', default='sqlite') == 'postgresql':
     DATABASES = {
         'default': {
             'ENGINE': 'django.db.backends.postgresql',
@@ -153,7 +166,6 @@ else:
             'NAME': BASE_DIR / 'db.sqlite3',
         }
     }
-
 # ═══════════════════════════════════════════════════════
 # PASSWORD VALIDATION — Stronger for production
 # ═══════════════════════════════════════════════════════
