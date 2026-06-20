@@ -6,7 +6,7 @@ hidden = [".pythonlibs"]
 
 [nix]
 channel = "stable-24_05"
-packages = ["nano"]
+packages = ["nano", "mailutils"]
 
 [unitTest]
 language = "python3"
