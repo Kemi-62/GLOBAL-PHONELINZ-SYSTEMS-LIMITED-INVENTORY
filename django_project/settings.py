@@ -138,12 +138,14 @@ from decouple import config
 
 _db_url = config('DATABASE_URL', default='')
 
-if _db_url:
+# Only use DATABASE_URL if it points to Supabase
+# Ignore Replit's auto-injected Helium URL
+if _db_url and 'supabase.com' in _db_url:
     DATABASES = {
         'default': dj_database_url.parse(
             _db_url,
             conn_max_age=600,
-            ssl_require='supabase.com' in _db_url,
+            ssl_require=True,
         )
     }
 elif config('DB_ENGINE', default='sqlite') == 'postgresql':
@@ -165,7 +167,6 @@ else:
             'NAME': BASE_DIR / 'db.sqlite3',
         }
     }
-
 # ═══════════════════════════════════════════════════════
 # PASSWORD VALIDATION — Stronger for production
 # ═══════════════════════════════════════════════════════
