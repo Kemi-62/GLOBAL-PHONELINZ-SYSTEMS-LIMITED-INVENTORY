@@ -179,9 +179,174 @@ def admin_redirect(request):
 # ─────────────────────────────────────────
 # STAFF / TELECOM DASHBOARD
 # ─────────────────────────────────────────
+
+@role_required("TELECOM")
+def staff_dashboard(request):
+    today = date.today()
+    branch = request.user.branch
+
+    targets = ServiceTarget.objects.filter(branch=branch, date__year=today.year, date__month=today.month)
+    activities = ServiceActivity.objects.filter(staff=request.user, date__year=today.year, date__month=today.month)
+
+    if request.method == "POST":
+        service_type = request.POST.get("service_type")
+        quantity = int(request.POST.get("quantity") or 0)
+        device_tag_id = request.POST.get("device_tag")
+        device_tag = None
+        if device_tag_id:
+            device_tag = DeviceTag.objects.filter(id=device_tag_id).first()
+
+        requires_approval = False
+        if service_type == "SIM_REG":
+            target = ServiceTarget.objects.filter(
+                branch=branch, service_type="SIM_REG",
+                device_tag=device_tag, date__year=today.year, date__month=today.month
+            ).first()
+            if target:
+                achieved = ServiceActivity.objects.filter(
+                    branch=branch, service_type="SIM_REG", device_tag=device_tag,
+                    date__year=today.year, date__month=today.month, approved=True
+                ).aggregate(total=Sum("quantity"))["total"] or 0
+                if achieved >= target.target_number:
+                    requires_approval = True
+
+        with transaction.atomic():
+            ServiceActivity.objects.create(
+                branch=branch, staff=request.user, service_type=service_type,
+                device_tag=device_tag, quantity=quantity,
+                requires_approval=requires_approval, approved=not requires_approval,
+            )
+            if service_type in ["SIM_REG", "SIM_SWAP", "SIM_UPGRADE"]:
+                try:
+                    inv = SimInventory.objects.get(branch=branch)
+                    inv.total_sold += quantity
+                    inv.save()
+                    SimInventoryLog.objects.create(
+                        inventory=inv, transaction_type="SOLD", quantity=quantity,
+                        description=f"{service_type}: {quantity} SIM by {request.user.username}",
+                        created_by=request.user,
+                    )
+                except SimInventory.DoesNotExist:
+                    pass
+
+        messages.success(request, "Activity recorded.")
+        return redirect("staff_dashboard")
+
+    device_progress = []
+    for target in targets.filter(service_type="SIM_REG"):
+        achieved = activities.filter(service_type="SIM_REG", device_tag=target.device_tag, approved=True).aggregate(total=Sum("quantity"))["total"] or 0
+        pct = round((achieved / target.target_number) * 100, 2) if target.target_number else 0
+        device_progress.append({
+            "device": target.device_tag.tag_name if target.device_tag else "Generic",
+            "target": target.target_number, "achieved": achieved,
+            "remaining": max(target.target_number - achieved, 0),
+            "percentage": pct, "exceeded": achieved >= target.target_number,
+        })
+
+    check_logs = CheckInOutLog.objects.filter(staff=request.user).order_by("-date", "-check_in_time")[:20]
+
+    return render(request, "staff_dashboard.html", {
+        "device_progress": device_progress,
+        "device_tags": DeviceTag.objects.filter(branch=branch),
+        "activities": activities,
+        "pending_activities": activities.filter(approved=False, requires_approval=True),
+        "monthly_total": activities.filter(approved=True).aggregate(total=Sum("quantity"))["total"] or 0,
+        "categories": RetailCategory.objects.all(),
+        "check_logs": check_logs,
+        "checkinout_logs": check_logs,
+    })
+
+
 # ─────────────────────────────────────────
 # MANAGER DASHBOARD
 # ─────────────────────────────────────────
+
+@role_required("MANAGER")
+def manager_dashboard(request):
+    today = date.today()
+    branch = request.user.branch
+
+    activities = ServiceActivity.objects.filter(branch=branch, date__year=today.year, date__month=today.month)
+    targets = ServiceTarget.objects.filter(branch=branch, date__year=today.year, date__month=today.month)
+    pending_approvals = ServiceActivity.objects.filter(branch=branch, requires_approval=True, approved=False)
+
+    # Search
+    search_query = request.GET.get("search", "")
+    if search_query:
+        activities = activities.filter(staff__username__icontains=search_query)
+
+    # Target progress
+    target_data = []
+    for t in targets:
+        achieved = activities.filter(service_type=t.service_type).aggregate(total=Sum("quantity"))["total"] or 0
+        pct = round((achieved / t.target_number) * 100, 2) if t.target_number else 0
+        target_data.append({
+            "service_type": t.service_type, "target_number": t.target_number,
+            "achieved": achieved, "remaining": max(t.target_number - achieved, 0), "percentage": pct,
+        })
+
+    # Stock
+    safe_stocks = BranchSafeStock.objects.filter(branch=branch).select_related("product")
+    today_movements = StockMovement.objects.filter(branch=branch, date=today)
+    total_stock_out = today_movements.filter(movement_type="OUT").aggregate(total=Sum("quantity"))["total"] or 0
+
+    # Retail sales
+    product_filter = request.GET.get("product")
+    staff_filter = request.GET.get("staff")
+    retail_sales_today = RetailSale.objects.filter(branch=branch, date=today)
+    if product_filter:
+        retail_sales_today = retail_sales_today.filter(product_id=product_filter)
+    if staff_filter:
+        retail_sales_today = retail_sales_today.filter(staff_id=staff_filter)
+
+    total_retail_revenue = retail_sales_today.aggregate(
+        total=Sum(F("quantity") * F("selling_price"))
+    )["total"] or 0
+    total_retail_quantity = retail_sales_today.aggregate(total=Sum("quantity"))["total"] or 0
+    sales_per_staff = retail_sales_today.values("staff__username").annotate(
+        total_qty=Sum("quantity"), total_revenue=Sum(F("quantity") * F("selling_price"))
+    )
+    top_products = retail_sales_today.values("product__model_name").annotate(
+        total_qty=Sum("quantity")
+    ).order_by("-total_qty")[:5]
+
+    # MultiChoice
+    multichoice_revenue = MultiChoiceSale.objects.filter(branch=branch, date=today).aggregate(
+        total=Sum("amount")
+    )["total"] or 0
+
+    # Misc
+    retail_staff = User.objects.filter(branch=branch, role="RETAIL")
+    categories = RetailCategory.objects.all()
+    pending_stock_requests = StockRequest.objects.filter(branch=branch, status="PENDING")
+    expenses = Expense.objects.filter(branch=branch).order_by("-date")[:10]
+    check_logs = CheckInOutLog.objects.filter(branch=branch).order_by("-date", "-check_in_time")[:20]
+    sim_inventory, _ = SimInventory.objects.get_or_create(branch=branch)
+    sim_logs = SimInventoryLog.objects.filter(inventory=sim_inventory).order_by("-date_created")[:15]
+
+    return render(request, "manager_dashboard.html", {
+        "target_data": target_data,
+        "activities": activities,
+        "pending_approvals": pending_approvals,
+        "safe_stocks": safe_stocks,
+        "categories": categories,
+        "retail_staff": retail_staff,
+        "today_movements": today_movements,
+        "total_stock_out": total_stock_out,
+        "multichoice_revenue": multichoice_revenue,
+        "total_retail_quantity": total_retail_quantity,
+        "total_retail_revenue": total_retail_revenue,
+        "sales_per_staff": sales_per_staff,
+        "top_products": top_products,
+        "search_query": search_query,
+        "pending_stock_requests": pending_stock_requests,
+        "expenses": expenses,
+        "check_logs": check_logs,
+        "sim_inventory": sim_inventory,
+        "sim_logs": sim_logs,
+    })
+
+
 @login_required
 def approve_activity(request, activity_id):
     if request.user.role not in ["MANAGER", "SUPERADMIN"] and not request.user.is_superuser:
@@ -197,9 +362,103 @@ def approve_activity(request, activity_id):
 # ─────────────────────────────────────────
 # DIRECTOR DASHBOARD
 # ─────────────────────────────────────────
+@role_required("DIRECTOR")
+def daily_sales_report(request):
+    today = timezone.now().date()
+    daily_sales = RetailSale.objects.filter(date=today).select_related("product", "branch", "staff").order_by("branch__name", "-id")
+    branch_sales_summary = {}
+    total_qty, total_revenue = 0, Decimal(0)
+    for s in daily_sales:
+        amt = Decimal(s.quantity) * s.selling_price
+        s.total_amount = amt
+        bk = s.branch.name
+        if bk not in branch_sales_summary:
+            branch_sales_summary[bk] = {"sales": [], "total_qty": 0, "total_revenue": Decimal(0)}
+        branch_sales_summary[bk]["sales"].append({
+            "product": s.product.model_name, "quantity": s.quantity,
+            "price": s.selling_price, "amount": amt, "staff": s.staff.username,
+        })
+        branch_sales_summary[bk]["total_qty"] += s.quantity
+        branch_sales_summary[bk]["total_revenue"] += amt
+        total_qty += s.quantity
+        total_revenue += amt
+
+    return render(request, "daily_sales_report.html", {
+        "branch_sales_summary": branch_sales_summary,
+        "total_qty": total_qty, "total_revenue": total_revenue,
+        "categories": RetailCategory.objects.all(),
+        "all_branches": Branch.objects.all(),
+        "today": today,
+    })
+
+
 # ─────────────────────────────────────────
 # RETAIL DASHBOARD
 # ─────────────────────────────────────────
+
+@role_required("RETAIL")
+def retail_dashboard(request):
+    staff = request.user
+    staff_stock = StaffStock.objects.filter(staff=staff).select_related("product")
+    sales_qs = RetailSale.objects.filter(staff=staff).select_related("product").order_by("-date", "-id")
+
+    paginator = Paginator(sales_qs, 30)
+    sales_history = paginator.get_page(request.GET.get("page"))
+    for s in sales_history:
+        s.total_revenue = Decimal(s.quantity) * s.selling_price
+
+    check_logs = CheckInOutLog.objects.filter(staff=staff).order_by("-date", "-check_in_time")[:20]
+
+    stock_rows = []
+    for stock in staff_stock:
+        stock_rows.append({
+            "id": stock.id,
+            "product": stock.product,
+            "quantity": stock.quantity,
+            "added_at": stock.product.date_added,
+            "added_by": stock.product.created_by,
+        })
+
+    return render(request, "retail_dashboard.html", {
+        "staff_stock": stock_rows,
+        "categories": RetailCategory.objects.all(),
+        "check_logs": check_logs,
+        "sales_history": sales_history,
+    })
+
+
+@role_required("RETAIL")
+def record_retail_sale(request):
+    if request.method == "POST":
+        product_id = request.POST.get("product")
+        quantity = int(request.POST.get("quantity", 0))
+        selling_price = Decimal(request.POST.get("selling_price", 0))
+        payment_method = request.POST.get("payment_method", "CASH")
+
+        product = get_object_or_404(Product, id=product_id)
+
+        try:
+            staff_stock = StaffStock.objects.get(staff=request.user, product=product)
+        except StaffStock.DoesNotExist:
+            messages.error(request, "You do not have this product in stock.")
+            return redirect("retail_dashboard")
+
+        if quantity > staff_stock.quantity:
+            messages.error(request, f"Insufficient stock. You have {staff_stock.quantity} unit(s).")
+            return redirect("retail_dashboard")
+
+        with transaction.atomic():
+            staff_stock.quantity -= quantity
+            staff_stock.save()
+            RetailSale.objects.create(
+                staff=request.user, branch=request.user.branch,
+                product=product, quantity=quantity,
+                selling_price=selling_price, payment_method=payment_method,
+            )
+        messages.success(request, "Sale recorded successfully.")
+    return redirect("retail_dashboard")
+
+
 @login_required
 def request_stock(request):
     if request.method == "POST" and request.user.role == "RETAIL":
@@ -305,6 +564,67 @@ def product_catalog(request):
 # ─────────────────────────────────────────
 # MULTICHOICE DASHBOARD
 # ─────────────────────────────────────────
+
+@role_required("MULTICHOICE")
+def multichoice_dashboard(request):
+    today = timezone.now().date()
+    week_start = today - timedelta(days=today.weekday())
+    weekly_report = (
+        MultiChoiceWeeklyReport.objects.filter(
+            staff=request.user,
+            branch=request.user.branch,
+            week_start_date=week_start,
+        )
+        .order_by("-id")
+        .first()
+    )
+
+    today_sales = MultiChoiceSale.objects.filter(staff=request.user, date=today).order_by("-time")
+
+    search_query = request.GET.get("search", "").strip()
+    selected_month = request.GET.get("month", today.strftime("%Y-%m"))
+    all_sales = MultiChoiceSale.objects.filter(staff=request.user).order_by("-date", "-time")
+    if selected_month:
+        yr, mo = selected_month.split("-")
+        all_sales = all_sales.filter(date__year=yr, date__month=mo)
+    if search_query:
+        all_sales = all_sales.filter(
+            Q(customer_name__icontains=search_query) |
+            Q(customer_phone__icontains=search_query) |
+            Q(package_type__icontains=search_query)
+        )
+
+    balance_history = None
+    current_balance = None
+    if weekly_report:
+        balance_history = MultiChoiceBalance.objects.filter(
+            weekly_report=weekly_report
+        ).order_by("-date", "-time", "-id")
+        latest_balance = balance_history.first()
+        current_balance = (
+            latest_balance.balance_after_sale
+            if latest_balance and latest_balance.balance_after_sale is not None
+            else weekly_report.opening_balance + weekly_report.additional_funds
+        )
+    weekly_total_sales = weekly_report.total_subscriptions if weekly_report else 0
+
+    return render(request, "multichoice_dashboard.html", {
+        "today_sales": today_sales,
+        "all_sales": all_sales,
+        "total_today": today_sales.aggregate(total=Sum("amount"))["total"] or 0,
+        "categories": RetailCategory.objects.all(),
+        "weekly_report": weekly_report,
+        "is_monday": today.weekday() == 0,
+        "is_saturday": today.weekday() == 5,
+        "weekly_total_sales": weekly_total_sales,
+        "balance_history": balance_history,
+        "current_balance": current_balance,
+        "check_logs": CheckInOutLog.objects.filter(staff=request.user).order_by("-date", "-check_in_time")[:20],
+        "checkinout_logs": CheckInOutLog.objects.filter(staff=request.user).order_by("-date", "-check_in_time")[:20],
+        "search_query": search_query,
+        "selected_month": selected_month,
+    })
+
 @login_required
 def close_weekly_report(request):
     if request.method == "POST" and request.user.role == "MULTICHOICE":
@@ -552,6 +872,21 @@ def stock_alerts(request):
 # DIRECTOR SAFE STOCK
 # ─────────────────────────────────────────
 @role_required("DIRECTOR")
+def add_director_stock(request):
+    if request.method == "POST":
+        try:
+            product = get_object_or_404(Product, id=request.POST.get("product_id"))
+            DirectorSafeStock.objects.create(
+                product=product, quantity=int(request.POST.get("quantity")),
+                notes=request.POST.get("notes", ""),
+            )
+            messages.success(request, f"Added to director safe.")
+        except Exception as e:
+            messages.error(request, f"Error: {e}")
+    return redirect("director_safe_stock")
+
+
+@role_required("DIRECTOR")
 def delete_director_stock(request, stock_id):
     stock = get_object_or_404(DirectorSafeStock, id=stock_id)
     stock.delete()
@@ -606,6 +941,15 @@ def create_director_product(request):
 # ─────────────────────────────────────────
 # ATTENDANCE
 # ─────────────────────────────────────────
+
+@login_required
+def attendance_history(request):
+    qs = Attendance.objects.filter(user=request.user).order_by("-date")
+    paginator = Paginator(qs, 30)
+    records = paginator.get_page(request.GET.get("page"))
+    return render(request, "staff/attendance_history.html", {"records": records})
+
+
 @role_required("DIRECTOR")
 def manage_branch_locations(request):
     if request.method == "POST":
@@ -813,6 +1157,20 @@ def export_branch_report(request):
 # ─────────────────────────────────────────
 # CRM
 # ─────────────────────────────────────────
+
+@role_required("DIRECTOR")
+def customer_crm(request):
+    customers = Customer.objects.filter(branch=request.user.branch).order_by("-last_purchase")
+    search = request.GET.get("search", "")
+    if search:
+        customers = customers.filter(Q(name__icontains=search) | Q(phone_number__icontains=search))
+    paginator = Paginator(customers, 30)
+    page = paginator.get_page(request.GET.get("page"))
+    return render(request, "customer_crm.html", {
+        "customers": page, "total_customers": customers.count(), "search": search,
+    })
+
+
 def _compress_image(image_file, max_size_kb=100, max_dimension=600):
     """Compress uploaded image to reduce storage size aggressively (target ~100KB)."""
     try:
@@ -986,6 +1344,39 @@ def staff_checkin(request, staff_id):
     else:
         messages.warning(request, "No active outing found for this staff.")
     return redirect("manager_dashboard")
+
+
+@role_required("MANAGER")
+def add_device_commission(request):
+    device_tags = DeviceTag.objects.filter(branch=request.user.branch)
+    if request.method == "POST":
+        DeviceTagCommission.objects.update_or_create(
+            branch=request.user.branch,
+            device_tag_id=request.POST.get("device_tag_id"),
+            month_year=request.POST.get("month_year"),
+            defaults={"commission_amount": request.POST.get("commission_amount"), "created_by": request.user},
+        )
+        messages.success(request, "Commission recorded.")
+        return redirect("manager_dashboard")
+    return render(request, "device_commission_form.html", {"device_tags": device_tags})
+
+
+@role_required("DIRECTOR")
+def commission_tracking(request):
+    commissions = CommissionPayment.objects.filter(
+        branch=request.user.branch
+    ).select_related("staff").order_by("-date_detected")
+    staff_filter = request.GET.get("staff")
+    if staff_filter:
+        commissions = commissions.filter(staff_id=staff_filter)
+    return render(request, "commission_tracking.html", {
+        "commissions": commissions,
+        "total_commissions": commissions.aggregate(total=Sum("commission_detected"))["total"] or 0,
+        "staff_list": User.objects.filter(branch=request.user.branch, role="MULTICHOICE"),
+        "selected_staff": staff_filter,
+    })
+
+
 @role_required("MANAGER")
 def create_service_target(request):
     if request.method == "POST":
@@ -1296,6 +1687,44 @@ def upload_director_csv(request):
 # ─────────────────────────────────────────
 # DIRECTOR RELEASE STOCK TO BRANCH/STAFF
 # ─────────────────────────────────────────
+
+
+@role_required("MANAGER")
+def stock_movement_log(request):
+    branch = request.user.branch
+    movements = StockMovement.objects.filter(
+        branch=branch
+    ).select_related("product", "performed_by").order_by("-date", "-time")
+
+    # Filters
+    movement_type = request.GET.get("type", "")
+    date_from = request.GET.get("date_from", "")
+    date_to = request.GET.get("date_to", "")
+
+    if movement_type:
+        movements = movements.filter(movement_type=movement_type)
+    if date_from:
+        movements = movements.filter(date__gte=date_from)
+    if date_to:
+        movements = movements.filter(date__lte=date_to)
+
+    paginator = Paginator(movements, 50)
+    page = paginator.get_page(request.GET.get("page"))
+
+    # Totals
+    total_in = movements.filter(movement_type="IN").aggregate(t=Sum("quantity"))["t"] or 0
+    total_out = movements.filter(movement_type="OUT").aggregate(t=Sum("quantity"))["t"] or 0
+
+    return render(request, "manager/stock_log.html", {
+        "movements": page,
+        "total_in": total_in,
+        "total_out": total_out,
+        "selected_type": movement_type,
+        "date_from": date_from,
+        "date_to": date_to,
+    })
+
+
 # ─────────────────────────────────────────
 # SEND DAILY REPORT TO DIRECTOR VIA WHATSAPP
 # ─────────────────────────────────────────
@@ -2015,6 +2444,22 @@ def customer_history(request, customer_id):
 # ─────────────────────────────────────────
 # MANAGER: VIEW TODAY'S SALES WITH VOID OPTION
 # ─────────────────────────────────────────
+
+@role_required("MANAGER")
+def manager_sales_today(request):
+    today = date.today()
+    sales = RetailSale.objects.filter(
+        branch=request.user.branch, date=today
+    ).select_related("product", "staff").order_by("-time")
+    total_revenue = sales.filter(is_voided=False).aggregate(
+        t=Sum(F("quantity") * F("selling_price"))
+    )["t"] or 0
+    return render(request, "manager/sales_today.html", {
+        "sales": sales,
+        "total_revenue": total_revenue,
+        "today": today,
+    })
+
 # ─────────────────────────────────────────
 # FIXED DIRECTOR ATTENDANCE DASHBOARD
 # ─────────────────────────────────────────
@@ -2201,6 +2646,83 @@ def export_monthly_attendance_pdf(request):
 # Balance reduces after every subscription
 # Shows running balance clearly
 # ─────────────────────────────────────────
+
+@role_required("MULTICHOICE")
+def record_multichoice_sale(request):
+    if request.method == "POST":
+        today = timezone.now().date()
+        week_start = today - timedelta(days=today.weekday())
+
+        weekly_report = (
+            MultiChoiceWeeklyReport.objects.filter(
+                staff=request.user,
+                branch=request.user.branch,
+                week_start_date=week_start,
+            )
+            .order_by("-id")
+            .first()
+        )
+        if weekly_report is None:
+            weekly_report = MultiChoiceWeeklyReport.objects.create(
+                staff=request.user,
+                branch=request.user.branch,
+                week_start_date=week_start,
+                opening_balance=Decimal("0"),
+                additional_funds=Decimal("0"),
+            )
+
+        cost_price = Decimal(request.POST.get("cost_price") or "0")
+        amount     = Decimal(request.POST.get("amount") or "0")
+
+        # Get the most recent balance entry to find current running balance
+        prev = MultiChoiceBalance.objects.filter(
+            weekly_report=weekly_report
+        ).order_by("-date", "-time", "-id").first()
+
+        if prev and prev.balance_after_sale is not None:
+            current_balance = prev.balance_after_sale
+        else:
+            current_balance = weekly_report.opening_balance + weekly_report.additional_funds
+
+        # Every subscription reduces current balance by its cost price
+        balance_after = current_balance - cost_price
+
+        package_type     = request.POST.get("package_type", "")
+        customer_name    = request.POST.get("customer_name", "")
+        customer_phone   = request.POST.get("customer_phone", "")
+        service_type     = request.POST.get("service_type", "DSTV")
+        transaction_type = request.POST.get("transaction_type", "NEW")
+
+        with transaction.atomic():
+            MultiChoiceSale.objects.create(
+                staff=request.user,
+                branch=request.user.branch,
+                customer_name=customer_name,
+                customer_phone=customer_phone,
+                service_type=service_type,
+                package_type=package_type,
+                transaction_type=transaction_type,
+                cost_price=cost_price,
+                amount=amount,
+            )
+            MultiChoiceBalance.objects.create(
+                weekly_report=weekly_report,
+                balance_amount=current_balance,
+                balance_after_sale=balance_after,
+                sale_cost_price=cost_price,
+                notes=f"{service_type} — {package_type} — {customer_name}",
+            )
+            weekly_report.total_subscriptions = (weekly_report.total_subscriptions or Decimal("0")) + amount
+            weekly_report.save(update_fields=["total_subscriptions"])
+
+        messages.success(
+            request,
+            f"Sale recorded. Balance: ₦{current_balance:,.2f} → ₦{balance_after:,.2f} "
+            f"(₦{cost_price:,.2f} deducted for {package_type})"
+        )
+    return redirect("multichoice_dashboard")
+
+
 # ─────────────────────────────────────────
 # FIXED multichoice_dashboard — shows current balance
 # ─────────────────────────────────────────
@@ -4890,40 +5412,3 @@ def cron_monthly_reset(request):
     except Exception as e:
         return JsonResponse({'ok': False, 'error': str(e)}, status=500)
 
-
-
-def offline_page(request):
-    """PWA offline fallback page."""
-    return render(request, "offline.html")
-
-
-def pwa_manifest(request):
-    """Serve PWA manifest.json."""
-    import json as _json
-    from django.http import HttpResponse as _HR
-    manifest = {
-        "name": "GPSL ERP",
-        "short_name": "GPSL",
-        "description": "Global Phonelinz Systems Limited",
-        "start_url": "/",
-        "display": "standalone",
-        "background_color": "#004F9F",
-        "theme_color": "#004F9F",
-        "icons": [
-            {"src": "/static/icons/icon-192.png", "sizes": "192x192", "type": "image/png"},
-            {"src": "/static/icons/icon-512.png", "sizes": "512x512", "type": "image/png"}
-        ]
-    }
-    return _HR(_json.dumps(manifest), content_type="application/manifest+json")
-
-
-def keepalive_ping(request):
-    """Keep Render and Supabase awake. Ping from cron-job.org every 4 days."""
-    from django.http import JsonResponse as _JR
-    try:
-        from django.db import connection as _conn
-        with _conn.cursor() as c:
-            c.execute("SELECT 1")
-        return _JR({"status": "ok", "time": str(timezone.now())})
-    except Exception as e:
-        return _JR({"status": "error", "detail": str(e)}, status=500)

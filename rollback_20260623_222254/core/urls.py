@@ -158,7 +158,4 @@ urlpatterns = [
     path('cron/backup/', views.cron_backup, name='cron_backup'),
     path('cron/stock-alert/', views.cron_stock_alert, name='cron_stock_alert'),
     path('cron/monthly-reset/', views.cron_monthly_reset, name='cron_monthly_reset'),
-    path('system/keepalive/', views.keepalive_ping, name='keepalive_ping'),
-    path('offline/', views.offline_page, name='offline_page'),
-    path('manifest.json', views.pwa_manifest, name='pwa_manifest'),
 ]

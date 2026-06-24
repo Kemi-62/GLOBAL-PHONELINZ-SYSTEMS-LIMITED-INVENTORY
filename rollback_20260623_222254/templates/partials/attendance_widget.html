@@ -111,7 +111,7 @@ document.getElementById('att-form').addEventListener('submit', function(e) {
   fetch(form.action, {
     method: 'POST',
     body: data,
-    headers: { 'X-Requested-With': 'XMLHttpRequest', 'X-CSRFToken': (document.cookie.match('(^|;) ?csrftoken=([^;]*)')||[])[2]||'' }, credentials: 'same-origin'
+    headers: { 'X-Requested-With': 'XMLHttpRequest' }
   })
   .then(r => r.json())
   .then(function(res) {
