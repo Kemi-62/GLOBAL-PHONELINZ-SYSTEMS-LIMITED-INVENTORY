@@ -209,6 +209,37 @@
 </head>
 <body>
 
+<div id="wake-splash" style="display:none;position:fixed;inset:0;background:#004F9F;z-index:99999;flex-direction:column;align-items:center;justify-content:center;color:#fff;font-family:Arial,sans-serif;">
+  <div style="text-align:center;margin-bottom:2rem;">
+    <div style="font-size:3rem;font-weight:700;color:#FFCB05;letter-spacing:2px;margin-bottom:.3rem;">GPSL</div>
+    <div style="font-size:.85rem;opacity:.75;letter-spacing:1px;">GLOBAL PHONELINZ SYSTEMS LIMITED</div>
+  </div>
+  <div style="display:flex;gap:10px;margin-bottom:1.5rem;">
+    <div style="width:12px;height:12px;border-radius:50%;background:#FFCB05;animation:gpsl-bounce 1s infinite 0s"></div>
+    <div style="width:12px;height:12px;border-radius:50%;background:#FFCB05;animation:gpsl-bounce 1s infinite .2s"></div>
+    <div style="width:12px;height:12px;border-radius:50%;background:#FFCB05;animation:gpsl-bounce 1s infinite .4s"></div>
+  </div>
+  <p style="font-size:.78rem;opacity:.55;margin:0;">Starting up, please wait&hellip;</p>
+</div>
+<style>
+@keyframes gpsl-bounce {
+  0%,100%{transform:translateY(0);opacity:1}
+  50%{transform:translateY(-10px);opacity:.6}
+}
+</style>
+<script>
+(function() {
+  var splash = document.getElementById('wake-splash');
+  var timer = setTimeout(function() {
+    if (splash) splash.style.display = 'flex';
+  }, 2000);
+  window.addEventListener('load', function() {
+    clearTimeout(timer);
+    if (splash) splash.style.display = 'none';
+  });
+})();
+</script>
+
 <div id="overlay" class="sidebar-overlay" onclick="closeSidebar()"></div>
 
 <!-- ═══════ SIDEBAR ═══════ -->
