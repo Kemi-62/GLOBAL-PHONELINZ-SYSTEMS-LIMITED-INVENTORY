@@ -42,11 +42,19 @@
 <div class="card">
   <form method="GET" class="filter-bar">
     <div>
-      <label style="font-size:.75rem;font-weight:600;color:#374151;display:block;margin-bottom:.2rem;">Filter by Branch</label>
-      <select name="branch" onchange="this.form.submit()">
+      <label style="font-size:.75rem;font-weight:600;color:#374151;display:block;margin-bottom:.2rem;">From Date</label>
+      <input type="date" name="date_from" value="{{ date_from }}">
+    </div>
+    <div>
+      <label style="font-size:.75rem;font-weight:600;color:#374151;display:block;margin-bottom:.2rem;">To Date</label>
+      <input type="date" name="date_to" value="{{ date_to }}">
+    </div>
+    <div>
+      <label style="font-size:.75rem;font-weight:600;color:#374151;display:block;margin-bottom:.2rem;">Branch</label>
+      <select name="branch">
         <option value="">All Branches</option>
         {% for b in branches %}
-        <option value="{{ b.id }}" {% if selected_branch == b.id|stringformat:"s" %}selected{% endif %}>{{ b.name }}</option>
+        <option value="{{ b.id }}" {% if branch_flt == b.id|stringformat:"s" %}selected{% endif %}>{{ b.name }}</option>
         {% endfor %}
       </select>
     </div>
@@ -54,8 +62,9 @@
       <label style="font-size:.75rem;font-weight:600;color:#374151;display:block;margin-bottom:.2rem;">Search Product</label>
       <input type="text" name="search" placeholder="Product name…" value="{{ search }}">
     </div>
-    <button type="submit" class="btn-sm btn-primary" style="align-self:flex-end;">Search</button>
+    <button type="submit" class="btn-sm btn-primary" style="align-self:flex-end;">Filter</button>
     <a href="{% url 'director_all_branch_stock' %}" class="btn-sm btn-outline" style="align-self:flex-end;">Clear</a>
+    <a href="?date_from={{ date_from }}&date_to={{ date_to }}&branch={{ branch_flt }}&search={{ search }}&export=pdf" class="btn-sm" style="background:#10b981;color:#fff;align-self:flex-end;">📥 PDF</a>
   </form>
 
   {% if stock_items %}

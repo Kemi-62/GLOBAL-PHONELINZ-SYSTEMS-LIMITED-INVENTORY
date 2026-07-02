@@ -22,6 +22,18 @@
 <div class="card">
   <form method="GET" class="filter-bar">
     <div>
+      <label style="font-size:.75rem;font-weight:600;color:#374151;display:block;margin-bottom:.2rem;">From Date</label>
+      <input type="date" name="date_from" value="{{ date_from }}">
+    </div>
+    <div>
+      <label style="font-size:.75rem;font-weight:600;color:#374151;display:block;margin-bottom:.2rem;">To Date</label>
+      <input type="date" name="date_to" value="{{ date_to }}">
+    </div>
+    <div>
+      <label style="font-size:.75rem;font-weight:600;color:#374151;display:block;margin-bottom:.2rem;">Search</label>
+      <input type="text" name="search" value="{{ search }}" placeholder="User or description…">
+    </div>
+    <div>
       <label style="font-size:.75rem;font-weight:600;color:#374151;display:block;margin-bottom:.2rem;">Action</label>
       <select name="action">
         <option value="">All Actions</option>
@@ -96,11 +108,11 @@
   {% if logs.has_other_pages %}
   <div style="display:flex;justify-content:center;gap:.5rem;margin-top:1rem;">
     {% if logs.has_previous %}
-    <a href="?page={{ logs.previous_page_number }}{% if action_filter %}&action={{ action_filter }}{% endif %}{% if model_filter %}&model={{ model_filter }}{% endif %}" class="btn-sm btn-outline">← Prev</a>
+    <a href="?page={{ logs.previous_page_number }}{% if date_from %}&date_from={{ date_from }}{% endif %}{% if date_to %}&date_to={{ date_to }}{% endif %}{% if action_filter %}&action={{ action_filter }}{% endif %}{% if search %}&search={{ search }}{% endif %}" class="btn-sm btn-outline">← Prev</a>
     {% endif %}
     <span style="padding:.5rem 1rem;font-size:.85rem;color:#6b7280;">Page {{ logs.number }} of {{ logs.paginator.num_pages }}</span>
     {% if logs.has_next %}
-    <a href="?page={{ logs.next_page_number }}{% if action_filter %}&action={{ action_filter }}{% endif %}{% if model_filter %}&model={{ model_filter }}{% endif %}" class="btn-sm btn-outline">Next →</a>
+    <a href="?page={{ logs.next_page_number }}{% if date_from %}&date_from={{ date_from }}{% endif %}{% if date_to %}&date_to={{ date_to }}{% endif %}{% if action_filter %}&action={{ action_filter }}{% endif %}{% if search %}&search={{ search }}{% endif %}" class="btn-sm btn-outline">Next →</a>
     {% endif %}
   </div>
   {% endif %}
