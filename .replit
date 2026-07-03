@@ -6,7 +6,7 @@ hidden = [".pythonlibs"]
 
 [nix]
 channel = "stable-24_05"
-packages = ["nano", "mailutils"]
+packages = ["nano", "mailutils", "sqlite-interactive"]
 
 [unitTest]
 language = "python3"
@@ -21,6 +21,7 @@ externalPort = 80
 
 [[ports]]
 localPort = 8000
+externalPort = 8000
 
 [agent]
 expertMode = true

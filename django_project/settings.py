@@ -274,3 +274,13 @@ LOGGING = {
         },
     },
 }
+
+# ─── BRAND SETTINGS ───
+SITE_NAME = "GPSL Business Suite"
+SITE_URL = "https://app.globalphonelinz.com"
+COMPANY_NAME = "Global Phonelinz Systems Limited"
+COMPANY_TAGLINE = "Your Trusted Technology Partner"
+COMPANY_EMAIL = "globalphonelinzsystems@gmail.com"
+COMPANY_PHONE = "+234 XXX XXX XXXX"
+COMPANY_WHATSAPP = "+234 XXX XXX XXXX"
+COMPANY_ADDRESS = "Uyo, Akwa Ibom State, Nigeria"

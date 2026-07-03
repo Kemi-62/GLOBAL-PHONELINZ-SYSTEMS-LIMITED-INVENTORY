@@ -1,7 +1,7 @@
 {
-  "name": "GPSL Automation",
+  "name": "GPSL Business Suite",
   "short_name": "GPSL",
-  "description": "Global Phonelinz Systems Limited — Staff ERP for telecom & retail",
+  "description": "Global Phonelinz Systems Limited Business Suite",
   "start_url": "/",
   "display": "standalone",
   "background_color": "#ffffff",

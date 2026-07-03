@@ -1,0 +1,822 @@
+{% load static %}
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta name="description" content="Global Phonelinz Systems Limited — Your trusted technology partner in Uyo, Akwa Ibom. SIM Registration, Phones, Accessories, DSTV, MiFi, Routers and more.">
+  <title>Global Phonelinz Systems Limited — Your Trusted Technology Partner</title>
+  <link rel="icon" type="image/png" href="gpsl_logo.png">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+    :root {
+      --blue: #004F9F;
+      --blue-dark: #003d7a;
+      --blue-light: #eff6ff;
+      --yellow: #FFCB05;
+      --yellow-dark: #e6b800;
+      --text: #111827;
+      --text-muted: #6b7280;
+      --border: #e5e7eb;
+      --white: #ffffff;
+      --bg: #f9fafb;
+    }
+
+    html { scroll-behavior: smooth; }
+
+    body {
+      font-family: 'Segoe UI', system-ui, -apple-system, Arial, sans-serif;
+      color: var(--text);
+      background: var(--white);
+      line-height: 1.6;
+    }
+
+    /* ── NAVBAR ── */
+    nav {
+      position: fixed;
+      top: 0; left: 0; right: 0;
+      background: rgba(0,79,159,.97);
+      backdrop-filter: blur(10px);
+      z-index: 1000;
+      padding: 0 1.5rem;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      height: 64px;
+      box-shadow: 0 2px 20px rgba(0,0,0,.15);
+    }
+    .nav-brand {
+      display: flex;
+      align-items: center;
+      gap: .75rem;
+      text-decoration: none;
+    }
+    .nav-logo {
+      width: 40px; height: 40px;
+      background: white;
+      border-radius: 50%;
+      display: flex; align-items: center; justify-content: center;
+      overflow: hidden; padding: 4px;
+    }
+    .nav-logo img { width: 100%; height: 100%; object-fit: contain; }
+    .nav-name { color: var(--yellow); font-weight: 800; font-size: 1rem; }
+    .nav-links {
+      display: flex; gap: 1.5rem; list-style: none;
+      align-items: center;
+    }
+    .nav-links a {
+      color: rgba(255,255,255,.85);
+      text-decoration: none; font-size: .88rem; font-weight: 500;
+      transition: color .2s;
+    }
+    .nav-links a:hover { color: var(--yellow); }
+    .nav-cta {
+      background: var(--yellow) !important;
+      color: var(--blue) !important;
+      padding: .5rem 1.2rem !important;
+      border-radius: 6px !important;
+      font-weight: 700 !important;
+    }
+    .nav-cta:hover { background: var(--yellow-dark) !important; }
+    .hamburger {
+      display: none; flex-direction: column; gap: 5px; cursor: pointer;
+      background: none; border: none; padding: .3rem;
+    }
+    .hamburger span {
+      width: 24px; height: 2px; background: white; border-radius: 2px;
+      transition: .3s;
+    }
+    .mobile-menu {
+      display: none; position: fixed; top: 64px; left: 0; right: 0;
+      background: var(--blue); padding: 1rem 1.5rem 1.5rem;
+      flex-direction: column; gap: 1rem; z-index: 999;
+    }
+    .mobile-menu.open { display: flex; }
+    .mobile-menu a {
+      color: rgba(255,255,255,.85); text-decoration: none;
+      font-size: .95rem; font-weight: 500; padding: .5rem 0;
+      border-bottom: 1px solid rgba(255,255,255,.1);
+    }
+
+    /* ── HERO ── */
+    .hero {
+      min-height: 100vh;
+      background: linear-gradient(135deg, var(--blue) 0%, #0066cc 60%, #0047a0 100%);
+      display: flex; flex-direction: column;
+      align-items: center; justify-content: center;
+      text-align: center;
+      padding: 6rem 1.5rem 4rem;
+      position: relative;
+      overflow: hidden;
+    }
+    .hero::before {
+      content: '';
+      position: absolute; inset: 0;
+      background:
+        radial-gradient(circle at 15% 85%, rgba(255,203,5,.2) 0%, transparent 45%),
+        radial-gradient(circle at 85% 15%, rgba(255,203,5,.15) 0%, transparent 45%);
+    }
+    .hero-logo {
+      width: 110px; height: 110px;
+      background: white; border-radius: 50%;
+      display: flex; align-items: center; justify-content: center;
+      margin: 0 auto 1.5rem;
+      box-shadow: 0 8px 40px rgba(0,0,0,.3);
+      overflow: hidden; padding: 10px;
+      position: relative; z-index: 1;
+    }
+    .hero-logo img { width: 100%; height: 100%; object-fit: contain; }
+    .hero h1 {
+      font-size: clamp(1.8rem, 5vw, 3.2rem);
+      font-weight: 900;
+      color: var(--yellow);
+      line-height: 1.15;
+      margin-bottom: .75rem;
+      position: relative; z-index: 1;
+    }
+    .hero h1 span { color: white; }
+    .hero p {
+      font-size: clamp(.95rem, 2.5vw, 1.2rem);
+      color: rgba(255,255,255,.85);
+      max-width: 580px;
+      margin: 0 auto 2rem;
+      position: relative; z-index: 1;
+    }
+    .hero-btns {
+      display: flex; gap: 1rem; flex-wrap: wrap;
+      justify-content: center;
+      position: relative; z-index: 1;
+    }
+    .btn-yellow {
+      background: var(--yellow); color: var(--blue);
+      padding: .85rem 2rem; border-radius: 8px;
+      font-weight: 800; font-size: 1rem;
+      text-decoration: none; transition: .2s;
+      box-shadow: 0 4px 15px rgba(255,203,5,.4);
+    }
+    .btn-yellow:hover { background: var(--yellow-dark); transform: translateY(-1px); }
+    .btn-outline-white {
+      background: transparent; color: white;
+      border: 2px solid rgba(255,255,255,.6);
+      padding: .85rem 2rem; border-radius: 8px;
+      font-weight: 700; font-size: 1rem;
+      text-decoration: none; transition: .2s;
+    }
+    .btn-outline-white:hover { background: rgba(255,255,255,.1); border-color: white; }
+    .hero-badges {
+      display: flex; gap: .75rem; flex-wrap: wrap;
+      justify-content: center; margin-top: 2rem;
+      position: relative; z-index: 1;
+    }
+    .hero-badge {
+      background: rgba(255,255,255,.12);
+      border: 1px solid rgba(255,255,255,.25);
+      color: rgba(255,255,255,.9);
+      padding: .35rem .9rem; border-radius: 999px;
+      font-size: .78rem; font-weight: 600;
+    }
+
+    /* ── SECTIONS ── */
+    section { padding: 5rem 1.5rem; }
+    .container { max-width: 1100px; margin: 0 auto; }
+    .section-label {
+      font-size: .75rem; font-weight: 700;
+      color: var(--blue); text-transform: uppercase;
+      letter-spacing: .1em; margin-bottom: .5rem;
+    }
+    .section-title {
+      font-size: clamp(1.6rem, 4vw, 2.4rem);
+      font-weight: 800; color: var(--text);
+      line-height: 1.2; margin-bottom: 1rem;
+    }
+    .section-title span { color: var(--blue); }
+    .section-sub {
+      font-size: 1rem; color: var(--text-muted);
+      max-width: 560px; margin-bottom: 3rem;
+    }
+
+    /* ── ABOUT ── */
+    .about { background: var(--bg); }
+    .about-grid {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 3rem; align-items: center;
+    }
+    .about-img {
+      background: linear-gradient(135deg, var(--blue), #0066cc);
+      border-radius: 16px;
+      height: 320px;
+      display: flex; align-items: center; justify-content: center;
+      box-shadow: 0 20px 50px rgba(0,79,159,.25);
+    }
+    .about-img img { width: 55%; object-fit: contain; }
+    .about-stats {
+      display: grid; grid-template-columns: 1fr 1fr;
+      gap: 1rem; margin-top: 1.5rem;
+    }
+    .stat-card {
+      background: white; border: 1px solid var(--border);
+      border-radius: 10px; padding: 1rem;
+      text-align: center;
+    }
+    .stat-number { font-size: 1.8rem; font-weight: 800; color: var(--blue); }
+    .stat-label { font-size: .75rem; color: var(--text-muted); margin-top: .2rem; }
+
+    /* ── SERVICES ── */
+    .services-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(220px, 1fr));
+      gap: 1.2rem;
+    }
+    .service-card {
+      background: white;
+      border: 1.5px solid var(--border);
+      border-radius: 12px;
+      padding: 1.5rem 1.2rem;
+      text-align: center;
+      transition: .25s;
+      cursor: default;
+    }
+    .service-card:hover {
+      border-color: var(--blue);
+      box-shadow: 0 8px 25px rgba(0,79,159,.12);
+      transform: translateY(-3px);
+    }
+    .service-icon { font-size: 2.2rem; margin-bottom: .75rem; display: block; }
+    .service-name { font-size: .95rem; font-weight: 700; color: var(--text); margin-bottom: .3rem; }
+    .service-desc { font-size: .78rem; color: var(--text-muted); }
+    .service-card.featured { border-color: var(--yellow); background: #fffdf0; }
+    .service-card.featured .service-name { color: var(--blue); }
+
+    /* ── WHY US ── */
+    .why { background: var(--blue); color: white; }
+    .why .section-title { color: var(--yellow); }
+    .why .section-sub { color: rgba(255,255,255,.75); }
+    .why-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(240px, 1fr));
+      gap: 1.5rem;
+    }
+    .why-card {
+      background: rgba(255,255,255,.08);
+      border: 1px solid rgba(255,255,255,.15);
+      border-radius: 12px; padding: 1.5rem;
+    }
+    .why-icon { font-size: 2rem; margin-bottom: .75rem; display: block; }
+    .why-title { font-size: 1rem; font-weight: 700; color: var(--yellow); margin-bottom: .4rem; }
+    .why-desc { font-size: .83rem; color: rgba(255,255,255,.75); }
+
+    /* ── BRANCHES ── */
+    .branches-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+      gap: 1.2rem;
+    }
+    .branch-card {
+      background: white; border: 1.5px solid var(--border);
+      border-radius: 12px; padding: 1.5rem;
+    }
+    .branch-card:hover { border-color: var(--blue); }
+    .branch-name { font-size: 1rem; font-weight: 700; color: var(--blue); margin-bottom: .4rem; }
+    .branch-detail { font-size: .82rem; color: var(--text-muted); margin-bottom: .3rem; }
+    .branch-detail span { color: var(--text); font-weight: 500; }
+
+    /* ── CONTACT ── */
+    .contact { background: var(--bg); }
+    .contact-grid {
+      display: grid; grid-template-columns: 1fr 1fr;
+      gap: 3rem;
+    }
+    .contact-info-block { display: flex; flex-direction: column; gap: 1.5rem; }
+    .contact-item {
+      display: flex; gap: 1rem; align-items: flex-start;
+    }
+    .contact-item-icon {
+      width: 44px; height: 44px; border-radius: 10px;
+      background: var(--blue-light); color: var(--blue);
+      display: flex; align-items: center; justify-content: center;
+      font-size: 1.2rem; flex-shrink: 0;
+    }
+    .contact-item-label { font-size: .75rem; color: var(--text-muted); margin-bottom: .15rem; }
+    .contact-item-value { font-size: .95rem; font-weight: 600; color: var(--text); }
+    .contact-item-value a { color: var(--blue); text-decoration: none; }
+    .contact-item-value a:hover { text-decoration: underline; }
+
+    .contact-form { display: flex; flex-direction: column; gap: .8rem; }
+    .contact-form input,
+    .contact-form textarea,
+    .contact-form select {
+      width: 100%; padding: .75rem 1rem;
+      border: 1.5px solid var(--border); border-radius: 8px;
+      font-size: .9rem; color: var(--text); font-family: inherit;
+      background: white; transition: border-color .2s;
+    }
+    .contact-form input:focus,
+    .contact-form textarea:focus,
+    .contact-form select:focus {
+      outline: none; border-color: var(--blue);
+      box-shadow: 0 0 0 3px rgba(0,79,159,.1);
+    }
+    .contact-form textarea { min-height: 130px; resize: vertical; }
+    .btn-blue {
+      background: var(--blue); color: white;
+      padding: .85rem 2rem; border-radius: 8px;
+      font-weight: 700; font-size: .95rem;
+      border: none; cursor: pointer; transition: .2s;
+      width: 100%;
+    }
+    .btn-blue:hover { background: var(--blue-dark); }
+
+    /* Map embed area */
+    .map-section { background: white; padding: 0; }
+    .map-section iframe {
+      width: 100%; height: 380px; border: none;
+      display: block;
+    }
+
+    /* ── FOOTER ── */
+    footer {
+      background: #0a0a1a; color: rgba(255,255,255,.7);
+      padding: 3rem 1.5rem 1.5rem;
+    }
+    .footer-grid {
+      display: grid;
+      grid-template-columns: 2fr 1fr 1fr 1fr;
+      gap: 2rem; max-width: 1100px; margin: 0 auto 2rem;
+    }
+    .footer-brand { display: flex; flex-direction: column; gap: .75rem; }
+    .footer-logo {
+      width: 52px; height: 52px; background: white;
+      border-radius: 50%; display: flex; align-items: center;
+      justify-content: center; overflow: hidden; padding: 5px;
+    }
+    .footer-logo img { width: 100%; height: 100%; object-fit: contain; }
+    .footer-name { font-size: 1rem; font-weight: 800; color: var(--yellow); }
+    .footer-desc { font-size: .8rem; line-height: 1.6; }
+    .footer-col h4 { color: white; font-size: .85rem; font-weight: 700; margin-bottom: .75rem; }
+    .footer-col ul { list-style: none; display: flex; flex-direction: column; gap: .45rem; }
+    .footer-col ul li a {
+      color: rgba(255,255,255,.6); text-decoration: none; font-size: .8rem;
+    }
+    .footer-col ul li a:hover { color: var(--yellow); }
+    .footer-bottom {
+      max-width: 1100px; margin: 0 auto;
+      border-top: 1px solid rgba(255,255,255,.1);
+      padding-top: 1.5rem;
+      display: flex; justify-content: space-between; align-items: center;
+      flex-wrap: wrap; gap: .75rem;
+    }
+    .footer-bottom p { font-size: .75rem; }
+    .footer-social { display: flex; gap: .75rem; }
+    .social-icon {
+      width: 34px; height: 34px; border-radius: 8px;
+      background: rgba(255,255,255,.08); display: flex;
+      align-items: center; justify-content: center;
+      font-size: 1rem; text-decoration: none;
+      transition: background .2s;
+    }
+    .social-icon:hover { background: var(--yellow); }
+
+    /* ── RESPONSIVE ── */
+    @media (max-width: 768px) {
+      .nav-links { display: none; }
+      .hamburger { display: flex; }
+      .about-grid { grid-template-columns: 1fr; }
+      .contact-grid { grid-template-columns: 1fr; }
+      .footer-grid { grid-template-columns: 1fr 1fr; }
+      .about-img { height: 220px; }
+    }
+    @media (max-width: 480px) {
+      section { padding: 3.5rem 1rem; }
+      .footer-grid { grid-template-columns: 1fr; }
+      .hero-btns { flex-direction: column; align-items: center; }
+    }
+  </style>
+</head>
+<body>
+
+<!-- ── NAVBAR ── -->
+<nav>
+  <a href="#" class="nav-brand">
+    <div class="nav-logo">
+      <img src="{% static 'img/gpsl_logo.png' %}" alt="GPSL Logo">
+    </div>
+    <span class="nav-name">Global Phonelinz</span>
+  </a>
+  <ul class="nav-links">
+    <li><a href="#about">About</a></li>
+    <li><a href="#services">Services</a></li>
+    <li><a href="#branches">Branches</a></li>
+    <li><a href="#contact">Contact</a></li>
+    <li><a href="https://app.globalphonelinz.com" class="nav-cta">Staff Login →</a></li>
+  </ul>
+  <button class="hamburger" onclick="toggleMenu()" aria-label="Menu">
+    <span></span><span></span><span></span>
+  </button>
+</nav>
+
+<div class="mobile-menu" id="mobile-menu">
+  <a href="#about" onclick="toggleMenu()">About</a>
+  <a href="#services" onclick="toggleMenu()">Services</a>
+  <a href="#branches" onclick="toggleMenu()">Branches</a>
+  <a href="#contact" onclick="toggleMenu()">Contact</a>
+  <a href="https://app.globalphonelinz.com" style="color:#FFCB05;font-weight:700;">Staff Login →</a>
+</div>
+
+<!-- ── HERO ── -->
+<section class="hero" id="home">
+  <div class="hero-logo">
+    <img src="{% static 'img/gpsl_logo.png' %}" alt="GPSL Logo">
+  </div>
+  <h1>Your Trusted <span>Technology</span><br>Partner in Uyo</h1>
+  <p>
+    From SIM registration and phone sales to DSTV subscriptions and internet solutions —
+    Global Phonelinz Systems Limited has you covered across multiple locations in Akwa Ibom State.
+  </p>
+  <div class="hero-btns">
+    <a href="#services" class="btn-yellow">Our Services</a>
+    <a href="#contact" class="btn-outline-white">Contact Us</a>
+  </div>
+  <div class="hero-badges">
+    <span class="hero-badge">📍 5 Locations</span>
+    <span class="hero-badge">📱 MTN Authorized</span>
+    <span class="hero-badge">📺 DStv Dealer</span>
+    <span class="hero-badge">✅ NIN Verified</span>
+  </div>
+</section>
+
+<!-- ── ABOUT ── -->
+<section class="about" id="about">
+  <div class="container">
+    <div class="about-grid">
+      <div>
+        <p class="section-label">Who We Are</p>
+        <h2 class="section-title">More Than Just a <span>Phone Shop</span></h2>
+        <p style="color:var(--text-muted);font-size:.95rem;line-height:1.8;margin-bottom:1rem;">
+          Global Phonelinz Systems Limited (GPSL) is a multi-branch technology and telecommunications
+          business headquartered in Uyo, Akwa Ibom State, Nigeria. We have been serving individuals,
+          families and businesses with premium phones, accessories, telecom services, and digital
+          solutions since our founding.
+        </p>
+        <p style="color:var(--text-muted);font-size:.95rem;line-height:1.8;">
+          Our team of trained professionals operates across five branches, ensuring you always have
+          access to genuine products, expert service, and competitive prices — right in your community.
+        </p>
+        <div class="about-stats">
+          <div class="stat-card">
+            <div class="stat-number">5+</div>
+            <div class="stat-label">Branch Locations</div>
+          </div>
+          <div class="stat-card">
+            <div class="stat-number">10k+</div>
+            <div class="stat-label">Customers Served</div>
+          </div>
+          <div class="stat-card">
+            <div class="stat-number">15+</div>
+            <div class="stat-label">Services Offered</div>
+          </div>
+          <div class="stat-card">
+            <div class="stat-number">5★</div>
+            <div class="stat-label">Customer Satisfaction</div>
+          </div>
+        </div>
+      </div>
+      <div class="about-img">
+        <img src="{% static 'img/gpsl_logo.png' %}" alt="GPSL Logo">
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ── SERVICES ── -->
+<section id="services">
+  <div class="container">
+    <p class="section-label">What We Offer</p>
+    <h2 class="section-title">Our <span>Services</span> & Products</h2>
+    <p class="section-sub">Everything you need in one place — from telecom services to the latest devices.</p>
+    <div class="services-grid">
+      <div class="service-card featured">
+        <span class="service-icon">📱</span>
+        <div class="service-name">MTN SIM Registration</div>
+        <div class="service-desc">New SIM, NIN linking, and SIM activation for all networks</div>
+      </div>
+      <div class="service-card featured">
+        <span class="service-icon">⬆️</span>
+        <div class="service-name">3G → 4G Upgrade</div>
+        <div class="service-desc">Upgrade your SIM to enjoy faster 4G LTE speeds</div>
+      </div>
+      <div class="service-card">
+        <span class="service-icon">🪪</span>
+        <div class="service-name">NIN Services</div>
+        <div class="service-desc">NIN enrollment, verification and linkage assistance</div>
+      </div>
+      <div class="service-card">
+        <span class="service-icon">💳</span>
+        <div class="service-name">eSIM Activation</div>
+        <div class="service-desc">Digital SIM setup for compatible devices</div>
+      </div>
+      <div class="service-card featured">
+        <span class="service-icon">📡</span>
+        <div class="service-name">MiFi Devices</div>
+        <div class="service-desc">4G & 5G portable WiFi devices for home and travel</div>
+      </div>
+      <div class="service-card featured">
+        <span class="service-icon">🌐</span>
+        <div class="service-name">Routers</div>
+        <div class="service-desc">Home and office routers — setup and configuration included</div>
+      </div>
+      <div class="service-card">
+        <span class="service-icon">🔌</span>
+        <div class="service-name">FibreX Internet</div>
+        <div class="service-desc">High-speed fibre broadband connection for homes and businesses</div>
+      </div>
+      <div class="service-card">
+        <span class="service-icon">☁️</span>
+        <div class="service-name">Cloud Services</div>
+        <div class="service-desc">Cloud storage, backup and business cloud solutions</div>
+      </div>
+      <div class="service-card featured">
+        <span class="service-icon">📞</span>
+        <div class="service-name">Phones</div>
+        <div class="service-desc">Latest smartphones — iPhones, Samsung, Tecno, Infinix and more</div>
+      </div>
+      <div class="service-card">
+        <span class="service-icon">🎧</span>
+        <div class="service-name">Accessories</div>
+        <div class="service-desc">Chargers, earphones, cases, cables, screen protectors and more</div>
+      </div>
+      <div class="service-card featured">
+        <span class="service-icon">📺</span>
+        <div class="service-name">DStv Subscriptions</div>
+        <div class="service-desc">New connections, renewals and decoder sales for DStv</div>
+      </div>
+      <div class="service-card">
+        <span class="service-icon">📻</span>
+        <div class="service-name">GOtv Subscriptions</div>
+        <div class="service-desc">GOtv decoder sales and subscription renewals</div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ── WHY US ── -->
+<section class="why">
+  <div class="container">
+    <p class="section-label" style="color:rgba(255,203,5,.7);">Why Choose Us</p>
+    <h2 class="section-title">The GPSL <span style="color:white;">Difference</span></h2>
+    <p class="section-sub">We don't just sell — we serve. Here is what sets us apart.</p>
+    <div class="why-grid">
+      <div class="why-card">
+        <span class="why-icon">✅</span>
+        <div class="why-title">Genuine Products Only</div>
+        <div class="why-desc">Every phone, accessory and device we sell is 100% original. No clones, no refurbs without disclosure.</div>
+      </div>
+      <div class="why-card">
+        <span class="why-icon">💰</span>
+        <div class="why-title">Competitive Prices</div>
+        <div class="why-desc">We keep our prices fair and transparent. What you see is what you pay — no hidden charges.</div>
+      </div>
+      <div class="why-card">
+        <span class="why-icon">🧑‍💼</span>
+        <div class="why-title">Expert Staff</div>
+        <div class="why-desc">Our trained team gives honest advice to help you pick the right product for your needs and budget.</div>
+      </div>
+      <div class="why-card">
+        <span class="why-icon">📍</span>
+        <div class="why-title">Multiple Locations</div>
+        <div class="why-desc">Five branches across Uyo and Akwa Ibom — always close to where you are.</div>
+      </div>
+      <div class="why-card">
+        <span class="why-icon">⚡</span>
+        <div class="why-title">Fast Service</div>
+        <div class="why-desc">SIM registration, upgrades and subscriptions done in minutes — no long waits.</div>
+      </div>
+      <div class="why-card">
+        <span class="why-icon">🤝</span>
+        <div class="why-title">After-Sale Support</div>
+        <div class="why-desc">We stay with you after the sale. Questions, setup help, or warranty issues — we are here.</div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ── BRANCHES ── -->
+<section id="branches">
+  <div class="container">
+    <p class="section-label">Find Us</p>
+    <h2 class="section-title">Our <span>Branch</span> Locations</h2>
+    <p class="section-sub">Walk into any of our branches and get served immediately.</p>
+    <div class="branches-grid">
+      <div class="branch-card">
+        <div class="branch-name">🏪 Mbierebe Branch</div>
+        <div class="branch-detail">📍 <span>173 Aka Etinan Road, Uyo</span></div>
+        <div class="branch-detail">⏰ <span>Mon–Sat: 8am – 7pm</span></div>
+      </div>
+      <div class="branch-card">
+        <div class="branch-name">🏪 Aka Etinan Branch</div>
+        <div class="branch-detail">📍 <span>Aka Etinan Road, Uyo</span></div>
+        <div class="branch-detail">⏰ <span>Mon–Sat: 8am – 7pm</span></div>
+      </div>
+      <div class="branch-card">
+        <div class="branch-name">🏪 Nung Udoe Branch</div>
+        <div class="branch-detail">📍 <span>14A Akpautong Road, Nung Udoe, Ibesikpo</span></div>
+        <div class="branch-detail">⏰ <span>Mon–Sat: 8am – 7pm</span></div>
+      </div>
+      <div class="branch-card">
+        <div class="branch-name">🏪 Plaza Branch</div>
+        <div class="branch-detail">📍 <span>7 Ikot Ekpene Road, Uyo</span></div>
+        <div class="branch-detail">⏰ <span>Mon–Sat: 8am – 7pm</span></div>
+      </div>
+      <div class="branch-card">
+        <div class="branch-name">🏪 Okobo Branch</div>
+        <div class="branch-detail">📍 <span>Okobo, Akwa Ibom State</span></div>
+        <div class="branch-detail">⏰ <span>Mon–Sat: 8am – 7pm</span></div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ── CONTACT ── -->
+<section class="contact" id="contact">
+  <div class="container">
+    <p class="section-label">Get In Touch</p>
+    <h2 class="section-title">Contact <span>Us</span></h2>
+    <p class="section-sub">We are always ready to help. Reach us through any of the channels below.</p>
+    <div class="contact-grid">
+      <div class="contact-info-block">
+        <div class="contact-item">
+          <div class="contact-item-icon">📞</div>
+          <div>
+            <div class="contact-item-label">Phone</div>
+            <div class="contact-item-value">
+              <a href="tel:+234XXXXXXXXXX">+234 XXX XXX XXXX</a>
+            </div>
+          </div>
+        </div>
+        <div class="contact-item">
+          <div class="contact-item-icon">💬</div>
+          <div>
+            <div class="contact-item-label">WhatsApp</div>
+            <div class="contact-item-value">
+              <a href="https://wa.me/234XXXXXXXXXX" target="_blank">Chat on WhatsApp →</a>
+            </div>
+          </div>
+        </div>
+        <div class="contact-item">
+          <div class="contact-item-icon">✉️</div>
+          <div>
+            <div class="contact-item-label">Email</div>
+            <div class="contact-item-value">
+              <a href="mailto:globalphonelinzsystems@gmail.com">globalphonelinzsystems@gmail.com</a>
+            </div>
+          </div>
+        </div>
+        <div class="contact-item">
+          <div class="contact-item-icon">📍</div>
+          <div>
+            <div class="contact-item-label">Head Office</div>
+            <div class="contact-item-value">173 Aka Etinan Road, Uyo, Akwa Ibom State</div>
+          </div>
+        </div>
+        <div class="contact-item">
+          <div class="contact-item-icon">⏰</div>
+          <div>
+            <div class="contact-item-label">Business Hours</div>
+            <div class="contact-item-value">Mon – Saturday: 8:00 AM – 7:00 PM</div>
+          </div>
+        </div>
+      </div>
+
+      <form class="contact-form" onsubmit="handleContact(event)">
+        <input type="text" placeholder="Your Full Name" required>
+        <input type="tel" placeholder="Your Phone Number" required>
+        <input type="email" placeholder="Your Email (optional)">
+        <select>
+          <option value="">What do you need help with?</option>
+          <option>SIM Registration / Upgrade</option>
+          <option>Phone Purchase</option>
+          <option>DStv / GOtv Subscription</option>
+          <option>MiFi / Router</option>
+          <option>Internet / FibreX</option>
+          <option>Accessories</option>
+          <option>Other</option>
+        </select>
+        <textarea placeholder="Your message (optional)"></textarea>
+        <button type="submit" class="btn-blue">Send Message via WhatsApp</button>
+        <p style="font-size:.72rem;color:var(--text-muted);text-align:center;">
+          Your message will be sent directly to our WhatsApp for a faster response.
+        </p>
+      </form>
+    </div>
+  </div>
+</section>
+
+<!-- ── GOOGLE MAP ── -->
+<div class="map-section">
+  <iframe
+    src="https://www.google.com/maps/embed?pb=!1m18!1m12!1m3!1d3966.3!2d7.89!3d4.99!2m3!1f0!2f0!3f0!3m2!1i1024!2i768!4f13.1!3m3!1m2!1s0x0%3A0x0!2zNMKwNTknMjQuMCJOIDfCsDUzJzI0LjAiRQ!5e0!3m2!1sen!2sng!4v1234567890"
+    allowfullscreen="" loading="lazy"
+    referrerpolicy="no-referrer-when-downgrade"
+    title="Global Phonelinz Systems Limited Location">
+  </iframe>
+</div>
+
+<!-- ── FOOTER ── -->
+<footer>
+  <div class="footer-grid">
+    <div class="footer-brand">
+      <div class="footer-logo">
+        <img src="{% static 'img/gpsl_logo.png' %}" alt="GPSL Logo">
+      </div>
+      <div class="footer-name">Global Phonelinz Systems Limited</div>
+      <p class="footer-desc">
+        Your trusted technology partner in Uyo, Akwa Ibom.
+        Phones, telecom services, internet solutions and more —
+        across 5 branch locations.
+      </p>
+    </div>
+    <div class="footer-col">
+      <h4>Services</h4>
+      <ul>
+        <li><a href="#services">SIM Registration</a></li>
+        <li><a href="#services">4G Upgrade</a></li>
+        <li><a href="#services">eSIM</a></li>
+        <li><a href="#services">MiFi & Routers</a></li>
+        <li><a href="#services">FibreX</a></li>
+        <li><a href="#services">Cloud Services</a></li>
+      </ul>
+    </div>
+    <div class="footer-col">
+      <h4>Products</h4>
+      <ul>
+        <li><a href="#services">Phones</a></li>
+        <li><a href="#services">Accessories</a></li>
+        <li><a href="#services">DStv</a></li>
+        <li><a href="#services">GOtv</a></li>
+        <li><a href="#services">NIN Services</a></li>
+      </ul>
+    </div>
+    <div class="footer-col">
+      <h4>Company</h4>
+      <ul>
+        <li><a href="#about">About Us</a></li>
+        <li><a href="#branches">Our Branches</a></li>
+        <li><a href="#contact">Contact</a></li>
+        <li><a href="https://app.globalphonelinz.com">Staff Portal</a></li>
+      </ul>
+    </div>
+  </div>
+  <div class="footer-bottom">
+    <p>© 2024–2026 Global Phonelinz Systems Limited. All rights reserved.</p>
+    <div class="footer-social">
+      <a href="https://wa.me/234XXXXXXXXXX" target="_blank" class="social-icon" title="WhatsApp">💬</a>
+      <a href="mailto:globalphonelinzsystems@gmail.com" class="social-icon" title="Email">✉️</a>
+      <a href="tel:+234XXXXXXXXXX" class="social-icon" title="Call">📞</a>
+    </div>
+  </div>
+</footer>
+
+<script>
+function toggleMenu() {
+  document.getElementById('mobile-menu').classList.toggle('open');
+}
+
+// Close mobile menu when clicking outside
+document.addEventListener('click', function(e) {
+  const menu = document.getElementById('mobile-menu');
+  const hamburger = document.querySelector('.hamburger');
+  if (!menu.contains(e.target) && !hamburger.contains(e.target)) {
+    menu.classList.remove('open');
+  }
+});
+
+// Contact form -> WhatsApp
+function handleContact(e) {
+  e.preventDefault();
+  const form = e.target;
+  const name = form[0].value;
+  const phone = form[1].value;
+  const service = form[3].value;
+  const message = form[4].value;
+  const text = encodeURIComponent(
+    `Hello GPSL! I need help.\n\nName: ${name}\nPhone: ${phone}\nService: ${service || 'Not specified'}\nMessage: ${message || 'None'}`
+  );
+  window.open(`https://wa.me/234XXXXXXXXXX?text=${text}`, '_blank');
+}
+
+// Smooth scroll offset for fixed nav
+document.querySelectorAll('a[href^="#"]').forEach(a => {
+  a.addEventListener('click', function(e) {
+    const target = document.querySelector(this.getAttribute('href'));
+    if (target) {
+      e.preventDefault();
+      const top = target.getBoundingClientRect().top + window.scrollY - 70;
+      window.scrollTo({ top, behavior: 'smooth' });
+    }
+  });
+});
+</script>
+</body>
+</html>

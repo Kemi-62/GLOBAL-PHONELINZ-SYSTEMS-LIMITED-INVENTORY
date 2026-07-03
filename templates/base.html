@@ -3,14 +3,16 @@
 <html lang="en">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <link rel="icon" type="image/png" href="/static/img/favicon.ico">
+  <link rel="apple-touch-icon" href="/static/img/apple-touch-icon.png">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
     <meta name="theme-color" content="#004F9F">
     <meta name="apple-mobile-web-app-capable" content="yes">
     <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
     <link rel="manifest" href="/static/manifest.json">
     <link rel="apple-touch-icon" href="/static/icons/icon-192.png">
     <link href="https://cdn.jsdelivr.net/npm/tom-select@2.3.1/dist/css/tom-select.min.css" rel="stylesheet">
-    <title>GPSL ERP</title>
+    <title>GPSL Business Suite</title>
     <script src="https://cdn.jsdelivr.net/npm/tom-select@2.3.1/dist/js/tom-select.complete.min.js"></script>
     <script>
       // Register Service Worker for PWA
@@ -504,7 +506,7 @@
     <div class="topbar-left">
         <button class="hamburger" onclick="toggleSidebar()">☰</button>
         <div>
-            <div class="topbar-logo">GPSL ERP</div>
+            <div class="topbar-logo">GPSL BUSINESS SUITE</div>
             {% if user.is_authenticated and user.branch %}
             <div class="topbar-branch">{{ user.branch.name }}</div>
             {% endif %}

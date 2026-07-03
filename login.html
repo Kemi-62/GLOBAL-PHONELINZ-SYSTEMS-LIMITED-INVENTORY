@@ -1,0 +1,340 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>GPSL Business Suite — Login</title>
+  <link rel="icon" type="image/png" href="/static/img/favicon.ico">
+  <link rel="apple-touch-icon" href="/static/img/apple-touch-icon.png">
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+    body {
+      font-family: 'Segoe UI', Arial, sans-serif;
+      min-height: 100vh;
+      background: #004F9F;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      padding: 1rem;
+      position: relative;
+      overflow: hidden;
+    }
+
+    /* Background pattern */
+    body::before {
+      content: '';
+      position: fixed;
+      inset: 0;
+      background:
+        radial-gradient(circle at 20% 20%, rgba(255,203,5,.15) 0%, transparent 50%),
+        radial-gradient(circle at 80% 80%, rgba(255,203,5,.1) 0%, transparent 50%);
+      pointer-events: none;
+    }
+
+    .login-wrapper {
+      width: 100%;
+      max-width: 420px;
+      position: relative;
+      z-index: 1;
+    }
+
+    /* Logo + brand header */
+    .brand-header {
+      text-align: center;
+      margin-bottom: 1.5rem;
+    }
+    .brand-logo {
+      width: 80px;
+      height: 80px;
+      background: #fff;
+      border-radius: 50%;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      margin: 0 auto 1rem;
+      box-shadow: 0 4px 20px rgba(0,0,0,.2);
+      overflow: hidden;
+      padding: 8px;
+    }
+    .brand-logo img {
+      width: 100%;
+      height: 100%;
+      object-fit: contain;
+    }
+    .brand-name {
+      font-size: 1.4rem;
+      font-weight: 800;
+      color: #FFCB05;
+      letter-spacing: .5px;
+      line-height: 1.2;
+    }
+    .brand-tagline {
+      font-size: .78rem;
+      color: rgba(255,255,255,.7);
+      margin-top: .2rem;
+      letter-spacing: .3px;
+    }
+
+    /* Login card */
+    .login-card {
+      background: #fff;
+      border-radius: 16px;
+      padding: 2rem;
+      box-shadow: 0 20px 60px rgba(0,0,0,.25);
+    }
+
+    .login-card h2 {
+      font-size: 1.1rem;
+      color: #004F9F;
+      font-weight: 700;
+      margin-bottom: 1.5rem;
+      text-align: center;
+    }
+
+    .form-group { margin-bottom: 1rem; }
+    .form-group label {
+      display: block;
+      font-size: .82rem;
+      font-weight: 600;
+      color: #374151;
+      margin-bottom: .35rem;
+    }
+    .form-group input {
+      width: 100%;
+      padding: .75rem 1rem;
+      border: 1.5px solid #e5e7eb;
+      border-radius: 8px;
+      font-size: .9rem;
+      color: #111;
+      transition: border-color .2s;
+      background: #fafafa;
+    }
+    .form-group input:focus {
+      outline: none;
+      border-color: #004F9F;
+      background: #fff;
+      box-shadow: 0 0 0 3px rgba(0,79,159,.1);
+    }
+
+    .password-wrap { position: relative; }
+    .password-wrap input { padding-right: 2.8rem; }
+    .toggle-password {
+      position: absolute;
+      right: .75rem;
+      top: 50%;
+      transform: translateY(-50%);
+      background: none;
+      border: none;
+      cursor: pointer;
+      font-size: 1.1rem;
+      color: #9ca3af;
+      padding: 0;
+    }
+
+    .alert-error {
+      background: #fee2e2;
+      border: 1px solid #fca5a5;
+      color: #991b1b;
+      border-radius: 8px;
+      padding: .75rem 1rem;
+      font-size: .83rem;
+      margin-bottom: 1rem;
+    }
+    .alert-success {
+      background: #d1fae5;
+      border: 1px solid #6ee7b7;
+      color: #065f46;
+      border-radius: 8px;
+      padding: .75rem 1rem;
+      font-size: .83rem;
+      margin-bottom: 1rem;
+    }
+
+    .login-btn {
+      width: 100%;
+      padding: .85rem;
+      background: #004F9F;
+      color: #fff;
+      border: none;
+      border-radius: 8px;
+      font-size: 1rem;
+      font-weight: 700;
+      cursor: pointer;
+      transition: background .2s, transform .1s;
+      margin-top: .5rem;
+    }
+    .login-btn:hover { background: #003d7a; }
+    .login-btn:active { transform: scale(.98); }
+
+    .forgot-link {
+      display: block;
+      text-align: center;
+      margin-top: 1rem;
+      font-size: .82rem;
+      color: #6b7280;
+      text-decoration: none;
+    }
+    .forgot-link:hover { color: #004F9F; text-decoration: underline; }
+
+    .divider {
+      height: 1px;
+      background: #f3f4f6;
+      margin: 1.2rem 0;
+    }
+
+    /* Contact section */
+    .contact-section {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: .5rem;
+      margin-top: .5rem;
+    }
+    .contact-item {
+      display: flex;
+      align-items: center;
+      gap: .4rem;
+      font-size: .75rem;
+      color: #6b7280;
+      text-decoration: none;
+    }
+    .contact-item:hover { color: #004F9F; }
+    .contact-icon { font-size: .9rem; }
+
+    /* Footer */
+    .login-footer {
+      text-align: center;
+      margin-top: 1.5rem;
+      color: rgba(255,255,255,.6);
+      font-size: .72rem;
+      line-height: 1.6;
+    }
+    .login-footer a {
+      color: rgba(255,255,255,.8);
+      text-decoration: none;
+    }
+    .login-footer a:hover { color: #FFCB05; }
+
+    /* Locked account warning */
+    .locked-warning {
+      background: #fef3c7;
+      border: 1px solid #fcd34d;
+      color: #92400e;
+      border-radius: 8px;
+      padding: .75rem 1rem;
+      font-size: .83rem;
+      margin-bottom: 1rem;
+    }
+
+    @media (max-width: 480px) {
+      .login-card { padding: 1.5rem; border-radius: 12px; }
+      .contact-section { grid-template-columns: 1fr; }
+    }
+  </style>
+</head>
+<body>
+
+<div class="login-wrapper">
+  <!-- Brand Header -->
+  <div class="brand-header">
+    <div class="brand-logo">
+      <img src="/static/img/gpsl_logo.png" alt="GPSL Logo">
+    </div>
+    <div class="brand-name">GPSL Business Suite</div>
+    <div class="brand-tagline">Global Phonelinz Systems Limited</div>
+  </div>
+
+  <!-- Login Card -->
+  <div class="login-card">
+    <h2>Staff Login</h2>
+
+    {% if messages %}
+    {% for message in messages %}
+    <div class="alert-{% if message.tags == 'error' %}error{% else %}success{% endif %}">
+      {{ message }}
+    </div>
+    {% endfor %}
+    {% endif %}
+
+    {% if form.non_field_errors %}
+    <div class="alert-error">
+      {% for error in form.non_field_errors %}{{ error }}{% endfor %}
+    </div>
+    {% endif %}
+
+    {% if locked %}
+    <div class="locked-warning">
+      🔒 This account is temporarily locked due to too many failed login attempts.
+      Please contact your administrator or try again later.
+    </div>
+    {% endif %}
+
+    <form method="POST" autocomplete="off">
+      {% csrf_token %}
+      <div class="form-group">
+        <label for="username">Username</label>
+        <input type="text" id="username" name="username"
+               value="{{ form.username.value|default:'' }}"
+               placeholder="Enter your username"
+               autofocus required>
+      </div>
+      <div class="form-group">
+        <label for="password">Password</label>
+        <div class="password-wrap">
+          <input type="password" id="password" name="password"
+                 placeholder="Enter your password" required>
+          <button type="button" class="toggle-password" onclick="togglePwd()">👁</button>
+        </div>
+      </div>
+      <button type="submit" class="login-btn">Login to Business Suite</button>
+      <a href="{% url 'password_reset' %}" class="forgot-link">Forgot password?</a>
+    </form>
+
+    <div class="divider"></div>
+
+    <!-- Contact & Support -->
+    <p style="font-size:.72rem;color:#9ca3af;margin-bottom:.5rem;text-align:center;">Support & Contact</p>
+    <div class="contact-section">
+      <a href="tel:+2348032036766" class="contact-item">
+        <span class="contact-icon">📞</span> Call Us
+      </a>
+      <a href="https://wa.me/2349060430534" target="_blank" class="contact-item">
+        <span class="contact-icon">💬</span> WhatsApp
+      </a>
+      <a href="mailto:globalphonelinzsystems@gmail.com" class="contact-item">
+        <span class="contact-icon">✉️</span> Email Support
+      </a>
+      <a href="https://globalphonelinz.com" target="_blank" class="contact-item">
+        <span class="contact-icon">🌐</span> Our Website
+      </a>
+    </div>
+  </div>
+
+  <!-- Footer -->
+  <div class="login-footer">
+    <p>© {% now "Y" %} Global Phonelinz Systems Limited. All rights reserved.</p>
+    <p>
+      <a href="https://globalphonelinz.com">Website</a> &nbsp;·&nbsp;
+      <a href="mailto:globalphonelinzsystems@gmail.com">Contact</a> &nbsp;·&nbsp;
+      <a href="https://globalphonelinz.com#privacy">Privacy</a>
+    </p>
+    <p style="margin-top:.3rem;">Powered by GPSL Business Suite v2.0</p>
+  </div>
+</div>
+
+<script>
+function togglePwd() {
+  const pwd = document.getElementById('password');
+  const btn = document.querySelector('.toggle-password');
+  if (pwd.type === 'password') {
+    pwd.type = 'text';
+    btn.textContent = '🙈';
+  } else {
+    pwd.type = 'password';
+    btn.textContent = '👁';
+  }
+}
+</script>
+</body>
+</html>

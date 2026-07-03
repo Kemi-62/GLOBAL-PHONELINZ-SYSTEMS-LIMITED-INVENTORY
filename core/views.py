@@ -2839,10 +2839,10 @@ def daily_sales_report(request):
         date_from = today.isoformat()
         date_to   = today.isoformat()
 
+    # Retail sales
     sales = RetailSale.objects.filter(
         is_voided=False
     ).select_related("product", "branch", "staff").order_by("branch__name", "-date", "-time")
-
     if date_from:
         sales = sales.filter(date__gte=date_from)
     if date_to:
@@ -2852,16 +2852,50 @@ def daily_sales_report(request):
     if staff_flt:
         sales = sales.filter(staff_id=staff_flt)
 
-    total_qty     = sales.aggregate(t=Sum("quantity"))["t"] or 0
-    total_revenue = sales.aggregate(t=Sum(F("quantity") * F("selling_price")))["t"] or 0
+    # MultiChoice sales
+    mc_sales = MultiChoiceSale.objects.select_related(
+        "branch", "staff"
+    ).order_by("branch__name", "-date")
+    if date_from:
+        mc_sales = mc_sales.filter(date__gte=date_from)
+    if date_to:
+        mc_sales = mc_sales.filter(date__lte=date_to)
+    if branch_flt:
+        mc_sales = mc_sales.filter(branch_id=branch_flt)
+    if staff_flt:
+        mc_sales = mc_sales.filter(staff_id=staff_flt)
+
+    # Telecom activities
+    telecom_acts = ServiceActivity.objects.select_related(
+        "branch", "staff"
+    ).order_by("branch__name", "-date")
+    if date_from:
+        telecom_acts = telecom_acts.filter(date__gte=date_from)
+    if date_to:
+        telecom_acts = telecom_acts.filter(date__lte=date_to)
+    if branch_flt:
+        telecom_acts = telecom_acts.filter(branch_id=branch_flt)
+    if staff_flt:
+        telecom_acts = telecom_acts.filter(staff_id=staff_flt)
+
+    total_qty          = sales.aggregate(t=Sum("quantity"))["t"] or 0
+    total_revenue      = sales.aggregate(t=Sum(F("quantity") * F("selling_price")))["t"] or 0
+    total_mc_revenue   = mc_sales.aggregate(t=Sum("amount"))["t"] or 0
+    total_mc_count     = mc_sales.count()
+    total_telecom_acts = telecom_acts.aggregate(t=Sum("quantity"))["t"] or 0
 
     branch_sales_summary = {}
     for s in sales:
         amt = Decimal(s.quantity) * s.selling_price
         bk  = s.branch.name
         if bk not in branch_sales_summary:
-            branch_sales_summary[bk] = {"sales": [], "total_qty": 0, "total_revenue": Decimal(0)}
-        branch_sales_summary[bk]["sales"].append({
+            branch_sales_summary[bk] = {
+                "retail": [], "multichoice": [], "telecom": [],
+                "total_qty": 0, "total_revenue": Decimal(0),
+                "mc_revenue": Decimal(0), "mc_count": 0,
+                "telecom_count": 0,
+            }
+        branch_sales_summary[bk]["retail"].append({
             "product": s.product.model_name, "quantity": s.quantity,
             "price": s.selling_price, "amount": amt,
             "staff": s.staff.username,
@@ -2870,12 +2904,53 @@ def daily_sales_report(request):
         branch_sales_summary[bk]["total_qty"] += s.quantity
         branch_sales_summary[bk]["total_revenue"] += amt
 
+    for mc in mc_sales:
+        bk = mc.branch.name
+        if bk not in branch_sales_summary:
+            branch_sales_summary[bk] = {
+                "retail": [], "multichoice": [], "telecom": [],
+                "total_qty": 0, "total_revenue": Decimal(0),
+                "mc_revenue": Decimal(0), "mc_count": 0,
+                "telecom_count": 0,
+            }
+        branch_sales_summary[bk]["multichoice"].append({
+            "service_type": mc.service_type,
+            "package_type": mc.package_type,
+            "amount": mc.amount or Decimal(0),
+            "staff": mc.staff.username,
+            "date": mc.date,
+            "customer": mc.customer_name or "—",
+        })
+        branch_sales_summary[bk]["mc_revenue"] += mc.amount or Decimal(0)
+        branch_sales_summary[bk]["mc_count"] += 1
+
+    for act in telecom_acts:
+        bk = act.branch.name
+        if bk not in branch_sales_summary:
+            branch_sales_summary[bk] = {
+                "retail": [], "multichoice": [], "telecom": [],
+                "total_qty": 0, "total_revenue": Decimal(0),
+                "mc_revenue": Decimal(0), "mc_count": 0,
+                "telecom_count": 0,
+            }
+        branch_sales_summary[bk]["telecom"].append({
+            "service_type": act.service_type,
+            "quantity": act.quantity,
+            "staff": act.staff.username,
+            "date": act.date,
+        })
+        branch_sales_summary[bk]["telecom_count"] += act.quantity or 0
+
     if export == "pdf":
         return _director_sales_pdf(branch_sales_summary, total_qty, total_revenue, date_from, date_to)
 
     return render(request, "daily_sales_report.html", {
         "branch_sales_summary": branch_sales_summary,
-        "total_qty": total_qty, "total_revenue": total_revenue,
+        "total_qty": total_qty,
+        "total_revenue": total_revenue,
+        "total_mc_revenue": total_mc_revenue,
+        "total_mc_count": total_mc_count,
+        "total_telecom_acts": total_telecom_acts,
         "all_branches": Branch.objects.all(),
         "all_staff": User.objects.exclude(role__in=["DIRECTOR","SUPERADMIN"]).order_by("username"),
         "date_from": date_from,
@@ -4710,108 +4785,32 @@ def backup_history_view(request):
 
 @role_required("DIRECTOR")
 def trigger_backup(request):
-    """Manual backup trigger via URL."""
-    from django.core.management import call_command
-    from django.utils import timezone
-    email = request.GET.get("email", "")
-    try:
-        call_command("backup_database", trigger="manual", send_email=email)
-        messages.success(request, "Backup completed successfully.")
-    except Exception as e:
-        messages.error(request, f"Backup failed: {e}")
-    return redirect("backup_history_view")
-
-
-# ─────────────────────────────────────────
-# PRICE FLOOR MANAGEMENT
-# ─────────────────────────────────────────
-
-@role_required("DIRECTOR")
-def manage_price_floors(request):
-    from core.models import PriceFloor
-    if request.method == "POST":
-        product_id = request.POST.get("product")
-        branch_id = request.POST.get("branch")
-        min_price = request.POST.get("min_selling_price")
+    """Responds immediately, runs backup in background to avoid timeout."""
+    from django.http import JsonResponse
+    from decouple import config as _config
+    import threading as _threading
+    import subprocess as _subprocess
+    secret = request.GET.get('key', '')
+    expected = _config('BACKUP_SECRET_KEY', default='')
+    if expected and secret != expected:
+        return JsonResponse({'error': 'unauthorized'}, status=403)
+    def _run():
         try:
-            pf, created = PriceFloor.objects.get_or_create(
-                product_id=product_id, branch_id=branch_id,
-                defaults={"min_selling_price": min_price, "created_by": request.user},
+            _subprocess.run(
+                ['python', '/opt/render/project/src/cron.py', 'backup'],
+                timeout=300
             )
-            if not created:
-                old = pf.min_selling_price
-                pf.min_selling_price = min_price
-                pf.save()
-                _log_change(
-                    user=request.user, action="PRICE_CHANGE", model_name="PriceFloor",
-                    object_id=pf.id, description=f"Updated price floor for {pf.product.model_name}",
-                    old_value=old, new_value=min_price, request=request,
-                )
-            messages.success(request, "Price floor saved.")
-        except Exception as e:
-            messages.error(request, f"Error: {e}")
-        return redirect("manage_price_floors")
+        except Exception:
+            pass
+    _threading.Thread(target=_run, daemon=True).start()
+    return JsonResponse({'status': 'started', 'message': 'Backup running in background'})
 
-    floors = PriceFloor.objects.select_related("product", "branch").order_by("-updated_at")
-    products = Product.objects.all()
-    branches = Branch.objects.all()
-    return render(request, "director/price_floors.html", {
-        "floors": floors, "products": products, "branches": branches,
-    })
 
-    lp.points_balance -= points
-    lp.total_redeemed += points
-    lp.save(update_fields=["points_balance", "total_redeemed"])
-
-    LoyaltyTransaction.objects.create(
-        loyalty_point=lp,
-        transaction_type="REDEEM",
-        points=points,
-        description=description,
-        created_by=request.user,
-    )
-
-    log_action(request.user, "UPDATE", "LoyaltyPoint", f"Redeemed {points} points for {phone}")
-    return JsonResponse({
-        "success": True,
-        "points_redeemed": points,
-        "remaining_balance": lp.points_balance,
-        "message": f"Redeemed {points} points. Remaining: {lp.points_balance}",
-    })
-
-# ─────────────────────────────────────────────
-# BARCODE SCANNING API
-# ─────────────────────────────────────────────
-
-from django.http import JsonResponse
-from django.views.decorators.csrf import csrf_exempt
-import json
-
-@csrf_exempt
-@login_required
-def scan_barcode(request):
-    if request.method != 'POST':
-        return JsonResponse({'error': 'POST only'}, status=405)
+def barcode_lookup(request):
+    barcode = request.GET.get('barcode', '').strip()
+    if not barcode:
+        return JsonResponse({'found': False})
     try:
-        data = json.loads(request.body)
-        barcode = data.get('barcode', '').strip()
-        if not barcode:
-            return JsonResponse({'error': 'No barcode provided'}, status=400)
-
-        # Try to find product by IMEI/Serial
-        product = Product.objects.filter(imei_serial=barcode).first()
-        if product:
-            return JsonResponse({
-                'found': True,
-                'id': product.id,
-                'name': product.model_name,
-                'price': str(product.selling_price),
-                'color': product.color,
-                'imei': product.imei_serial,
-                'source': 'imei',
-            })
-
-        # Try partial IMEI match
         product = Product.objects.filter(imei_serial__contains=barcode).first()
         if product:
             return JsonResponse({
@@ -4823,7 +4822,6 @@ def scan_barcode(request):
                 'imei': product.imei_serial,
                 'source': 'partial_imei',
             })
-
         return JsonResponse({'found': False, 'message': 'No product found with this barcode/IMEI.'})
     except Exception as e:
         return JsonResponse({'error': str(e)}, status=500)
@@ -4902,7 +4900,7 @@ def pwa_manifest(request):
     import json as _json
     from django.http import HttpResponse as _HR
     manifest = {
-        "name": "GPSL ERP",
+        "name": "GPSL Business Suite",
         "short_name": "GPSL",
         "description": "Global Phonelinz Systems Limited",
         "start_url": "/",
@@ -4927,3 +4925,302 @@ def keepalive_ping(request):
         return _JR({"status": "ok", "time": str(timezone.now())})
     except Exception as e:
         return _JR({"status": "error", "detail": str(e)}, status=500)
+
+
+@role_required("DIRECTOR")
+def manage_price_floors(request):
+    from django.db.models import Q
+    search = request.GET.get("search", "")
+    products = Product.objects.all().select_related(
+        "subcategory", "subcategory__category"
+    ).order_by("model_name")
+
+    if search:
+        products = products.filter(
+            Q(model_name__icontains=search) |
+            Q(product_name__icontains=search)
+        )
+
+    if request.method == "POST":
+        product_id = request.POST.get("product_id")
+        new_price  = request.POST.get("selling_price")
+        try:
+            product = Product.objects.get(id=product_id)
+            old_price = product.selling_price
+            product.selling_price = Decimal(new_price)
+            product.save()
+            try:
+                AuditLog.objects.create(
+                    user=request.user,
+                    action="UPDATE",
+                    model_name="Product",
+                    object_id=product.id,
+                    description=(
+                        f"Price updated: {product.model_name} "
+                        f"N{old_price:,.2f} -> N{Decimal(new_price):,.2f}"
+                    ),
+                )
+            except Exception:
+                pass
+            messages.success(
+                request,
+                f"{product.model_name} price updated to N{Decimal(new_price):,.0f}."
+            )
+        except Exception as e:
+            messages.error(request, f"Error updating price: {e}")
+        return redirect("manage_price_floors")
+
+    return render(request, "director/price_floors.html", {
+        "products": products,
+        "search": search,
+    })
+
+
+def scan_barcode(request):
+    """Barcode/IMEI scanner endpoint for retail dashboard."""
+    barcode = request.GET.get('barcode', '').strip()
+    if not barcode:
+        return JsonResponse({'found': False, 'message': 'No barcode provided'})
+    try:
+        # Try exact IMEI match first
+        product = Product.objects.filter(imei_serial=barcode).first()
+        if not product:
+            # Try partial match
+            product = Product.objects.filter(
+                imei_serial__contains=barcode
+            ).first()
+        if not product:
+            # Try model name match
+            product = Product.objects.filter(
+                model_name__icontains=barcode
+            ).first()
+        if product:
+            return JsonResponse({
+                'found': True,
+                'id': product.id,
+                'name': product.model_name,
+                'price': str(product.selling_price),
+                'cost_price': str(product.cost_price),
+                'imei': product.imei_serial or '',
+                'category': product.subcategory.category.name if product.subcategory else '',
+            })
+        return JsonResponse({
+            'found': False,
+            'message': f'No product found for: {barcode}'
+        })
+    except Exception as e:
+        return JsonResponse({'error': str(e), 'found': False}, status=500)
+
+
+# ─────────────────────────────────────────
+# MISSING VIEWS - Added by fix script
+# ─────────────────────────────────────────
+
+@role_required("DIRECTOR")
+def daily_summary_trigger(request):
+    """Triggered by cron-job.org or GitHub Actions daily to email director summary."""
+    from django.http import JsonResponse as _JR
+    from decouple import config as _cfg
+    import threading as _threading
+    secret = request.GET.get("key", "")
+    expected = _cfg("BACKUP_SECRET_KEY", default="")
+    if expected and secret != expected:
+        return _JR({"error": "unauthorized"}, status=403)
+    def _run():
+        try:
+            send_daily_summary_email()
+        except Exception:
+            pass
+    _threading.Thread(target=_run, daemon=True).start()
+    return _JR({"status": "started", "message": "Daily digest running in background"})
+
+
+@role_required("DIRECTOR")
+def audit_log(request):
+    """Director view - full audit log with date filters."""
+    date_from  = request.GET.get("date_from", "")
+    date_to    = request.GET.get("date_to", "")
+    search     = request.GET.get("search", "")
+    action_flt = request.GET.get("action", "")
+    model_flt  = request.GET.get("model", "")
+
+    logs = AuditLog.objects.select_related("user").order_by("-timestamp")
+
+    if date_from:
+        logs = logs.filter(timestamp__date__gte=date_from)
+    if date_to:
+        logs = logs.filter(timestamp__date__lte=date_to)
+    if search:
+        logs = logs.filter(
+            Q(description__icontains=search) |
+            Q(user__username__icontains=search)
+        )
+    if action_flt:
+        logs = logs.filter(action=action_flt)
+    if model_flt:
+        logs = logs.filter(model_name__icontains=model_flt)
+
+    paginator = Paginator(logs, 50)
+    page = paginator.get_page(request.GET.get("page"))
+
+    return render(request, "director/audit_log.html", {
+        "logs": page,
+        "date_from": date_from,
+        "date_to": date_to,
+        "search": search,
+        "action_flt": action_flt,
+        "model_flt": model_flt,
+        "action_choices": ["CREATE", "UPDATE", "DELETE", "VIEW"],
+    })
+
+
+@role_required("DIRECTOR")
+def change_log(request):
+    """Director view - change log with date filters."""
+    date_from = request.GET.get("date_from", "")
+    date_to   = request.GET.get("date_to", "")
+    search    = request.GET.get("search", "")
+
+    logs = AuditLog.objects.filter(
+        action__in=["UPDATE", "DELETE"]
+    ).select_related("user").order_by("-timestamp")
+
+    if date_from:
+        logs = logs.filter(timestamp__date__gte=date_from)
+    if date_to:
+        logs = logs.filter(timestamp__date__lte=date_to)
+    if search:
+        logs = logs.filter(
+            Q(description__icontains=search) |
+            Q(user__username__icontains=search) |
+            Q(model_name__icontains=search)
+        )
+
+    paginator = Paginator(logs, 50)
+    page = paginator.get_page(request.GET.get("page"))
+
+    return render(request, "director/change_log.html", {
+        "logs": page,
+        "date_from": date_from,
+        "date_to": date_to,
+        "search": search,
+    })
+
+
+@role_required("DIRECTOR")
+def all_branch_stock(request):
+    """Director view - all branch safe stock with date and branch filters."""
+    date_from  = request.GET.get("date_from", "")
+    date_to    = request.GET.get("date_to", "")
+    branch_flt = request.GET.get("branch", "")
+    search     = request.GET.get("search", "")
+    export     = request.GET.get("export", "")
+
+    stocks = BranchSafeStock.objects.select_related(
+        "product", "branch", "product__subcategory"
+    ).order_by("branch__name", "product__model_name")
+
+    if branch_flt:
+        stocks = stocks.filter(branch_id=branch_flt)
+    if search:
+        stocks = stocks.filter(
+            Q(product__model_name__icontains=search) |
+            Q(branch__name__icontains=search)
+        )
+    if date_from:
+        stocks = stocks.filter(date_added__date__gte=date_from)
+    if date_to:
+        stocks = stocks.filter(date_added__date__lte=date_to)
+
+    total_value = sum(
+        (s.quantity * s.product.selling_price) for s in stocks
+    )
+    total_units = sum(s.quantity for s in stocks)
+
+    # Group by branch
+    branch_stock = {}
+    for s in stocks:
+        bname = s.branch.name
+        if bname not in branch_stock:
+            branch_stock[bname] = {
+                "items": [], "total_units": 0, "total_value": Decimal(0)
+            }
+        val = s.quantity * s.product.selling_price
+        branch_stock[bname]["items"].append({
+            "product": s.product.model_name,
+            "quantity": s.quantity,
+            "selling_price": s.product.selling_price,
+            "cost_price": s.product.cost_price,
+            "value": val,
+            "category": s.product.subcategory.category.name if s.product.subcategory else "—",
+        })
+        branch_stock[bname]["total_units"] += s.quantity
+        branch_stock[bname]["total_value"] += val
+
+    if export == "pdf":
+        from reportlab.platypus import SimpleDocTemplate, Table, TableStyle, Paragraph, Spacer
+        from reportlab.lib import colors
+        from reportlab.lib.styles import getSampleStyleSheet, ParagraphStyle
+        from reportlab.lib.units import inch
+        from reportlab.lib.enums import TA_CENTER
+        import io
+        BLUE = colors.HexColor("#004F9F")
+        buf = io.BytesIO()
+        doc = SimpleDocTemplate(buf, rightMargin=0.5*inch, leftMargin=0.5*inch,
+                                topMargin=0.6*inch, bottomMargin=0.6*inch)
+        styles = getSampleStyleSheet()
+        elements = [
+            Paragraph("GLOBAL PHONELINZ SYSTEMS LIMITED",
+                ParagraphStyle("T", parent=styles["Heading1"], fontSize=13,
+                               textColor=BLUE, alignment=TA_CENTER)),
+            Paragraph(f"All Branch Stock Report | {date_from or 'All'} to {date_to or 'Today'}",
+                ParagraphStyle("S", parent=styles["Normal"], fontSize=8,
+                               textColor=colors.grey, alignment=TA_CENTER, spaceAfter=10)),
+        ]
+        data = [["Branch", "Product", "Category", "Qty", "Sell Price", "Value"]]
+        for bname, bdata in branch_stock.items():
+            for item in bdata["items"]:
+                data.append([
+                    bname, item["product"], item["category"],
+                    str(item["quantity"]),
+                    f"N{item['selling_price']:,.0f}",
+                    f"N{item['value']:,.0f}",
+                ])
+        t = Table(data, repeatRows=1)
+        t.setStyle(TableStyle([
+            ("BACKGROUND", (0,0), (-1,0), BLUE),
+            ("TEXTCOLOR", (0,0), (-1,0), colors.white),
+            ("FONTNAME", (0,0), (-1,0), "Helvetica-Bold"),
+            ("FONTSIZE", (0,0), (-1,-1), 8),
+            ("GRID", (0,0), (-1,-1), 0.3, colors.HexColor("#E5E7EB")),
+            ("ROWBACKGROUNDS", (0,1), (-1,-1), [colors.white, colors.HexColor("#F9FAFB")]),
+            ("TOPPADDING", (0,0), (-1,-1), 4),
+            ("BOTTOMPADDING", (0,0), (-1,-1), 4),
+        ]))
+        elements.append(t)
+        doc.build(elements)
+        buf.seek(0)
+        fname = f"AllBranchStock_{date_from or 'All'}_{date_to or 'Today'}.pdf"
+        return HttpResponse(buf, content_type="application/pdf",
+                            headers={"Content-Disposition": f'attachment; filename="{fname}"'})
+
+    return render(request, "director/all_branch_stock.html", {
+        "branch_stock": branch_stock,
+        "total_value": total_value,
+        "total_units": total_units,
+        "branches": Branch.objects.all(),
+        "date_from": date_from,
+        "date_to": date_to,
+        "branch_flt": branch_flt,
+        "search": search,
+    })
+
+
+def landing_page(request):
+    """Public landing page for globalphonelinz.com"""
+    return render(request, "landing.html")
+
+
+def landing_page(request):
+    """Public landing page for globalphonelinz.com"""
+    return render(request, "landing.html")
