@@ -5217,10 +5217,8 @@ def all_branch_stock(request):
 
 
 def landing_page(request):
-    """Public landing page for globalphonelinz.com"""
-    return render(request, "landing.html")
+    host = request.get_host().lower()
+    if 'app.' in host:
+        return redirect('login')
+    return render(request, 'landing.html')
 
-
-def landing_page(request):
-    """Public landing page for globalphonelinz.com"""
-    return render(request, "landing.html")
