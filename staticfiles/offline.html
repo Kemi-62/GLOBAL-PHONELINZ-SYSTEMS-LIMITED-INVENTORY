@@ -1,0 +1,76 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Offline — GPSL ERP</title>
+  <style>
+    *{margin:0;box-sizing:border-box;font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,sans-serif}
+    body{background:linear-gradient(135deg,#004F9F,#003a7a);min-height:100vh;display:flex;align-items:center;justify-content:center;color:#fff;text-align:center;padding:2rem}
+    .card{background:rgba(255,255,255,.95);border-radius:16px;padding:2rem 1.5rem;max-width:380px;width:100%;color:#111827;box-shadow:0 20px 60px rgba(0,0,0,.3)}
+    .icon{font-size:4rem;margin-bottom:1rem}
+    h1{font-size:1.3rem;font-weight:700;margin-bottom:.5rem;color:#004F9F}
+    p{font-size:.88rem;color:#6b7280;margin-bottom:1.5rem;line-height:1.5}
+    .status{display:inline-block;padding:.4rem 1rem;border-radius:999px;font-size:.75rem;font-weight:600;background:#d1fae5;color:#065f46;margin-bottom:1rem}
+    .btn{display:block;width:100%;padding:.75rem 1rem;border-radius:8px;border:none;font-size:.88rem;font-weight:600;cursor:pointer;text-decoration:none;margin-bottom:.5rem}
+    .btn-primary{background:#004F9F;color:#fff}
+    .btn-outline{background:transparent;border:1px solid #d1d5db;color:#374151}
+    .btn:hover{opacity:.85}
+    .pending{display:flex;align-items:center;gap:.6rem;padding:.8rem;border-radius:8px;background:#fef3c7;border:1px solid #fcd34d;font-size:.82rem;margin-top:1rem;text-align:left}
+    .hidden{display:none}
+  </style>
+</head>
+<body>
+  <div class="card">
+    <div class="icon">📡</div>
+    <span class="status" id="net-status">📴 Offline Mode</span>
+    <h1>You're Offline</h1>
+    <p>GPSL ERP is running in offline mode. Your attendance checks and stock records are saved locally and will sync automatically when you're back online.</p>
+
+    <div id="pending-queue" class="pending hidden">
+      <span style="font-size:1.2rem;">⏳</span>
+      <div>
+        <strong>Pending uploads:</strong> <span id="pending-count">0</span> items queued
+      </div>
+    </div>
+
+    <a href="/" class="btn btn-primary">🔁 Retry Connection</a>
+    <button onclick="window.location.reload()" class="btn btn-outline">🔄 Refresh Page</button>
+  </div>
+
+  <script>
+    function updateStatus() {
+      const isOnline = navigator.onLine;
+      document.getElementById('net-status').textContent = isOnline ? '🟢 Online' : '📴 Offline Mode';
+      document.getElementById('net-status').style.background = isOnline ? '#d1fae5' : '#fee2e2';
+      document.getElementById('net-status').style.color = isOnline ? '#065f46' : '#991b1b';
+    }
+    window.addEventListener('online', updateStatus);
+    window.addEventListener('offline', updateStatus);
+    updateStatus();
+
+    // Show pending count
+    if ('indexedDB' in window) {
+      const open = indexedDB.open('GPSL_Offline', 2);
+      open.onupgradeneeded = e => {
+        const db = e.target.result;
+        if (!db.objectStoreNames.contains('forms')) db.createObjectStore('forms', {keyPath: 'id', autoIncrement: true});
+        if (!db.objectStoreNames.contains('attendance')) db.createObjectStore('attendance', {keyPath: 'id', autoIncrement: true});
+      };
+      open.onsuccess = e => {
+        const db = e.target.result;
+        const tx = db.transaction(['forms', 'attendance'], 'readonly');
+        let count = 0;
+        tx.objectStore('forms').count().onsuccess = ev => { count += ev.target.result; };
+        tx.objectStore('attendance').count().onsuccess = ev => {
+          count += ev.target.result;
+          if (count > 0) {
+            document.getElementById('pending-count').textContent = count;
+            document.getElementById('pending-queue').classList.remove('hidden');
+          }
+        };
+      };
+    }
+  </script>
+</body>
+</html>
