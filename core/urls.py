@@ -162,4 +162,12 @@ urlpatterns = [
     path('system/keepalive/', views.keepalive_ping, name='keepalive_ping'),
     path('offline/', views.offline_page, name='offline_page'),
     path('manifest.json', views.pwa_manifest, name='pwa_manifest'),
+    path('catalog/', views.catalog_management, name='catalog_management'),
+    path('catalog/slide/add/', views.catalog_add_slide, name='catalog_add_slide'),
+    path('catalog/slide/<int:slide_id>/edit/', views.catalog_edit_slide, name='catalog_edit_slide'),
+    path('catalog/slide/<int:slide_id>/delete/', views.catalog_delete_slide, name='catalog_delete_slide'),
+    path('catalog/product/add/', views.catalog_add_product, name='catalog_add_product'),
+    path('catalog/product/<int:product_id>/edit/', views.catalog_edit_product, name='catalog_edit_product'),
+    path('catalog/product/<int:product_id>/delete/', views.catalog_delete_product, name='catalog_delete_product'),
+    path('catalog/category/add/', views.catalog_add_category, name='catalog_add_category'),
 ]

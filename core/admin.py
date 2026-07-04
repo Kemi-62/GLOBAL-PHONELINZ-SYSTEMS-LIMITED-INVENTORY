@@ -102,3 +102,28 @@ admin.site.register(MultiChoiceWeeklyReport)
 admin.site.register(StockMovement)
 admin.site.register(SimInventory)
 admin.site.register(SimInventoryLog)
+
+
+
+from core.models import SlideShowItem, CatalogCategory, CatalogProduct
+
+@admin.register(SlideShowItem)
+class SlideShowItemAdmin(admin.ModelAdmin):
+    list_display  = ('title', 'price', 'old_price', 'is_active', 'order')
+    list_editable = ('is_active', 'order')
+    list_filter   = ('is_active',)
+    search_fields = ('title', 'subtitle')
+    ordering      = ('order',)
+
+@admin.register(CatalogCategory)
+class CatalogCategoryAdmin(admin.ModelAdmin):
+    list_display  = ('name', 'icon', 'order')
+    list_editable = ('order',)
+
+@admin.register(CatalogProduct)
+class CatalogProductAdmin(admin.ModelAdmin):
+    list_display  = ('name', 'category', 'price', 'old_price', 'condition', 'is_available', 'is_featured', 'order')
+    list_editable = ('is_available', 'is_featured', 'order')
+    list_filter   = ('category', 'condition', 'is_available', 'is_featured')
+    search_fields = ('name', 'description')
+    ordering      = ('order', '-created_at')

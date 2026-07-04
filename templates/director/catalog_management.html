@@ -1,0 +1,401 @@
+{% extends "base.html" %}
+{% block content %}
+<style>
+.page-title{font-size:1.3rem;font-weight:700;color:#004F9F;margin:0 0 1.5rem}
+.tab-bar{display:flex;gap:.4rem;overflow-x:auto;padding:.4rem 0;margin-bottom:1.5rem;border-bottom:2px solid #e5e7eb}
+.tab-btn{flex-shrink:0;padding:.55rem 1.1rem;border:none;border-radius:8px 8px 0 0;background:transparent;color:#6b7280;font-size:.85rem;font-weight:600;cursor:pointer;white-space:nowrap;border-bottom:3px solid transparent;margin-bottom:-2px}
+.tab-btn.active{color:#004F9F;border-bottom-color:#004F9F;background:#eff6ff}
+.tab-panel{display:none}.tab-panel.active{display:block}
+.card{background:#fff;border:1px solid #e5e7eb;border-radius:10px;padding:1.2rem 1.4rem;margin-bottom:1.2rem}
+.card-title{font-size:1rem;font-weight:700;color:#111827;margin:0 0 1rem}
+.form-group{margin-bottom:.8rem}
+.form-group label{font-size:.78rem;font-weight:600;color:#374151;display:block;margin-bottom:.3rem}
+.form-group input,.form-group select,.form-group textarea{width:100%;padding:.5rem .75rem;border:1px solid #d1d5db;border-radius:6px;font-size:.88rem;box-sizing:border-box}
+.form-row{display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:.8rem}
+.btn-sm{padding:.45rem .9rem;font-size:.82rem;border-radius:6px;border:none;cursor:pointer;font-weight:600;text-decoration:none;display:inline-block}
+.btn-primary{background:#004F9F;color:#fff}.btn-success{background:#10b981;color:#fff}
+.btn-danger{background:#ef4444;color:#fff}.btn-outline{background:transparent;border:1px solid #d1d5db;color:#374151}
+.btn-amber{background:#f59e0b;color:#fff}.btn-sm:hover{opacity:.88}
+.data-table{width:100%;border-collapse:collapse;font-size:.85rem}
+.data-table th{background:#004F9F;color:#fff;font-weight:600;padding:.65rem .9rem;text-align:left}
+.data-table td{padding:.6rem .9rem;border-bottom:1px solid #f3f4f6;color:#374151;vertical-align:middle}
+.data-table tr:hover td{background:#fafafa}
+.badge{display:inline-block;padding:.2rem .55rem;border-radius:999px;font-size:.72rem;font-weight:700}
+.badge-green{background:#d1fae5;color:#065f46}.badge-red{background:#fee2e2;color:#991b1b}
+.badge-amber{background:#fef3c7;color:#92400e}.badge-blue{background:#dbeafe;color:#1e40af}
+.thumb{width:52px;height:52px;object-fit:cover;border-radius:6px;border:1px solid #e5e7eb}
+.thumb-placeholder{width:52px;height:52px;background:#f3f4f6;border-radius:6px;display:flex;align-items:center;justify-content:center;font-size:1.2rem}
+.modal-overlay{display:none;position:fixed;inset:0;background:rgba(0,0,0,.5);z-index:9999;align-items:center;justify-content:center;padding:1rem}
+.modal-overlay.show{display:flex}
+.modal-box{background:#fff;border-radius:12px;padding:1.5rem;width:100%;max-width:560px;max-height:90vh;overflow-y:auto}
+.modal-title{font-size:1rem;font-weight:700;color:#111827;margin-bottom:1rem}
+</style>
+
+<div style="display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:.8rem;margin-bottom:1.5rem;">
+  <h1 class="page-title" style="margin:0;">🛍️ Catalog Management</h1>
+  <a href="{% url 'director_dashboard' %}" class="btn-sm btn-outline">← Dashboard</a>
+</div>
+
+<div class="tab-bar">
+  <button class="tab-btn active" onclick="switchTab('slides',this)">🖼️ Slideshow ({{ slides|length }})</button>
+  <button class="tab-btn" onclick="switchTab('products',this)">📦 Products ({{ products|length }})</button>
+  <button class="tab-btn" onclick="switchTab('cats',this)">🗂️ Categories ({{ cats|length }})</button>
+  <button class="tab-btn" onclick="switchTab('addslide',this)">➕ Add Slide</button>
+  <button class="tab-btn" onclick="switchTab('addproduct',this)">➕ Add Product</button>
+</div>
+
+<!-- ══ SLIDESHOW TAB ══ -->
+<div id="tab-slides" class="tab-panel active">
+  <div class="card">
+    <p class="card-title">🖼️ Hero Slideshow Items</p>
+    <div style="overflow-x:auto;">
+      <table class="data-table">
+        <thead><tr><th>Image</th><th>Title</th><th>Price</th><th>Old Price</th><th>Badge</th><th>Active</th><th>Order</th><th>Actions</th></tr></thead>
+        <tbody>
+          {% for s in slides %}
+          <tr>
+            <td>
+              {% if s.get_image_url %}
+              <img src="{{ s.get_image_url }}" class="thumb" alt="{{ s.title }}">
+              {% else %}
+              <div class="thumb-placeholder">🖼️</div>
+              {% endif %}
+            </td>
+            <td><strong>{{ s.title }}</strong><br><span style="font-size:.75rem;color:#9ca3af;">{{ s.subtitle|truncatewords:8 }}</span></td>
+            <td>{% if s.price %}₦{{ s.price|floatformat:0 }}{% else %}—{% endif %}</td>
+            <td>{% if s.old_price %}<s style="color:#9ca3af;">₦{{ s.old_price|floatformat:0 }}</s>{% else %}—{% endif %}</td>
+            <td>{% if s.badge_text %}<span class="badge badge-amber">{{ s.badge_text }}</span>{% else %}—{% endif %}</td>
+            <td>{% if s.is_active %}<span class="badge badge-green">Active</span>{% else %}<span class="badge badge-red">Off</span>{% endif %}</td>
+            <td>{{ s.order }}</td>
+            <td>
+              <button onclick="editSlide({{ s.id }},'{{ s.title|escapejs }}','{{ s.subtitle|escapejs }}','{{ s.badge_text|escapejs }}','{{ s.price|default:'' }}','{{ s.old_price|default:'' }}','{{ s.cta_text|escapejs }}','{{ s.image_url|default:'' }}','{{ s.order }}',{{ s.is_active|yesno:'true,false' }})" class="btn-sm btn-amber" style="font-size:.75rem;padding:.3rem .6rem;">Edit</button>
+              <form method="POST" action="{% url 'catalog_delete_slide' s.id %}" style="display:inline;" onsubmit="return confirm('Delete this slide?')">
+                {% csrf_token %}<button type="submit" class="btn-sm btn-danger" style="font-size:.75rem;padding:.3rem .6rem;">Delete</button>
+              </form>
+            </td>
+          </tr>
+          {% empty %}
+          <tr><td colspan="8" style="text-align:center;color:#9ca3af;padding:2rem;">No slides yet. Add one using the Add Slide tab.</td></tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+  </div>
+</div>
+
+<!-- ══ PRODUCTS TAB ══ -->
+<div id="tab-products" class="tab-panel">
+  <div class="card">
+    <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:1rem;flex-wrap:wrap;gap:.5rem;">
+      <p class="card-title" style="margin:0;">📦 Catalog Products</p>
+      <input type="text" id="prod-search" onkeyup="filterProds()" placeholder="Search…" style="padding:.4rem .7rem;border:1px solid #d1d5db;border-radius:6px;font-size:.83rem;width:180px;">
+    </div>
+    <div style="overflow-x:auto;">
+      <table class="data-table">
+        <thead><tr><th>Image</th><th>Name</th><th>Category</th><th>Price</th><th>Discount</th><th>Condition</th><th>Featured</th><th>Available</th><th>Actions</th></tr></thead>
+        <tbody id="prod-tbody">
+          {% for p in products %}
+          <tr class="prod-row" data-name="{{ p.name|lower }}">
+            <td>
+              {% if p.get_image_url %}
+              <img src="{{ p.get_image_url }}" class="thumb" alt="{{ p.name }}">
+              {% else %}
+              <div class="thumb-placeholder">📦</div>
+              {% endif %}
+            </td>
+            <td><strong>{{ p.name }}</strong>{% if p.badge %}<br><span class="badge badge-amber">{{ p.badge }}</span>{% endif %}</td>
+            <td style="color:#9ca3af;">{{ p.category.icon|default:'' }} {{ p.category.name|default:'—' }}</td>
+            <td><strong>₦{{ p.price|floatformat:0 }}</strong></td>
+            <td>
+              {% if p.discount_percent %}
+              <span class="badge badge-green">-{{ p.discount_percent }}%</span>
+              {% else %}—{% endif %}
+            </td>
+            <td><span class="badge badge-blue">{{ p.get_condition_display }}</span></td>
+            <td>{% if p.is_featured %}<span class="badge badge-amber">⭐ Yes</span>{% else %}—{% endif %}</td>
+            <td>{% if p.is_available %}<span class="badge badge-green">Yes</span>{% else %}<span class="badge badge-red">No</span>{% endif %}</td>
+            <td>
+              <button onclick="editProduct({{ p.id }},'{{ p.name|escapejs }}','{{ p.description|escapejs }}','{{ p.price }}','{{ p.old_price|default:'' }}','{{ p.badge|escapejs }}','{{ p.condition }}','{{ p.image_url|default:'' }}','{{ p.order }}',{{ p.is_available|yesno:'true,false' }},{{ p.is_featured|yesno:'true,false' }},'{{ p.category_id|default:'' }}')" class="btn-sm btn-amber" style="font-size:.75rem;padding:.3rem .6rem;">Edit</button>
+              <form method="POST" action="{% url 'catalog_delete_product' p.id %}" style="display:inline;" onsubmit="return confirm('Delete {{ p.name }}?')">
+                {% csrf_token %}<button type="submit" class="btn-sm btn-danger" style="font-size:.75rem;padding:.3rem .6rem;">Delete</button>
+              </form>
+            </td>
+          </tr>
+          {% empty %}
+          <tr><td colspan="9" style="text-align:center;color:#9ca3af;padding:2rem;">No products yet. Add some using the Add Product tab.</td></tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+  </div>
+</div>
+
+<!-- ══ CATEGORIES TAB ══ -->
+<div id="tab-cats" class="tab-panel">
+  <div class="card">
+    <p class="card-title">🗂️ Catalog Categories</p>
+    <form method="POST" action="{% url 'catalog_add_category' %}" style="display:flex;gap:.6rem;flex-wrap:wrap;margin-bottom:1.5rem;align-items:flex-end;">
+      {% csrf_token %}
+      <div><label style="font-size:.75rem;font-weight:600;color:#374151;display:block;margin-bottom:.2rem;">Category Name *</label><input type="text" name="name" required placeholder="e.g. Phones" style="padding:.45rem .7rem;border:1px solid #d1d5db;border-radius:6px;font-size:.85rem;"></div>
+      <div><label style="font-size:.75rem;font-weight:600;color:#374151;display:block;margin-bottom:.2rem;">Icon (emoji)</label><input type="text" name="icon" placeholder="📱" style="padding:.45rem .7rem;border:1px solid #d1d5db;border-radius:6px;font-size:.85rem;width:70px;"></div>
+      <div><label style="font-size:.75rem;font-weight:600;color:#374151;display:block;margin-bottom:.2rem;">Order</label><input type="number" name="order" value="0" style="padding:.45rem .7rem;border:1px solid #d1d5db;border-radius:6px;font-size:.85rem;width:70px;"></div>
+      <button type="submit" class="btn-sm btn-success">Add Category</button>
+    </form>
+    <table class="data-table">
+      <thead><tr><th>Icon</th><th>Name</th><th>Order</th><th>Products</th></tr></thead>
+      <tbody>
+        {% for cat in cats %}
+        <tr>
+          <td style="font-size:1.2rem;">{{ cat.icon|default:'📦' }}</td>
+          <td><strong>{{ cat.name }}</strong></td>
+          <td>{{ cat.order }}</td>
+          <td>{{ cat.products.count }}</td>
+        </tr>
+        {% empty %}
+        <tr><td colspan="4" style="text-align:center;color:#9ca3af;">No categories yet.</td></tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+</div>
+
+<!-- ══ ADD SLIDE TAB ══ -->
+<div id="tab-addslide" class="tab-panel">
+  <div class="card">
+    <p class="card-title">➕ Add Slideshow Item</p>
+    <form method="POST" action="{% url 'catalog_add_slide' %}" enctype="multipart/form-data">
+      {% csrf_token %}
+      <div class="form-row">
+        <div class="form-group">
+          <label>Title *</label>
+          <input type="text" name="title" required placeholder="e.g. iPhone 15 Pro — Now in Stock">
+        </div>
+        <div class="form-group">
+          <label>Badge Text</label>
+          <input type="text" name="badge_text" placeholder="e.g. NEW, HOT DEAL, LIMITED">
+        </div>
+      </div>
+      <div class="form-group">
+        <label>Subtitle</label>
+        <input type="text" name="subtitle" placeholder="Short description or tagline">
+      </div>
+      <div class="form-row">
+        <div class="form-group">
+          <label>Price (₦)</label>
+          <input type="number" name="price" step="0.01" placeholder="Current selling price">
+        </div>
+        <div class="form-group">
+          <label>Old Price (₦) — for strikethrough</label>
+          <input type="number" name="old_price" step="0.01" placeholder="Original price if on discount">
+        </div>
+        <div class="form-group">
+          <label>Button Text</label>
+          <input type="text" name="cta_text" value="Order on WhatsApp" placeholder="Button label">
+        </div>
+        <div class="form-group">
+          <label>Order (0 = first)</label>
+          <input type="number" name="order" value="0">
+        </div>
+      </div>
+      <div class="form-group">
+        <label>Upload Image</label>
+        <input type="file" name="image" accept="image/*">
+      </div>
+      <div class="form-group">
+        <label>Or paste image URL (if not uploading)</label>
+        <input type="url" name="image_url" placeholder="https://...">
+      </div>
+      <div class="form-group">
+        <label>Custom WhatsApp Message (optional — leave blank to auto-generate)</label>
+        <textarea name="whatsapp_msg" rows="3" placeholder="Hello GPSL! I'm interested in..."></textarea>
+      </div>
+      <label style="display:flex;align-items:center;gap:.5rem;font-size:.85rem;margin-bottom:1rem;cursor:pointer;">
+        <input type="checkbox" name="is_active" checked> Active (shows on landing page)
+      </label>
+      <button type="submit" class="btn-sm btn-success" style="width:100%;">Add Slide</button>
+    </form>
+  </div>
+</div>
+
+<!-- ══ ADD PRODUCT TAB ══ -->
+<div id="tab-addproduct" class="tab-panel">
+  <div class="card">
+    <p class="card-title">➕ Add Catalog Product</p>
+    <form method="POST" action="{% url 'catalog_add_product' %}" enctype="multipart/form-data">
+      {% csrf_token %}
+      <div class="form-row">
+        <div class="form-group">
+          <label>Product Name *</label>
+          <input type="text" name="name" required placeholder="e.g. iPhone 15 Pro 256GB">
+        </div>
+        <div class="form-group">
+          <label>Category</label>
+          <select name="category">
+            <option value="">— Select Category —</option>
+            {% for cat in cats %}<option value="{{ cat.id }}">{{ cat.icon }} {{ cat.name }}</option>{% endfor %}
+          </select>
+        </div>
+        <div class="form-group">
+          <label>Condition</label>
+          <select name="condition">
+            <option value="NEW">Brand New</option>
+            <option value="UK">UK Used</option>
+            <option value="LOCAL">Nigerian Used</option>
+          </select>
+        </div>
+      </div>
+      <div class="form-group">
+        <label>Description</label>
+        <textarea name="description" rows="2" placeholder="Brief product description..."></textarea>
+      </div>
+      <div class="form-row">
+        <div class="form-group">
+          <label>Price (₦) *</label>
+          <input type="number" name="price" step="0.01" required placeholder="Current price">
+        </div>
+        <div class="form-group">
+          <label>Old Price (₦) — for discount</label>
+          <input type="number" name="old_price" step="0.01" placeholder="Original price">
+        </div>
+        <div class="form-group">
+          <label>Badge</label>
+          <input type="text" name="badge" placeholder="HOT, NEW, SOLD OUT">
+        </div>
+        <div class="form-group">
+          <label>Order (0 = first)</label>
+          <input type="number" name="order" value="0">
+        </div>
+      </div>
+      <div class="form-group">
+        <label>Upload Product Image</label>
+        <input type="file" name="image" accept="image/*">
+      </div>
+      <div class="form-group">
+        <label>Or paste image URL</label>
+        <input type="url" name="image_url" placeholder="https://...">
+      </div>
+      <div class="form-group">
+        <label>Custom WhatsApp Message (optional)</label>
+        <textarea name="whatsapp_msg" rows="2" placeholder="Leave blank to auto-generate from product name and price"></textarea>
+      </div>
+      <div style="display:flex;gap:1.5rem;margin-bottom:1rem;">
+        <label style="display:flex;align-items:center;gap:.5rem;font-size:.85rem;cursor:pointer;"><input type="checkbox" name="is_available" checked> Available for purchase</label>
+        <label style="display:flex;align-items:center;gap:.5rem;font-size:.85rem;cursor:pointer;"><input type="checkbox" name="is_featured"> Featured (shows in hero section)</label>
+      </div>
+      <button type="submit" class="btn-sm btn-success" style="width:100%;">Add Product</button>
+    </form>
+  </div>
+</div>
+
+<!-- Edit Slide Modal -->
+<div class="modal-overlay" id="slide-modal" onclick="if(event.target===this)this.classList.remove('show')">
+  <div class="modal-box">
+    <p class="modal-title">✏️ Edit Slide</p>
+    <form method="POST" id="slide-edit-form" enctype="multipart/form-data">
+      {% csrf_token %}
+      <div class="form-group"><label>Title *</label><input type="text" name="title" id="se-title" required></div>
+      <div class="form-group"><label>Subtitle</label><input type="text" name="subtitle" id="se-subtitle"></div>
+      <div class="form-group"><label>Badge Text</label><input type="text" name="badge_text" id="se-badge"></div>
+      <div class="form-row">
+        <div class="form-group"><label>Price (₦)</label><input type="number" name="price" id="se-price" step="0.01"></div>
+        <div class="form-group"><label>Old Price (₦)</label><input type="number" name="old_price" id="se-oldprice" step="0.01"></div>
+      </div>
+      <div class="form-group"><label>Button Text</label><input type="text" name="cta_text" id="se-cta"></div>
+      <div class="form-group"><label>Image URL</label><input type="url" name="image_url" id="se-imgurl"></div>
+      <div class="form-group"><label>Upload New Image</label><input type="file" name="image" accept="image/*"></div>
+      <div class="form-group"><label>Order</label><input type="number" name="order" id="se-order"></div>
+      <label style="display:flex;align-items:center;gap:.5rem;font-size:.85rem;margin-bottom:1rem;cursor:pointer;"><input type="checkbox" name="is_active" id="se-active"> Active</label>
+      <div style="display:flex;gap:.5rem;">
+        <button type="submit" class="btn-sm btn-success" style="flex:1;">Save Changes</button>
+        <button type="button" onclick="document.getElementById('slide-modal').classList.remove('show')" class="btn-sm btn-outline" style="flex:1;">Cancel</button>
+      </div>
+    </form>
+  </div>
+</div>
+
+<!-- Edit Product Modal -->
+<div class="modal-overlay" id="prod-modal" onclick="if(event.target===this)this.classList.remove('show')">
+  <div class="modal-box">
+    <p class="modal-title">✏️ Edit Product</p>
+    <form method="POST" id="prod-edit-form" enctype="multipart/form-data">
+      {% csrf_token %}
+      <div class="form-group"><label>Name *</label><input type="text" name="name" id="pe-name" required></div>
+      <div class="form-group"><label>Category</label>
+        <select name="category" id="pe-cat">
+          <option value="">— None —</option>
+          {% for cat in cats %}<option value="{{ cat.id }}">{{ cat.icon }} {{ cat.name }}</option>{% endfor %}
+        </select>
+      </div>
+      <div class="form-group"><label>Description</label><textarea name="description" id="pe-desc" rows="2"></textarea></div>
+      <div class="form-row">
+        <div class="form-group"><label>Price *</label><input type="number" name="price" id="pe-price" step="0.01" required></div>
+        <div class="form-group"><label>Old Price</label><input type="number" name="old_price" id="pe-old" step="0.01"></div>
+      </div>
+      <div class="form-row">
+        <div class="form-group"><label>Badge</label><input type="text" name="badge" id="pe-badge"></div>
+        <div class="form-group"><label>Condition</label>
+          <select name="condition" id="pe-cond">
+            <option value="NEW">Brand New</option>
+            <option value="UK">UK Used</option>
+            <option value="LOCAL">Nigerian Used</option>
+          </select>
+        </div>
+        <div class="form-group"><label>Order</label><input type="number" name="order" id="pe-order"></div>
+      </div>
+      <div class="form-group"><label>Image URL</label><input type="url" name="image_url" id="pe-img"></div>
+      <div class="form-group"><label>Upload New Image</label><input type="file" name="image" accept="image/*"></div>
+      <div style="display:flex;gap:1.5rem;margin-bottom:1rem;">
+        <label style="display:flex;align-items:center;gap:.5rem;font-size:.85rem;cursor:pointer;"><input type="checkbox" name="is_available" id="pe-avail"> Available</label>
+        <label style="display:flex;align-items:center;gap:.5rem;font-size:.85rem;cursor:pointer;"><input type="checkbox" name="is_featured" id="pe-feat"> Featured</label>
+      </div>
+      <div style="display:flex;gap:.5rem;">
+        <button type="submit" class="btn-sm btn-success" style="flex:1;">Save Changes</button>
+        <button type="button" onclick="document.getElementById('prod-modal').classList.remove('show')" class="btn-sm btn-outline" style="flex:1;">Cancel</button>
+      </div>
+    </form>
+  </div>
+</div>
+
+<script>
+function switchTab(name,btn){
+  document.querySelectorAll('.tab-panel').forEach(p=>p.classList.remove('active'));
+  document.querySelectorAll('.tab-btn').forEach(b=>b.classList.remove('active'));
+  document.getElementById('tab-'+name).classList.add('active');
+  btn.classList.add('active');
+}
+function filterProds(){
+  const q=document.getElementById('prod-search').value.toLowerCase();
+  document.querySelectorAll('.prod-row').forEach(r=>{
+    r.style.display=r.dataset.name.includes(q)?'':'none';
+  });
+}
+function editSlide(id,title,subtitle,badge,price,oldprice,cta,imgurl,order,active){
+  document.getElementById('slide-edit-form').action=`/catalog/slide/${id}/edit/`;
+  document.getElementById('se-title').value=title;
+  document.getElementById('se-subtitle').value=subtitle;
+  document.getElementById('se-badge').value=badge;
+  document.getElementById('se-price').value=price;
+  document.getElementById('se-oldprice').value=oldprice;
+  document.getElementById('se-cta').value=cta;
+  document.getElementById('se-imgurl').value=imgurl;
+  document.getElementById('se-order').value=order;
+  document.getElementById('se-active').checked=active;
+  document.getElementById('slide-modal').classList.add('show');
+}
+function editProduct(id,name,desc,price,old,badge,cond,imgurl,order,avail,feat,catid){
+  document.getElementById('prod-edit-form').action=`/catalog/product/${id}/edit/`;
+  document.getElementById('pe-name').value=name;
+  document.getElementById('pe-desc').value=desc;
+  document.getElementById('pe-price').value=price;
+  document.getElementById('pe-old').value=old;
+  document.getElementById('pe-badge').value=badge;
+  document.getElementById('pe-img').value=imgurl;
+  document.getElementById('pe-order').value=order;
+  document.getElementById('pe-avail').checked=avail;
+  document.getElementById('pe-feat').checked=feat;
+  document.getElementById('pe-cond').value=cond;
+  document.getElementById('pe-cat').value=catid;
+  document.getElementById('prod-modal').classList.add('show');
+}
+</script>
+{% endblock %}
