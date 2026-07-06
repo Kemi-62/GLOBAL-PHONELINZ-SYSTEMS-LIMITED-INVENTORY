@@ -5214,18 +5214,6 @@ def all_branch_stock(request):
         "branch_flt": branch_flt,
         "search": search,
     })
-
-
-def landing_page(request):
-    host = request.get_host().lower()
-    if 'app.' in host:
-        return redirect('login')
-    return render(request, 'landing.html')
-
-
-
-
-
 @role_required("DIRECTOR")
 def catalog_management(request):
     """Director page to manage landing page slideshow and products."""
@@ -5426,5 +5414,5 @@ def landing_page(request):
         "cats": cats,
         "featured": featured,
         "all_products": all_products,
-        "whatsapp_number": "234XXXXXXXXXX",
+        "whatsapp_number": "2348032036766",
     })
