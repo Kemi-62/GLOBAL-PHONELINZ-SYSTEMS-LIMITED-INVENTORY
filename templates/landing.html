@@ -36,7 +36,18 @@
     .mob-menu a{color:rgba(255,255,255,.85);text-decoration:none;font-size:.95rem;font-weight:500;padding:.4rem 0;border-bottom:1px solid rgba(255,255,255,.08)}
 
     /* ── HERO ── */
-    .hero{min-height:100vh;background:var(--blue);display:flex;flex-direction:column;align-items:center;justify-content:center;text-align:center;padding:5rem 1.25rem 3.5rem;position:relative;overflow:hidden}
+    .hero{
+    min-height:50vh;
+    background:var(--blue);
+    display:flex;
+    flex-direction:column;
+    align-items:center;
+    justify-content:center;
+    text-align:center;
+    padding:4rem 1.25rem 2.5rem;
+    position:relative;
+    overflow:hidden;
+    }
     .hero::before{content:'';position:absolute;inset:0;background:radial-gradient(ellipse at 15% 90%,rgba(255,203,5,.18) 0%,transparent 55%),radial-gradient(ellipse at 85% 10%,rgba(255,203,5,.12) 0%,transparent 55%);pointer-events:none}
     .hero-logo{width:90px;height:90px;background:#fff;border-radius:50%;display:flex;align-items:center;justify-content:center;margin:0 auto 1.25rem;overflow:hidden;padding:8px;position:relative;z-index:1;pointer-events:none;user-select:none}
     .hero-logo img{width:100%;height:100%;object-fit:contain;pointer-events:none;user-select:none;-webkit-user-drag:none}
@@ -61,9 +72,26 @@
 
     /* ── ABOUT ── */
     .about{background:var(--bg)}
-    .about-grid{display:grid;grid-template-columns:1fr 1fr;gap:2.5rem;align-items:center}
-    .about-img{background:var(--blue);border-radius:var(--radius-lg);height:280px;display:flex;align-items:center;justify-content:center;overflow:hidden}
-    .about-img img{width:50%;object-fit:contain;pointer-events:none;user-select:none;-webkit-user-drag:none}
+.about-grid{
+    display:grid;
+    grid-template-columns:380px 1fr;
+    gap:60px;
+    align-items:center;
+}    .about-img{
+    background:#fff;
+    border-radius:22px;
+    height:320px;
+    display:flex;
+    align-items:center;
+    justify-content:center;
+    overflow:hidden;
+    box-shadow:0 18px 40px rgba(0,0,0,.08);
+    border:1px solid rgba(0,0,0,.05);
+}
+    .about-img img{
+    width:72%;
+    object-fit:contain;
+            }
     .about-text p{font-size:.9rem;color:var(--muted);line-height:1.8;margin-bottom:.75rem}
     .stats{display:grid;grid-template-columns:1fr 1fr;gap:.75rem;margin-top:1.25rem}
     .stat{background:#fff;border:1px solid var(--border);border-radius:var(--radius);padding:.85rem;text-align:center}
@@ -139,8 +167,25 @@
     /* ── RESPONSIVE ── */
 
     /* ── SLIDESHOW ── */
-    .slideshow{position:relative;width:100%;min-height:100vh;display:flex;align-items:center;justify-content:center;}
-    .slide{display:none;flex-direction:column;align-items:center;justify-content:center;width:100%;min-height:100vh;text-align:center;padding:5rem 1.5rem 3rem;position:relative;}
+    .slideshow{
+    position:relative;
+    width:100%;
+    min-height:50vh;
+    display:flex;
+    align-items:center;
+    justify-content:center;
+    }
+    .slide{
+    display:none;
+    flex-direction:column;
+    align-items:center;
+    justify-content:center;
+    width:100%;
+    min-height:50vh;
+    text-align:center;
+    padding:4rem 1.5rem 2.5rem;
+    position:relative;
+    }
     .slide.active{display:flex;}
     .slide-bg{position:absolute;inset:0;background-size:cover;background-position:center;opacity:.25;pointer-events:none;}
     .slide-content{position:relative;z-index:1;max-width:640px;margin:0 auto;}
