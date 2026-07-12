@@ -2260,6 +2260,23 @@ def multichoice_dashboard(request):
         weekly_report.total_subscriptions if weekly_report else 0
     )
 
+    # Add expiry countdown to sales
+    from datetime import timedelta as _td
+    _today = today if hasattr(today, "year") else today.date()
+    for _s in all_sales_page:
+        try:
+            _exp = _s.expiry_date
+        except Exception:
+            _exp = None
+        if _exp is None:
+            try:
+                _sd = _s.date if hasattr(_s.date, "year") else _s.date.date()
+                _exp = _sd + _td(days=30)
+            except Exception:
+                _exp = None
+        _s.computed_expiry = _exp
+        _s.computed_days_left = (_exp - _today).days if _exp else None
+
     return render(request, "multichoice_dashboard.html", {
         "today_sales": today_sales,
         "all_sales": all_sales_page,
@@ -5512,7 +5529,7 @@ def router_subscriptions(request):
     })
 
 
-@role_required("DIRECTOR")
+@role_required("DIRECTOR", "MANAGER")
 def router_subscriptions_overview(request):
     """Manager/Director - see all router subscriptions across staff/branches."""
     from datetime import date
@@ -5584,7 +5601,7 @@ def router_subscriptions_overview(request):
     })
 
 
-@role_required("DIRECTOR")
+@role_required("DIRECTOR", "MULTICHOICE")
 def mc_subscription_retention(request):
     """Director - MultiChoice customer retention overview."""
     from datetime import date, timedelta
@@ -5627,8 +5644,8 @@ def mc_subscription_retention(request):
             except Exception:
                 continue
         days_left = (exp - today).days
-        sale._computed_expiry = exp
-        sale._computed_days_left = days_left
+        sale.computed_expiry = exp
+        sale.computed_days_left = days_left
         if 0 <= days_left <= 7:
             expiring_soon.append(sale)
         elif -14 <= days_left < 0:

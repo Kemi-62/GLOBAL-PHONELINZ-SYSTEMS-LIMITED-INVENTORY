@@ -48,8 +48,8 @@
       <td style="font-size:.75rem;font-family:monospace">{{ s.iuc_number|default:"—" }}</td>
       <td>{{ s.service_type }} {{ s.package_type }}</td>
       <td>{{ s.staff.username }}</td><td>{{ s.branch.name }}</td>
-      <td>{{ s._computed_expiry|default:s.expiry_date }}</td>
-      <td><span class="badge b-warn">{{ s._computed_days_left }} day{{ s._computed_days_left|pluralize }}</span></td>
+      <td>{{ s.computed_expiry }}</td>
+      <td><span class="badge b-warn">{{ s.computed_days_left }} day{{ s.computed_days_left|pluralize }}</span></td>
     </tr>{% endfor %}</tbody>
   </table></div>
 </div>
@@ -63,7 +63,7 @@
       <td><strong>{{ s.customer_name }}</strong></td><td>{{ s.customer_phone|default:"—" }}</td>
       <td>{{ s.service_type }} {{ s.package_type }}</td>
       <td>{{ s.staff.username }}</td><td>{{ s.branch.name }}</td>
-      <td><span class="badge b-exp">{{ s._computed_expiry|default:s.expiry_date }}</span></td>
+      <td><span class="badge b-exp">{{ s.computed_expiry }}</span></td>
     </tr>{% endfor %}</tbody>
   </table></div>
 </div>

@@ -227,7 +227,7 @@
     </div>
     <div style="overflow-x:auto;">
       <table class="data-table">
-        <thead><tr><th>Time</th><th>Customer</th><th>IUC</th><th>Phone</th><th>Service</th><th>Package</th><th>Type</th><th>Amount</th><th>Cost</th><th>Action</th></tr></thead>
+        <thead><tr><th>Time</th><th>Customer</th><th>IUC</th><th>Phone</th><th>Service</th><th>Package</th><th>Type</th><th>Amount</th><th>Expires</th><th>Days Left</th><th>Cost</th><th>Action</th></tr></thead>
         <tbody>
           {% for sale in today_sales %}
           <tr>
@@ -239,6 +239,8 @@
             <td>{{ sale.package_type }}</td>
             <td>{{ sale.get_transaction_type_display }}</td>
             <td>₦{{ sale.amount|floatformat:2 }}</td>
+                <td>{{ sale.computed_expiry|date:"d M Y"|default:"—" }}</td>
+                <td>{% if sale.computed_days_left is not None %}{% if sale.computed_days_left < 0 %}<span style="color:#ef4444;font-weight:700">Expired</span>{% elif sale.computed_days_left <= 3 %}<span style="color:#f97316;font-weight:700">{{ sale.computed_days_left }}d left</span>{% elif sale.computed_days_left <= 7 %}<span style="color:#eab308;font-weight:700">{{ sale.computed_days_left }}d left</span>{% else %}<span style="color:#22c55e">{{ sale.computed_days_left }}d left</span>{% endif %}{% else %}—{% endif %}</td>
             <td style="color:#ef4444;">₦{{ sale.cost_price|floatformat:2 }}</td>
             <td>
               <a href="{% url 'invoice_preview' sale_type='MULTICHOICE' sale_id=sale.id %}" class="btn-sm btn-outline" style="font-size:.72rem;padding:.25rem .55rem;">🧾 Invoice</a>

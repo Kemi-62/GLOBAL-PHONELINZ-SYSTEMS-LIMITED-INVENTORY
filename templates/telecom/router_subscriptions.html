@@ -65,7 +65,7 @@
           <td>{{ s.alt_phone|default:"—" }}</td>
           <td style="font-family:monospace;font-size:.78rem">{{ s.router_number }}</td>
           <td>{{ s.router_type }}</td>
-          <td><span class="badge b-expired">{{ s.expiry_date }} ({{ s.days_to_expiry|abs }} days ago)</span></td>
+          <td><span class="badge b-expired">{{ s.expiry_date }} ({{ s.days_to_expiry|cut:"-" }} days ago)</span></td>
           <td>Month {{ s.month_number }}</td>
           <td>
             <form method="POST" style="display:inline">

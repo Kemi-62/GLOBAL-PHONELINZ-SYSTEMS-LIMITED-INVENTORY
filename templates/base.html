@@ -373,6 +373,9 @@
         <a href="{% url 'manager_sales_today' %}" class="sidebar-link">
     <span class="icon">🧾</span> Today's Sales & Voids
 </a>
+            <a href="{% url 'router_subscriptions_overview' %}" class="sidebar-link">
+                <span class="icon">📡</span> Router Subscriptions
+            </a>
 <a href="{% url 'supplier_list' %}" class="sidebar-link">
     <span class="icon">🏭</span> Suppliers
 </a>
@@ -430,6 +433,9 @@
         <a href="{% url 'multichoice_dashboard' %}" class="sidebar-link">
             <span class="icon">📺</span> Dashboard
         </a>
+            <a href="{% url 'mc_subscription_retention' %}" class="sidebar-link">
+                <span class="icon">📺</span> Subscription Renewals
+            </a>
         <a href="{% url 'record_multichoice_sale' %}" class="sidebar-link">
             <span class="icon">➕</span> Record Subscription
         </a>
@@ -470,6 +476,10 @@
         <a href="{% url 'staff_dashboard' %}" class="sidebar-link">
             <span class="icon">📡</span> Dashboard
         </a>
+            <a href="{% url 'router_subscriptions' %}" class="sidebar-link">
+                <span class="icon">📡</span> Router Subscriptions
+            </a>
+            
         <a href="{% url 'record_physical_product' %}" class="sidebar-link">
             <span class="icon">📝</span> Record Activity
         </a>
