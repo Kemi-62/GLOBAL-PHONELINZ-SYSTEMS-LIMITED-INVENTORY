@@ -1,0 +1,22 @@
+name: GPSL Stock Alert
+
+on:
+  schedule:
+    - cron: '0 8 * * 1-6'
+  workflow_dispatch:
+
+jobs:
+  stock-alert:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Wake Render app
+        run: |
+          echo "Waking app..."
+          curl -s --max-time 60 "https://app.globalphonelinz.com/system/keepalive/" || true
+          sleep 15
+      - name: Send stock and subscription alerts
+        run: |
+          echo "Sending alerts..."
+          curl -s --max-time 120 \
+            "https://app.globalphonelinz.com/cron/stock-alert/?email=kemimonday00@gmail.com&secret=gpsl2026backup"
+          echo "Done"

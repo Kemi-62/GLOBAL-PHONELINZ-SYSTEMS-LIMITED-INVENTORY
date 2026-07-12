@@ -1,0 +1,22 @@
+name: GPSL Weekly Backup
+
+on:
+  schedule:
+    - cron: '30 17 * * 6'
+  workflow_dispatch:
+
+jobs:
+  weekly-backup:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Wake Render app
+        run: |
+          echo "Waking app..."
+          curl -s --max-time 60 "https://app.globalphonelinz.com/system/keepalive/" || true
+          sleep 15
+      - name: Run weekly backup
+        run: |
+          echo "Running backup..."
+          curl -s --max-time 180 \
+            "https://app.globalphonelinz.com/system/backup/?key=gpsl2026backup"
+          echo "Done"
