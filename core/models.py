@@ -1131,3 +1131,65 @@ class CatalogProduct(models.Model):
             f"Condition: {self.get_condition_display()}\n\n"
             f"Is this available? Please let me know. Thank you!"
         )
+
+
+class RouterSubscription(models.Model):
+    """
+    Tracks 4G/5G Router subscriptions sold by Telecom staff.
+    Policy: every router sale must have 2 months subscription recorded.
+    Each month = 30 days. Staff must renew before expiry.
+    """
+    ROUTER_TYPE_CHOICES = [
+        ('4G', '4G Router'),
+        ('5G', '5G Router'),
+    ]
+    staff             = models.ForeignKey('User', on_delete=models.CASCADE, related_name='router_subs')
+    branch            = models.ForeignKey('Branch', on_delete=models.CASCADE, related_name='router_subs')
+    customer_name     = models.CharField(max_length=150)
+    customer_phone    = models.CharField(max_length=20)
+    alt_phone         = models.CharField(max_length=20, blank=True, default='')
+    router_number     = models.CharField(max_length=100, help_text='Router serial / SIM number')
+    router_type       = models.CharField(max_length=20, choices=ROUTER_TYPE_CHOICES, default='4G')
+    network           = models.CharField(max_length=50, blank=True, default='MTN')
+    subscription_date = models.DateField(null=True, blank=True)
+    expiry_date       = models.DateField(null=True, blank=True, help_text='Auto-set to subscription_date + 30 days')
+    month_number      = models.PositiveIntegerField(default=1, help_text='1 = first month, 2 = second month')
+    amount            = models.DecimalField(max_digits=12, decimal_places=2, default=0)
+    is_active         = models.BooleanField(default=True)
+    notes             = models.TextField(blank=True, default='')
+    created_at        = models.DateTimeField(auto_now_add=True)
+
+    class Meta:
+        ordering = ['expiry_date']
+        verbose_name = 'Router Subscription'
+        verbose_name_plural = 'Router Subscriptions'
+
+    def save(self, *args, **kwargs):
+        from datetime import date, timedelta
+        if not self.subscription_date:
+            self.subscription_date = date.today()
+        if not self.expiry_date:
+            self.expiry_date = self.subscription_date + timedelta(days=30)
+        super().save(*args, **kwargs)
+
+    def __str__(self):
+        return f"{self.customer_name} — {self.router_number} (expires {self.expiry_date})"
+
+    @property
+    def days_to_expiry(self):
+        from datetime import date
+        if self.expiry_date:
+            return (self.expiry_date - date.today()).days
+        return 999
+
+    @property
+    def is_expired(self):
+        return self.days_to_expiry < 0
+
+    @property
+    def expiry_status(self):
+        days = self.days_to_expiry
+        if days < 0: return 'expired'
+        if days <= 3: return 'critical'
+        if days <= 7: return 'warning'
+        return 'active'

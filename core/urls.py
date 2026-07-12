@@ -170,4 +170,8 @@ urlpatterns = [
     path('catalog/product/<int:product_id>/edit/', views.catalog_edit_product, name='catalog_edit_product'),
     path('catalog/product/<int:product_id>/delete/', views.catalog_delete_product, name='catalog_delete_product'),
     path('catalog/category/add/', views.catalog_add_category, name='catalog_add_category'),
+    path('telecom/router-subscriptions/', views.router_subscriptions, name='router_subscriptions'),
+    path('director/router-subscriptions/', views.router_subscriptions_overview, name='router_subscriptions_overview'),
+    path('director/mc-retention/', views.mc_subscription_retention, name='mc_subscription_retention'),
+    path('manager/router-subscriptions/', views.router_subscriptions_overview, name='manager_router_subscriptions'),
 ]
