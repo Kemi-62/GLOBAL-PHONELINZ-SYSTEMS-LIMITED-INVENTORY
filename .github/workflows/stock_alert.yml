@@ -2,7 +2,7 @@ name: GPSL Stock Alert
 
 on:
   schedule:
-    - cron: '18 * * 1-6'
+    - cron: '30 18 * * 1-6'
   workflow_dispatch:
 
 jobs:
