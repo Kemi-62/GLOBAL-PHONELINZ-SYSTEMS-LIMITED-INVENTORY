@@ -18,5 +18,5 @@ jobs:
         run: |
           echo "Sending alerts..."
           curl -s --max-time 120 \
-            "https://app.globalphonelinz.com/cron/stock-alert/?email=kemimonday00@gmail.com&secret=gpsl2026backup"
+            "https://app.globalphonelinz.com/cron/stock-alert/?email=kemimonday00@gmail.com&key=gpsl2026backup"
           echo "Done"
