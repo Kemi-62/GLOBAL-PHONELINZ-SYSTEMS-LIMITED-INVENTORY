@@ -73,21 +73,35 @@ function openAttModal(type) {
   modal.style.display = 'flex';
 
   if (navigator.geolocation) {
-    navigator.geolocation.getCurrentPosition(
-      function(pos) {
-        document.getElementById('att-lat').value = pos.coords.latitude;
-        document.getElementById('att-lon').value = pos.coords.longitude;
-        locStatus.textContent = '✅ Location found (' + pos.coords.latitude.toFixed(4) + ', ' + pos.coords.longitude.toFixed(4) + ')';
-        locStatus.style.background = '#d1fae5';
-        locStatus.style.color = '#065f46';
-        submitBtn.disabled = false;
-      },
-      function(err) {
-        locStatus.textContent = '❌ Could not get location. Enable GPS and try again.';
+    function tryGetLocation(highAccuracy) {
+    // First try quick low-accuracy, then fallback to high-accuracy
+    function tryGetLocation(highAccuracy) {
+      navigator.geolocation.getCurrentPosition(
+        function(pos) {
+          document.getElementById('att-lat').value = pos.coords.latitude;
+          document.getElementById('att-lon').value = pos.coords.longitude;
+          locStatus.textContent = '✅ Location found (' + pos.coords.latitude.toFixed(4) + ', ' + pos.coords.longitude.toFixed(4) + ')';
+          locStatus.style.background = '#d1fae5';
+          locStatus.style.color = '#065f46';
+          submitBtn.disabled = false;
+        },
+        function(err) {
+          if (!highAccuracy) {
+            // Retry with high accuracy
+            locStatus.textContent = '📡 Retrying with GPS…';
+            tryGetLocation(true);
+            return;
+          }
+          var errMsg = '❌ Could not get location. ';
+          if (err.code === 1) errMsg += 'Permission denied — please allow location access in your browser.';
+          else if (err.code === 2) errMsg += 'GPS signal not available. Move outdoors and try again.';
+          else if (err.code === 3) errMsg += 'Location timed out. Check your GPS is on and try again.';
+          else errMsg += 'Enable GPS and try again.';
+          locStatus.textContent = errMsg;
         locStatus.style.background = '#fee2e2';
         locStatus.style.color = '#991b1b';
       },
-      { enableHighAccuracy: true, timeout: 10000 }
+      { enableHighAccuracy: highAccuracy, timeout: highAccuracy ? 20000 : 8000, maximumAge: 30000 }
     );
   } else {
     locStatus.textContent = '❌ Geolocation not supported on this device.';

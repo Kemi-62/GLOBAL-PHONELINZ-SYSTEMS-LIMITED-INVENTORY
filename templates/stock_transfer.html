@@ -1,0 +1,149 @@
+{% extends "base.html" %}
+{% block content %}
+<style>
+.page-title{font-size:1.2rem;font-weight:700;color:#004F9F;margin:0}
+.card{background:#fff;border:1px solid #e2e8f0;border-radius:10px;padding:1.1rem 1.3rem;margin-bottom:1rem}
+.card-title{font-size:.92rem;font-weight:700;margin:0 0 .85rem}
+.form-row{display:grid;grid-template-columns:repeat(auto-fit,minmax(160px,1fr));gap:.75rem}
+.form-group{margin-bottom:.75rem}
+.form-group label{font-size:.75rem;font-weight:600;color:#374151;display:block;margin-bottom:.25rem}
+.form-group input,.form-group select,.form-group textarea{width:100%;padding:.5rem .75rem;border:1.5px solid #e2e8f0;border-radius:7px;font-size:.85rem;box-sizing:border-box}
+.btn-sm{padding:.45rem .9rem;font-size:.82rem;border-radius:6px;border:none;cursor:pointer;font-weight:600;text-decoration:none;display:inline-block}
+.btn-primary{background:#004F9F;color:#fff}.btn-outline{background:transparent;border:1px solid #d1d5db;color:#374151}
+.table{width:100%;border-collapse:collapse;font-size:.82rem}
+.table th{background:#004F9F;color:#fff;padding:.55rem .8rem;text-align:left;font-weight:600}
+.table td{padding:.55rem .8rem;border-bottom:1px solid #f1f5f9;vertical-align:middle}
+.badge{display:inline-block;padding:.18rem .55rem;border-radius:999px;font-size:.68rem;font-weight:700}
+.b-blue{background:#dbeafe;color:#1e40af}
+.arrow{color:#004F9F;font-weight:700}
+</style>
+
+<div style="display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:.75rem;margin-bottom:1.25rem">
+  <h1 class="page-title">🔄 Stock Transfer</h1>
+  {% if user.role == 'DIRECTOR' %}
+  <a href="{% url 'stock_transfer_history' %}" class="btn-sm btn-outline">📋 Full History</a>
+  {% endif %}
+</div>
+
+{% if messages %}{% for m in messages %}
+<div style="background:{% if m.tags == 'error' %}#fee2e2{% else %}#dcfce7{% endif %};border-radius:7px;padding:.65rem 1rem;font-size:.83rem;margin-bottom:1rem;">{{ m }}</div>
+{% endfor %}{% endif %}
+
+<div class="card">
+  <p class="card-title">New Transfer</p>
+  <form method="POST" id="transfer-form">
+    {% csrf_token %}
+    <div class="form-group">
+      <label>Transfer Type *</label>
+      <select name="transfer_type" id="transfer_type" onchange="updateFields()" required>
+        <option value="">— Select Type —</option>
+        {% if user.role == 'DIRECTOR' %}
+        <option value="DIRECTOR_TO_BRANCH">Director Safe → Branch Safe</option>
+        <option value="BRANCH_TO_DIRECTOR">Branch Safe → Director Safe (Return)</option>
+        {% endif %}
+        <option value="BRANCH_TO_BRANCH">Branch → Branch</option>
+        <option value="BRANCH_TO_STAFF">Branch Safe → Staff Stock</option>
+        <option value="STAFF_TO_BRANCH">Staff Stock → Branch Safe (Return)</option>
+      </select>
+    </div>
+    <div class="form-row">
+      <div class="form-group">
+        <label>Product *</label>
+        <select name="product" required>
+          <option value="">— Select Product —</option>
+          {% for p in products %}<option value="{{ p.id }}">{{ p.model_name }}</option>{% endfor %}
+        </select>
+      </div>
+      <div class="form-group">
+        <label>Quantity *</label>
+        <input type="number" name="quantity" min="1" required placeholder="How many units">
+      </div>
+    </div>
+
+    <div class="form-row">
+      <div class="form-group" id="from_branch_wrap" style="display:none">
+        <label>From Branch</label>
+        <select name="from_branch" id="from_branch">
+          <option value="">— Select Source Branch —</option>
+          {% for b in branches %}<option value="{{ b.id }}">{{ b.name }}</option>{% endfor %}
+        </select>
+      </div>
+      <div class="form-group" id="to_branch_wrap" style="display:none">
+        <label>To Branch</label>
+        <select name="to_branch" id="to_branch">
+          <option value="">— Select Destination Branch —</option>
+          {% for b in branches %}<option value="{{ b.id }}">{{ b.name }}</option>{% endfor %}
+        </select>
+      </div>
+      <div class="form-group" id="to_staff_wrap" style="display:none">
+        <label>Staff Member</label>
+        <select name="to_staff" id="to_staff">
+          <option value="">— Select Staff —</option>
+          {% for s in staff_list %}<option value="{{ s.id }}">{{ s.username }} ({{ s.branch.name|default:"No branch" }})</option>{% endfor %}
+        </select>
+      </div>
+    </div>
+
+    <div class="form-group">
+      <label>Notes (optional)</label>
+      <textarea name="notes" rows="2" placeholder="Reason for transfer, any remarks..."></textarea>
+    </div>
+    <button type="submit" class="btn-sm btn-primary" style="width:100%">Complete Transfer</button>
+  </form>
+</div>
+
+<div class="card">
+  <p class="card-title">Recent Transfers</p>
+  {% if transfers %}
+  <div style="overflow-x:auto">
+    <table class="table">
+      <thead><tr><th>Date</th><th>Product</th><th>Qty</th><th>From</th><th></th><th>To</th><th>By</th><th>Type</th></tr></thead>
+      <tbody>
+        {% for t in transfers %}
+        <tr>
+          <td style="font-size:.75rem">{{ t.created_at|date:"d M Y H:i" }}</td>
+          <td><strong>{{ t.product.model_name }}</strong></td>
+          <td><strong>{{ t.quantity }}</strong></td>
+          <td>{{ t.source_label }}</td>
+          <td class="arrow">→</td>
+          <td>{{ t.destination_label }}</td>
+          <td style="font-size:.75rem;color:#64748b">{{ t.initiated_by.username }}</td>
+          <td><span class="badge b-blue" style="font-size:.62rem">{{ t.get_transfer_type_display }}</span></td>
+        </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+  {% else %}
+  <p style="color:#94a3b8;text-align:center;padding:2rem">No transfers recorded yet.</p>
+  {% endif %}
+</div>
+
+<script>
+function updateFields() {
+  const type = document.getElementById('transfer_type').value;
+  const fromBranch = document.getElementById('from_branch_wrap');
+  const toBranch = document.getElementById('to_branch_wrap');
+  const toStaff = document.getElementById('to_staff_wrap');
+
+  fromBranch.style.display = 'none';
+  toBranch.style.display = 'none';
+  toStaff.style.display = 'none';
+
+  if (type === 'DIRECTOR_TO_BRANCH') {
+    toBranch.style.display = '';
+  } else if (type === 'BRANCH_TO_BRANCH') {
+    fromBranch.style.display = '';
+    toBranch.style.display = '';
+  } else if (type === 'BRANCH_TO_STAFF') {
+    fromBranch.style.display = '';
+    toStaff.style.display = '';
+  } else if (type === 'BRANCH_TO_DIRECTOR') {
+    fromBranch.style.display = '';
+  } else if (type === 'STAFF_TO_BRANCH') {
+    toStaff.style.display = '';
+    toBranch.style.display = '';
+  }
+}
+</script>
+{% endblock %}
