@@ -52,88 +52,132 @@
 
 <script>
 var attType = 'in';
+var _geoAttempts = 0;
+var _geoTimer = null;
 
 function openAttModal(type) {
   attType = type;
-  const modal = document.getElementById('att-modal');
-  const title = document.getElementById('att-modal-title');
-  const submitBtn = document.getElementById('att-submit-btn');
-  const form = document.getElementById('att-form');
-  const locStatus = document.getElementById('att-location-status');
+  _geoAttempts = 0;
 
-  title.textContent = type === 'in' ? '🌅 Morning Check-In' : '🌆 Evening Check-Out';
+  var modal     = document.getElementById('att-modal');
+  var title     = document.getElementById('att-modal-title');
+  var submitBtn = document.getElementById('att-submit-btn');
+  var form      = document.getElementById('att-form');
+  var locStatus = document.getElementById('att-location-status');
+
+  title.textContent     = type === 'in' ? '🌅 Morning Check-In' : '🌆 Evening Check-Out';
   submitBtn.textContent = type === 'in' ? 'Submit Check-In' : 'Submit Check-Out';
-  submitBtn.className = 'btn-sm ' + (type === 'in' ? 'btn-success' : 'btn-danger');
-  submitBtn.style.flex = '1';
-  form.action = type === 'in' ? '{% url "check_in" %}' : '{% url "check_out" %}';
-  submitBtn.disabled = true;
+  submitBtn.className   = 'btn-sm ' + (type === 'in' ? 'btn-success' : 'btn-danger');
+  submitBtn.style.flex  = '1';
+  form.action           = type === 'in' ? '{% url "check_in" %}' : '{% url "check_out" %}';
+  submitBtn.disabled    = true;
+
   locStatus.style.background = '#eff6ff';
-  locStatus.style.color = '#1e40af';
-  locStatus.textContent = '📡 Getting your location…';
+  locStatus.style.color      = '#1e40af';
+  locStatus.textContent      = '📡 Getting your location…';
+
+  // Show modal
   modal.style.display = 'flex';
 
-  if (navigator.geolocation) {
-    function tryGetLocation(highAccuracy) {
-    // First try quick low-accuracy, then fallback to high-accuracy
-    function tryGetLocation(highAccuracy) {
-      navigator.geolocation.getCurrentPosition(
-        function(pos) {
-          document.getElementById('att-lat').value = pos.coords.latitude;
-          document.getElementById('att-lon').value = pos.coords.longitude;
-          locStatus.textContent = '✅ Location found (' + pos.coords.latitude.toFixed(4) + ', ' + pos.coords.longitude.toFixed(4) + ')';
-          locStatus.style.background = '#d1fae5';
-          locStatus.style.color = '#065f46';
-          submitBtn.disabled = false;
-        },
-        function(err) {
-          if (!highAccuracy) {
-            // Retry with high accuracy
-            locStatus.textContent = '📡 Retrying with GPS…';
-            tryGetLocation(true);
-            return;
-          }
-          var errMsg = '❌ Could not get location. ';
-          if (err.code === 1) errMsg += 'Permission denied — please allow location access in your browser.';
-          else if (err.code === 2) errMsg += 'GPS signal not available. Move outdoors and try again.';
-          else if (err.code === 3) errMsg += 'Location timed out. Check your GPS is on and try again.';
-          else errMsg += 'Enable GPS and try again.';
-          locStatus.textContent = errMsg;
-        locStatus.style.background = '#fee2e2';
-        locStatus.style.color = '#991b1b';
-      },
-      { enableHighAccuracy: highAccuracy, timeout: highAccuracy ? 20000 : 8000, maximumAge: 30000 }
-    );
-  } else {
-    locStatus.textContent = '❌ Geolocation not supported on this device.';
+  // Start geolocation
+  _tryGetLocation(false, locStatus, submitBtn);
+}
+
+function _tryGetLocation(highAccuracy, locStatus, submitBtn) {
+  _geoAttempts++;
+
+  if (!navigator.geolocation) {
+    locStatus.innerHTML = '❌ Geolocation is not supported on this browser.';
     locStatus.style.background = '#fee2e2';
     locStatus.style.color = '#991b1b';
+    return;
   }
+
+  if (_geoAttempts > 1) {
+    locStatus.textContent = '📡 Retrying with GPS (attempt ' + _geoAttempts + '/3)…';
+  }
+
+  navigator.geolocation.getCurrentPosition(
+    function(pos) {
+      // SUCCESS
+      document.getElementById('att-lat').value = pos.coords.latitude;
+      document.getElementById('att-lon').value = pos.coords.longitude;
+      var acc = Math.round(pos.coords.accuracy);
+      locStatus.textContent = '✅ Location found — Accuracy: ' + acc + 'm (' + pos.coords.latitude.toFixed(4) + ', ' + pos.coords.longitude.toFixed(4) + ')';
+      locStatus.style.background = '#d1fae5';
+      locStatus.style.color = '#065f46';
+      submitBtn.disabled = false;
+    },
+    function(err) {
+      // FAILURE
+      if (err.code === 3 && _geoAttempts < 3) {
+        // Timeout — retry with high accuracy
+        _tryGetLocation(true, locStatus, submitBtn);
+        return;
+      }
+
+      var msg = '❌ ';
+      if (err.code === 1) {
+        msg += 'Permission denied. Open browser settings → Site Settings → Location → Allow for this site.';
+      } else if (err.code === 2) {
+        msg += 'GPS signal not available. Move to an open area and check Location is enabled in phone settings.';
+      } else if (err.code === 3) {
+        msg += 'Location timed out after ' + _geoAttempts + ' attempts. Ensure GPS is ON and try again.';
+      } else {
+        msg += 'Unknown error (' + err.code + '). Enable GPS and try again.';
+      }
+
+      locStatus.style.background = '#fee2e2';
+      locStatus.style.color = '#991b1b';
+      locStatus.innerHTML = msg + ' <button onclick="_retryLocation()" style="margin-top:.4rem;display:inline-block;padding:.22rem .65rem;background:#004F9F;color:#fff;border:none;border-radius:5px;font-size:.73rem;cursor:pointer;">🔄 Try Again</button>';
+    },
+    {
+      enableHighAccuracy: highAccuracy,
+      timeout: highAccuracy ? 25000 : 8000,
+      maximumAge: 60000
+    }
+  );
+}
+
+function _retryLocation() {
+  var locStatus = document.getElementById('att-location-status');
+  var submitBtn = document.getElementById('att-submit-btn');
+  _geoAttempts = 0;
+  locStatus.style.background = '#eff6ff';
+  locStatus.style.color = '#1e40af';
+  locStatus.textContent = '📡 Retrying…';
+  _tryGetLocation(true, locStatus, submitBtn);
 }
 
 function closeAttModal() {
   document.getElementById('att-modal').style.display = 'none';
+  _geoAttempts = 0;
 }
 
 document.getElementById('att-form').addEventListener('submit', function(e) {
   e.preventDefault();
-  const form = this;
-  const data = new FormData(form);
-  const submitBtn = document.getElementById('att-submit-btn');
-  submitBtn.disabled = true;
+  var form      = this;
+  var data      = new FormData(form);
+  var submitBtn = document.getElementById('att-submit-btn');
+  submitBtn.disabled    = true;
   submitBtn.textContent = 'Submitting…';
 
   fetch(form.action, {
     method: 'POST',
     body: data,
-    headers: { 'X-Requested-With': 'XMLHttpRequest', 'X-CSRFToken': (document.cookie.match('(^|;) ?csrftoken=([^;]*)')||[])[2]||'' }, credentials: 'same-origin'
+    headers: {
+      'X-Requested-With': 'XMLHttpRequest',
+      'X-CSRFToken': (document.cookie.match('(^|;) ?csrftoken=([^;]*)')||[])[2]||''
+    },
+    credentials: 'same-origin'
   })
-  .then(r => r.json())
+  .then(function(r) { return r.json(); })
   .then(function(res) {
     closeAttModal();
     if (res.success) {
       showToast('success', attType === 'in' ? 'Checked In!' : 'Checked Out!', res.success);
     } else {
-      showToast('error', 'Could Not ' + (attType === 'in' ? 'Check In' : 'Check Out'), res.error);
+      showToast('error', 'Could Not ' + (attType === 'in' ? 'Check In' : 'Check Out'), res.error || 'Unknown error');
     }
     submitBtn.disabled = false;
   })
@@ -145,18 +189,18 @@ document.getElementById('att-form').addEventListener('submit', function(e) {
 });
 
 function showToast(type, title, msg) {
-  const toast = document.getElementById('att-toast');
-  const icon = document.getElementById('att-toast-icon');
-  const titleEl = document.getElementById('att-toast-title');
-  const msgEl = document.getElementById('att-toast-msg');
+  var toast   = document.getElementById('att-toast');
+  var icon    = document.getElementById('att-toast-icon');
+  var titleEl = document.getElementById('att-toast-title');
+  var msgEl   = document.getElementById('att-toast-msg');
 
-  icon.textContent = type === 'success' ? '✅' : '❌';
+  icon.textContent    = type === 'success' ? '✅' : '❌';
   titleEl.textContent = title;
-  msgEl.textContent = msg;
+  msgEl.textContent   = msg;
   toast.style.background = type === 'success' ? '#d1fae5' : '#fee2e2';
-  toast.style.color = type === 'success' ? '#065f46' : '#991b1b';
-  toast.style.border = '1px solid ' + (type === 'success' ? '#6ee7b7' : '#fca5a5');
-  toast.style.display = 'block';
+  toast.style.color      = type === 'success' ? '#065f46' : '#991b1b';
+  toast.style.border     = '1px solid ' + (type === 'success' ? '#6ee7b7' : '#fca5a5');
+  toast.style.display    = 'block';
 
   clearTimeout(window._toastTimer);
   window._toastTimer = setTimeout(closeToast, 6000);
