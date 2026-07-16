@@ -1193,3 +1193,45 @@ class RouterSubscription(models.Model):
         if days <= 3: return 'critical'
         if days <= 7: return 'warning'
         return 'active'
+
+
+class StockTransfer(models.Model):
+    """Stock movement between Director Safe, Branch Safe, Staff Stock."""
+    TRANSFER_TYPE_CHOICES = [
+        ('DIRECTOR_TO_BRANCH',  'Director Safe → Branch Safe'),
+        ('BRANCH_TO_BRANCH',    'Branch → Branch'),
+        ('BRANCH_TO_STAFF',     'Branch Safe → Staff Stock'),
+        ('STAFF_TO_BRANCH',     'Staff Stock → Branch Safe'),
+        ('BRANCH_TO_DIRECTOR',  'Branch Safe → Director Safe'),
+    ]
+    transfer_type  = models.CharField(max_length=30, choices=TRANSFER_TYPE_CHOICES)
+    product        = models.ForeignKey('Product', on_delete=models.CASCADE, related_name='transfers')
+    quantity       = models.PositiveIntegerField()
+    notes          = models.TextField(blank=True, default='')
+    from_branch    = models.ForeignKey('Branch', on_delete=models.SET_NULL, null=True, blank=True, related_name='transfers_out')
+    to_branch      = models.ForeignKey('Branch', on_delete=models.SET_NULL, null=True, blank=True, related_name='transfers_in')
+    to_staff       = models.ForeignKey('User', on_delete=models.SET_NULL, null=True, blank=True, related_name='transfers_received')
+    initiated_by   = models.ForeignKey('User', on_delete=models.CASCADE, related_name='transfers_initiated')
+    created_at     = models.DateTimeField(auto_now_add=True)
+
+    class Meta:
+        ordering = ['-created_at']
+        verbose_name = 'Stock Transfer'
+        verbose_name_plural = 'Stock Transfers'
+
+    def __str__(self):
+        return f"{self.product.model_name} x{self.quantity} ({self.get_transfer_type_display()})"
+
+    @property
+    def source_label(self):
+        if self.from_branch:
+            return self.from_branch.name
+        return "Director Safe"
+
+    @property
+    def destination_label(self):
+        if self.to_branch:
+            return self.to_branch.name
+        if self.to_staff:
+            return f"{self.to_staff.username} (Staff)"
+        return "Director Safe"

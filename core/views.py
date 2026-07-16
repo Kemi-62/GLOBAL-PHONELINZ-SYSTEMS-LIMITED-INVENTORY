@@ -5871,3 +5871,72 @@ def stock_transfer_history(request):
         'type_flt': type_flt,
         'transfer_types': StockTransfer.TRANSFER_TYPE_CHOICES,
     })
+
+
+def custom_password_reset(request):
+    """
+    Password reset with username + email verification.
+    Both must match the account before sending reset email.
+    """
+    from django.contrib.auth.forms import PasswordResetForm
+    from django.core.mail import send_mail
+    from django.template.loader import render_to_string
+    from django.utils.http import urlsafe_base64_encode
+    from django.utils.encoding import force_bytes
+    from django.contrib.auth.tokens import default_token_generator
+    import threading
+
+    error = None
+    success = False
+
+    if request.method == 'POST':
+        username = request.POST.get('username', '').strip()
+        email    = request.POST.get('email', '').strip().lower()
+
+        try:
+            user = User.objects.get(username__iexact=username)
+            if user.email.lower() != email:
+                error = "The email address does not match our records for this username."
+            else:
+                # Send reset email in background thread
+                def send_reset():
+                    try:
+                        token = default_token_generator.make_token(user)
+                        uid   = urlsafe_base64_encode(force_bytes(user.pk))
+                        domain = request.get_host()
+                        protocol = 'https' if request.is_secure() else 'http'
+                        reset_url = f"{protocol}://{domain}/reset/{uid}/{token}/"
+
+                        subject = "GPSL Business Suite - Password Reset"
+                        body = f"""Hello {user.username},
+
+You requested a password reset for your GPSL Business Suite account.
+
+Click the link below to set a new password:
+{reset_url}
+
+This link expires in 3 days.
+
+If you did not request this, ignore this email.
+
+— GPSL Business Suite
+"""
+                        send_mail(
+                            subject, body,
+                            settings.DEFAULT_FROM_EMAIL,
+                            [user.email],
+                            fail_silently=False
+                        )
+                    except Exception as e:
+                        pass
+
+                threading.Thread(target=send_reset, daemon=True).start()
+                success = True
+        except User.DoesNotExist:
+            error = "No account found with that username."
+
+    return render(request, 'registration/password_reset_form.html', {
+        'error': error,
+        'success': success,
+        'custom_reset': True,
+    })

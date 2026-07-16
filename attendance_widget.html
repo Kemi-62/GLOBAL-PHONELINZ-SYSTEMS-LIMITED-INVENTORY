@@ -1,0 +1,212 @@
+{% comment %}
+  Include this partial in any dashboard that needs check-in/out:
+  {% include "partials/attendance_widget.html" %}
+{% endcomment %}
+
+<!-- ATTENDANCE TOAST NOTIFICATION -->
+<div id="att-toast" style="display:none;position:fixed;top:1rem;right:1rem;z-index:9999;max-width:340px;border-radius:10px;padding:1rem 1.2rem;box-shadow:0 4px 20px rgba(0,0,0,.15);font-size:.88rem;font-weight:500;transition:all .3s;">
+  <div style="display:flex;align-items:flex-start;gap:.7rem;">
+    <span id="att-toast-icon" style="font-size:1.3rem;flex-shrink:0;">✅</span>
+    <div>
+      <div id="att-toast-title" style="font-weight:700;margin-bottom:.2rem;"></div>
+      <div id="att-toast-msg" style="font-weight:400;line-height:1.4;"></div>
+    </div>
+    <button onclick="closeToast()" style="background:none;border:none;cursor:pointer;font-size:1.1rem;color:inherit;margin-left:auto;flex-shrink:0;">✕</button>
+  </div>
+</div>
+
+<!-- CHECK IN / CHECK OUT BUTTONS -->
+<div style="display:flex;gap:.6rem;flex-wrap:wrap;margin-bottom:1rem;" id="att-buttons">
+  <button onclick="openAttModal('in')" class="btn-sm btn-success" style="display:flex;align-items:center;gap:.4rem;">
+    🌅 Check In
+  </button>
+  <button onclick="openAttModal('out')" class="btn-sm btn-danger" style="display:flex;align-items:center;gap:.4rem;">
+    🌆 Check Out
+  </button>
+  <a href="{% url 'attendance_history' %}" class="btn-sm btn-outline">📋 History</a>
+</div>
+
+<!-- ATTENDANCE MODAL -->
+<div id="att-modal" style="display:none;position:fixed;top:0;left:0;width:100%;height:100%;background:rgba(0,0,0,.5);z-index:9998;align-items:center;justify-content:center;">
+  <div style="background:#fff;border-radius:12px;padding:1.5rem;max-width:380px;width:90%;margin:auto;position:relative;top:50%;transform:translateY(-50%);">
+    <h3 id="att-modal-title" style="margin:0 0 1rem;color:#004F9F;">🌅 Morning Check-In</h3>
+    <div id="att-location-status" style="background:#eff6ff;border-radius:6px;padding:.6rem .9rem;font-size:.82rem;color:#1e40af;margin-bottom:1rem;">
+      📡 Getting your location…
+    </div>
+    <form id="att-form" method="POST" enctype="multipart/form-data">
+      {% csrf_token %}
+      <input type="hidden" name="latitude" id="att-lat">
+      <input type="hidden" name="longitude" id="att-lon">
+      <div style="margin-bottom:.8rem;">
+        <label style="font-size:.78rem;font-weight:600;color:#374151;display:block;margin-bottom:.3rem;">Selfie Photo *</label>
+        <input type="file" name="selfie" accept="image/*" capture="user" required
+               style="width:100%;padding:.4rem;border:1px solid #d1d5db;border-radius:6px;font-size:.83rem;">
+      </div>
+      <div style="display:flex;gap:.6rem;">
+        <button type="submit" id="att-submit-btn" class="btn-sm btn-success" style="flex:1;" disabled>Submit</button>
+        <button type="button" onclick="closeAttModal()" class="btn-sm btn-outline" style="flex:1;">Cancel</button>
+      </div>
+    </form>
+  </div>
+</div>
+
+<script>
+var attType = 'in';
+var _geoAttempts = 0;
+var _geoTimer = null;
+
+function openAttModal(type) {
+  attType = type;
+  _geoAttempts = 0;
+
+  var modal     = document.getElementById('att-modal');
+  var title     = document.getElementById('att-modal-title');
+  var submitBtn = document.getElementById('att-submit-btn');
+  var form      = document.getElementById('att-form');
+  var locStatus = document.getElementById('att-location-status');
+
+  title.textContent     = type === 'in' ? '🌅 Morning Check-In' : '🌆 Evening Check-Out';
+  submitBtn.textContent = type === 'in' ? 'Submit Check-In' : 'Submit Check-Out';
+  submitBtn.className   = 'btn-sm ' + (type === 'in' ? 'btn-success' : 'btn-danger');
+  submitBtn.style.flex  = '1';
+  form.action           = type === 'in' ? '{% url "check_in" %}' : '{% url "check_out" %}';
+  submitBtn.disabled    = true;
+
+  locStatus.style.background = '#eff6ff';
+  locStatus.style.color      = '#1e40af';
+  locStatus.textContent      = '📡 Getting your location…';
+
+  // Show modal
+  modal.style.display = 'flex';
+
+  // Start geolocation
+  _tryGetLocation(false, locStatus, submitBtn);
+}
+
+function _tryGetLocation(highAccuracy, locStatus, submitBtn) {
+  _geoAttempts++;
+
+  if (!navigator.geolocation) {
+    locStatus.innerHTML = '❌ Geolocation is not supported on this browser.';
+    locStatus.style.background = '#fee2e2';
+    locStatus.style.color = '#991b1b';
+    return;
+  }
+
+  if (_geoAttempts > 1) {
+    locStatus.textContent = '📡 Retrying with GPS (attempt ' + _geoAttempts + '/3)…';
+  }
+
+  navigator.geolocation.getCurrentPosition(
+    function(pos) {
+      // SUCCESS
+      document.getElementById('att-lat').value = pos.coords.latitude;
+      document.getElementById('att-lon').value = pos.coords.longitude;
+      var acc = Math.round(pos.coords.accuracy);
+      locStatus.textContent = '✅ Location found — Accuracy: ' + acc + 'm (' + pos.coords.latitude.toFixed(4) + ', ' + pos.coords.longitude.toFixed(4) + ')';
+      locStatus.style.background = '#d1fae5';
+      locStatus.style.color = '#065f46';
+      submitBtn.disabled = false;
+    },
+    function(err) {
+      // FAILURE
+      if (err.code === 3 && _geoAttempts < 3) {
+        // Timeout — retry with high accuracy
+        _tryGetLocation(true, locStatus, submitBtn);
+        return;
+      }
+
+      var msg = '❌ ';
+      if (err.code === 1) {
+        msg += 'Permission denied. Open browser settings → Site Settings → Location → Allow for this site.';
+      } else if (err.code === 2) {
+        msg += 'GPS signal not available. Move to an open area and check Location is enabled in phone settings.';
+      } else if (err.code === 3) {
+        msg += 'Location timed out after ' + _geoAttempts + ' attempts. Ensure GPS is ON and try again.';
+      } else {
+        msg += 'Unknown error (' + err.code + '). Enable GPS and try again.';
+      }
+
+      locStatus.style.background = '#fee2e2';
+      locStatus.style.color = '#991b1b';
+      locStatus.innerHTML = msg + ' <button onclick="_retryLocation()" style="margin-top:.4rem;display:inline-block;padding:.22rem .65rem;background:#004F9F;color:#fff;border:none;border-radius:5px;font-size:.73rem;cursor:pointer;">🔄 Try Again</button>';
+    },
+    {
+      enableHighAccuracy: highAccuracy,
+      timeout: highAccuracy ? 25000 : 8000,
+      maximumAge: 60000
+    }
+  );
+}
+
+function _retryLocation() {
+  var locStatus = document.getElementById('att-location-status');
+  var submitBtn = document.getElementById('att-submit-btn');
+  _geoAttempts = 0;
+  locStatus.style.background = '#eff6ff';
+  locStatus.style.color = '#1e40af';
+  locStatus.textContent = '📡 Retrying…';
+  _tryGetLocation(true, locStatus, submitBtn);
+}
+
+function closeAttModal() {
+  document.getElementById('att-modal').style.display = 'none';
+  _geoAttempts = 0;
+}
+
+document.getElementById('att-form').addEventListener('submit', function(e) {
+  e.preventDefault();
+  var form      = this;
+  var data      = new FormData(form);
+  var submitBtn = document.getElementById('att-submit-btn');
+  submitBtn.disabled    = true;
+  submitBtn.textContent = 'Submitting…';
+
+  fetch(form.action, {
+    method: 'POST',
+    body: data,
+    headers: {
+      'X-Requested-With': 'XMLHttpRequest',
+      'X-CSRFToken': (document.cookie.match('(^|;) ?csrftoken=([^;]*)')||[])[2]||''
+    },
+    credentials: 'same-origin'
+  })
+  .then(function(r) { return r.json(); })
+  .then(function(res) {
+    closeAttModal();
+    if (res.success) {
+      showToast('success', attType === 'in' ? 'Checked In!' : 'Checked Out!', res.success);
+    } else {
+      showToast('error', 'Could Not ' + (attType === 'in' ? 'Check In' : 'Check Out'), res.error || 'Unknown error');
+    }
+    submitBtn.disabled = false;
+  })
+  .catch(function() {
+    closeAttModal();
+    showToast('error', 'Network Error', 'Something went wrong. Please try again.');
+    submitBtn.disabled = false;
+  });
+});
+
+function showToast(type, title, msg) {
+  var toast   = document.getElementById('att-toast');
+  var icon    = document.getElementById('att-toast-icon');
+  var titleEl = document.getElementById('att-toast-title');
+  var msgEl   = document.getElementById('att-toast-msg');
+
+  icon.textContent    = type === 'success' ? '✅' : '❌';
+  titleEl.textContent = title;
+  msgEl.textContent   = msg;
+  toast.style.background = type === 'success' ? '#d1fae5' : '#fee2e2';
+  toast.style.color      = type === 'success' ? '#065f46' : '#991b1b';
+  toast.style.border     = '1px solid ' + (type === 'success' ? '#6ee7b7' : '#fca5a5');
+  toast.style.display    = 'block';
+
+  clearTimeout(window._toastTimer);
+  window._toastTimer = setTimeout(closeToast, 6000);
+}
+
+function closeToast() {
+  document.getElementById('att-toast').style.display = 'none';
+}
+</script>

@@ -9,10 +9,7 @@ urlpatterns = [
     path('accounts/login/', views.custom_login, name='account_login'),
 
     # Password Reset (Django built-in)
-    path('password-reset/', auth_views.PasswordResetView.as_view(
-        template_name='registration/password_reset_form.html',
-        email_template_name='registration/password_reset_email.html',
-    ), name='password_reset'),
+    path('password-reset/', views.custom_password_reset, name='password_reset'),
     path('password-reset/done/', auth_views.PasswordResetDoneView.as_view(
         template_name='registration/password_reset_done.html',
     ), name='password_reset_done'),
