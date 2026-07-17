@@ -173,4 +173,5 @@ urlpatterns = [
     path('manager/router-subscriptions/', views.router_subscriptions_overview, name='manager_router_subscriptions'),
     path('stock-transfer/', views.stock_transfer, name='stock_transfer'),
     path('director/stock-transfer-history/', views.stock_transfer_history, name='stock_transfer_history'),
+    path('system/email-test/', views.email_diagnostic, name='email_diagnostic'),
 ]
