@@ -229,7 +229,7 @@ DATA_UPLOAD_MAX_MEMORY_SIZE = 5 * 1024 * 1024  # 5MB
 # EMAIL CONFIGURATION — via environment only
 # ═══════════════════════════════════════════════════════
 
-EMAIL_BACKEND = 'django.core.mail.backends.smtp.EmailBackend'
+EMAIL_BACKEND = config('EMAIL_BACKEND', default='django.core.mail.backends.smtp.EmailBackend')
 EMAIL_HOST = config('EMAIL_HOST', default='smtp.gmail.com')
 EMAIL_PORT = config('EMAIL_PORT', default=587, cast=int)
 EMAIL_TIMEOUT = 10  # Fail fast - prevent password reset hanging
@@ -309,3 +309,6 @@ COMPANY_EMAIL = "globalphonelinzsystems@gmail.com"
 COMPANY_PHONE = "+234 XXX XXX XXXX"
 COMPANY_WHATSAPP = "+234 XXX XXX XXXX"
 COMPANY_ADDRESS = "Uyo, Akwa Ibom State, Nigeria"
+
+# Brevo API Email
+BREVO_API_KEY = config('BREVO_API_KEY', default='')
