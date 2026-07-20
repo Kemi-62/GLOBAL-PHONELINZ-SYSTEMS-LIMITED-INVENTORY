@@ -80,7 +80,7 @@ pre{background:#f5f5f5;padding:.8rem;border-radius:6px;font-size:.75rem;overflow
           {% for stock in stocks %}
           <tr>
             <td><strong>{{ stock.product.model_name }}</strong></td>
-            <td><span style="display:inline-block;width:14px;height:14px;border-radius:50%;border:1px solid #d1d5db;background:{{ stock.product.color|default:'#e5e7eb' }};vertical-align:middle;"></span></td>
+            <td>{{ stock.product.color|default:"—" }}</td>
             <td style="color:#9ca3af;">{{ stock.product.subcategory.category.name|default:"—" }}</td>
             <td>&#8358;{{ stock.product.cost_price|floatformat:0 }}</td>
             <td>&#8358;{{ stock.product.selling_price|floatformat:0 }}</td>

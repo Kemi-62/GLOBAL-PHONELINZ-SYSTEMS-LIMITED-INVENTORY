@@ -3412,6 +3412,7 @@ def record_retail_sale(request):
             messages.error(request, "Please select at least one product.")
             return redirect("retail_dashboard")
 
+        colors = request.POST.getlist("color")
         total_amount = Decimal("0")
         sale_items = []
 
@@ -3443,12 +3444,14 @@ def record_retail_sale(request):
                 staff_stock.quantity -= qty
                 staff_stock.save()
 
+                color = colors[i].strip() if i < len(colors) else (product.color or "")
                 sale = RetailSale.objects.create(
                     staff=request.user,
                     branch=request.user.branch,
                     product=product,
                     quantity=qty,
                     selling_price=price,
+                    color=color,
                     payment_method=payment_method,
                     customer_phone=customer_phone,
                 )

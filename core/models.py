@@ -363,6 +363,7 @@ class RetailSale(models.Model):
 
     quantity = models.PositiveIntegerField()
     selling_price = models.DecimalField(max_digits=12, decimal_places=2)
+    color = models.CharField(max_length=50, blank=True, null=True, help_text="Color variant sold")
     payment_method = models.CharField(max_length=10, choices=PAYMENT_METHODS, default='CASH')
 
     is_voided   = models.BooleanField(default=False)

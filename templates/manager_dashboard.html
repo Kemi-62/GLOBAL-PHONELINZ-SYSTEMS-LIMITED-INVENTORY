@@ -263,7 +263,7 @@
               {% for s in safe_stocks %}
               <tr>
                 <td>{{ s.product.model_name }}</td>
-                <td><span style="display:inline-block;width:14px;height:14px;border-radius:50%;border:1px solid #d1d5db;background:{{ s.product.color|default:'#e5e7eb' }};vertical-align:middle;"></span></td>
+                <td>{{ s.product.color|default:"—" }}</td>
                 <td>{{ s.product.subcategory.name }}</td>
                 <td style="text-align:center;">
                   <span class="badge {% if s.quantity == 0 %}badge-red{% elif s.quantity < 3 %}badge-amber{% else %}badge-green{% endif %}">
@@ -376,7 +376,7 @@
         {% for p in top_products %}
         <tr>
           <td>{{ p.product__model_name }}</td>
-          <td><span style="display:inline-block;width:14px;height:14px;border-radius:50%;border:1px solid #d1d5db;background:{{ p.product__color|default:'#e5e7eb' }};vertical-align:middle;"></span></td>
+          <td>{{ p.product__color|default:"—" }}</td>
           <td style="text-align:center;">{{ p.total_qty }}</td>
         </tr>
         {% empty %}
