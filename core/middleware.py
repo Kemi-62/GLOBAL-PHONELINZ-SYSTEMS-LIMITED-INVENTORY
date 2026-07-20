@@ -7,6 +7,7 @@ Security middleware for GPSL ERP.
 """
 
 import time
+import hashlib
 import logging
 from django.conf import settings
 from django.http import HttpResponseForbidden, JsonResponse
@@ -15,6 +16,11 @@ from django.shortcuts import redirect
 from django.core.cache import cache
 
 security_logger = logging.getLogger('django.security')
+
+
+def _hash_ip(ip: str) -> str:
+    """One-way hash of IP for privacy-compliant logging."""
+    return hashlib.sha256(ip.encode()).hexdigest()[:16]
 
 
 class SecurityHeadersMiddleware:
@@ -54,7 +60,7 @@ class RateLimitMiddleware:
                 # Check if currently blocked
                 if cache.get(block_key):
                     security_logger.warning(
-                        f"Blocked login attempt from {ip} for user {username}"
+                        f"Blocked login attempt from ip_hash={_hash_ip(ip)} for user={username}"
                     )
                     return HttpResponseForbidden(
                         "Too many failed login attempts. Please try again in 30 minutes."
@@ -67,7 +73,7 @@ class RateLimitMiddleware:
                     cache.set(block_key, True, getattr(settings, 'RATE_LIMIT_LOGIN_BLOCK', 1800))
                     cache.delete(key)
                     security_logger.warning(
-                        f"Rate limit exceeded for {ip}/{username}. Blocked for 30min."
+                        f"Rate limit exceeded for ip_hash={_hash_ip(ip)}/user={username}. Blocked for 30min."
                     )
                     return HttpResponseForbidden(
                         "Too many failed login attempts. Please try again in 30 minutes."
@@ -87,7 +93,7 @@ class RateLimitMiddleware:
                         attempts = cache.get(key, 0) + 1
                         cache.set(key, attempts, getattr(settings, 'RATE_LIMIT_LOGIN_WINDOW', 300))
                         security_logger.info(
-                            f"Failed login #{attempts} from {ip} for {username}"
+                            f"Failed login #{attempts} from ip_hash={_hash_ip(ip)} for user={username}"
                         )
 
         return response
@@ -145,7 +151,7 @@ class AdminAccessLogMiddleware:
             ip = self._get_client_ip(request)
             user = request.user.username if request.user.is_authenticated else 'anonymous'
             security_logger.info(
-                f"Admin access: path={request.path} user={user} ip={ip} method={request.method}"
+                f"Admin access: path={request.path} user={user} ip_hash={_hash_ip(ip)} method={request.method}"
             )
         return self.get_response(request)
 

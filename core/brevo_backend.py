@@ -64,15 +64,19 @@ class BrevoEmailBackend(BaseEmailBackend):
         cc_list = [{'email': addr} for addr in (message.cc or [])]
         bcc_list = [{'email': addr} for addr in (message.bcc or [])]
 
-        # Get sender
+        # Get sender — Brevo requires verified senders for deliverability
         from_email = message.from_email or settings.DEFAULT_FROM_EMAIL
-        # Parse "Name <email>" format
-        if '<' in from_email and '>' in from_email:
-            name_part = from_email[:from_email.find('<')].strip().strip('"')
-            email_part = from_email[from_email.find('<')+1:from_email.find('>')]
-            sender = {'name': name_part, 'email': email_part}
+        brevo_sender = getattr(settings, 'BREVO_SENDER_EMAIL', '')
+        if brevo_sender:
+            sender = {'name': 'GPSL Automation', 'email': brevo_sender}
         else:
-            sender = {'name': 'GPSL Business Suite', 'email': from_email}
+            # Parse "Name <email>" format
+            if '<' in from_email and '>' in from_email:
+                name_part = from_email[:from_email.find('<')].strip().strip('"')
+                email_part = from_email[from_email.find('<')+1:from_email.find('>')]
+                sender = {'name': name_part, 'email': email_part}
+            else:
+                sender = {'name': 'GPSL Automation', 'email': from_email}
 
         # Build payload
         payload = {

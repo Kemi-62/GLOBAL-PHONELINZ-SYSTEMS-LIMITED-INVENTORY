@@ -24,7 +24,11 @@ IS_PRODUCTION = config('IS_PRODUCTION', default=False, cast=bool)
 DEBUG = config('DEBUG', default=True, cast=bool)
 
 # ALLOWED_HOSTS: NEVER wildcard in production. Only specific domains.
-ALLOWED_HOSTS = config('ALLOWED_HOSTS', default='localhost,127.0.0.1,.replit.dev,.repl.co,.replit.app,.worf.replit.dev,.pike.replit.dev,.riker.replit.dev', cast=Csv())
+ALLOWED_HOSTS = config(
+    'ALLOWED_HOSTS',
+    default='localhost,127.0.0.1,.replit.dev,.repl.co,.replit.app,.worf.replit.dev,.pike.replit.dev,.riker.replit.dev,.globalphonelinz.com,.app.globalphonelinz.com',
+    cast=Csv()
+)
 
 # CSRF: Secure by default
 CSRF_COOKIE_HTTPONLY = True
@@ -238,6 +242,10 @@ EMAIL_USE_SSL = config('EMAIL_USE_SSL', default=False, cast=bool)
 EMAIL_HOST_USER = config('EMAIL_HOST_USER', default='')
 EMAIL_HOST_PASSWORD = config('EMAIL_HOST_PASSWORD', default='')
 DEFAULT_FROM_EMAIL = config('DEFAULT_FROM_EMAIL', default=EMAIL_HOST_USER)
+
+# Brevo: verified sender email (required for deliverability on free tier)
+# Go to app.brevo.com -> Senders -> add and verify this address
+BREVO_SENDER_EMAIL = config('BREVO_SENDER_EMAIL', default=DEFAULT_FROM_EMAIL)
 
 # ═══════════════════════════════════════════════════════
 # RATE LIMITING CONFIG

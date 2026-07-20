@@ -728,7 +728,8 @@ def add_category(request):
         if name:
             RetailCategory.objects.get_or_create(name=name)
             messages.success(request, f"Category '{name}' added.")
-    return redirect(request.META.get("HTTP_REFERER", "manager_dashboard"))
+    # Prevent open redirect: only use internal fallback
+    return redirect("manager_dashboard")
 
 
 # ─────────────────────────────────────────
@@ -814,8 +815,16 @@ def export_branch_report(request):
 # CRM
 # ─────────────────────────────────────────
 def _compress_image(image_file, max_size_kb=100, max_dimension=600):
-    """Compress uploaded image to reduce storage size aggressively (target ~100KB)."""
+    """Compress uploaded image to reduce storage size aggressively (target ~100KB).
+    image_file must be a Django UploadedFile or file-like object (not a raw path).
+    """
     try:
+        # Security: ensure we only accept Django UploadedFile objects, not raw paths
+        if hasattr(image_file, 'name'):
+            # Validate filename to prevent path traversal
+            safe_name = os.path.basename(image_file.name)
+            if safe_name != image_file.name:
+                raise ValueError("Invalid upload path")
         img = _PILImage.open(image_file)
         # Convert RGBA to RGB if needed
         if img.mode in ("RGBA", "P"):
@@ -4824,9 +4833,15 @@ def trigger_backup(request):
 
 
 def barcode_lookup(request):
+    """Staff-only barcode/IMEI lookup for retail sales."""
+    if not request.user.is_authenticated:
+        return JsonResponse({'error': 'Authentication required'}, status=401)
     barcode = request.GET.get('barcode', '').strip()
-    if not barcode:
-        return JsonResponse({'found': False})
+    if not barcode or len(barcode) < 3:
+        return JsonResponse({'found': False, 'message': 'Enter at least 3 characters.'})
+    # Prevent regex injection / excessive queries
+    if len(barcode) > 50:
+        return JsonResponse({'error': 'Barcode too long'}, status=400)
     try:
         product = Product.objects.filter(imei_serial__contains=barcode).first()
         if product:
@@ -4945,8 +4960,12 @@ def pwa_manifest(request):
 
 
 def keepalive_ping(request):
-    """Keep Render and Supabase awake. Ping from cron-job.org every 4 days."""
+    """Keep Render and Supabase awake. Requires cron secret or staff auth."""
     from django.http import JsonResponse as _JR
+    # Require either cron secret or authenticated staff
+    if not _check_cron_secret(request):
+        if not request.user.is_authenticated:
+            return _JR({"status": "error", "detail": "Unauthorized"}, status=403)
     try:
         from django.db import connection as _conn
         with _conn.cursor() as c:
