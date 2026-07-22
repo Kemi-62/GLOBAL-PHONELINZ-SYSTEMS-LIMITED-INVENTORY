@@ -5923,7 +5923,7 @@ def custom_password_reset(request):
                 # Build reset URL using SITE_URL (reliable on Render)
                 token = default_token_generator.make_token(user)
                 uid   = urlsafe_base64_encode(force_bytes(user.pk))
-                site_url = getattr(settings, 'SITE_URL', '').rstrip('/')
+                site_url = getattr(django_settings, 'SITE_URL', '').rstrip('/')
                 if not site_url:
                     site_url = f"https://{request.get_host()}"
                 reset_url = f"{site_url}/reset/{uid}/{token}/"
@@ -5945,7 +5945,7 @@ If you did not request this, ignore this email.
                 try:
                     send_mail(
                         subject, body,
-                        settings.BREVO_SENDER_EMAIL or settings.DEFAULT_FROM_EMAIL,
+                        django_settings.BREVO_SENDER_EMAIL or django_settings.DEFAULT_FROM_EMAIL,
                         [user.email],
                         fail_silently=False
                     )
