@@ -5899,15 +5899,15 @@ def custom_password_reset(request):
     """
     Password reset with username + email verification.
     Both must match the account before sending reset email.
+    Sends synchronously (not in a thread) so errors are caught and logged.
     """
-    from django.contrib.auth.forms import PasswordResetForm
     from django.core.mail import send_mail
-    from django.template.loader import render_to_string
     from django.utils.http import urlsafe_base64_encode
     from django.utils.encoding import force_bytes
     from django.contrib.auth.tokens import default_token_generator
-    import threading
+    import logging
 
+    security_logger = logging.getLogger('django.security')
     error = None
     success = False
 
@@ -5920,17 +5920,16 @@ def custom_password_reset(request):
             if user.email.lower() != email:
                 error = "The email address does not match our records for this username."
             else:
-                # Send reset email in background thread
-                def send_reset():
-                    try:
-                        token = default_token_generator.make_token(user)
-                        uid   = urlsafe_base64_encode(force_bytes(user.pk))
-                        domain = request.get_host()
-                        protocol = 'https' if request.is_secure() else 'http'
-                        reset_url = f"{protocol}://{domain}/reset/{uid}/{token}/"
+                # Build reset URL using SITE_URL (reliable on Render)
+                token = default_token_generator.make_token(user)
+                uid   = urlsafe_base64_encode(force_bytes(user.pk))
+                site_url = getattr(settings, 'SITE_URL', '').rstrip('/')
+                if not site_url:
+                    site_url = f"https://{request.get_host()}"
+                reset_url = f"{site_url}/reset/{uid}/{token}/"
 
-                        subject = "GPSL Business Suite - Password Reset"
-                        body = f"""Hello {user.username},
+                subject = "GPSL Business Suite — Password Reset"
+                body = f"""Hello {user.username},
 
 You requested a password reset for your GPSL Business Suite account.
 
@@ -5943,17 +5942,22 @@ If you did not request this, ignore this email.
 
 — GPSL Business Suite
 """
-                        send_mail(
-                            subject, body,
-                            settings.DEFAULT_FROM_EMAIL,
-                            [user.email],
-                            fail_silently=False
-                        )
-                    except Exception as e:
-                        pass
-
-                threading.Thread(target=send_reset, daemon=True).start()
-                success = True
+                try:
+                    send_mail(
+                        subject, body,
+                        settings.BREVO_SENDER_EMAIL or settings.DEFAULT_FROM_EMAIL,
+                        [user.email],
+                        fail_silently=False
+                    )
+                    security_logger.info(
+                        f"Password reset email sent to {user.email} for user {user.username}"
+                    )
+                    success = True
+                except Exception as e:
+                    security_logger.error(
+                        f"Password reset email FAILED for {user.email}: {type(e).__name__}: {str(e)[:200]}"
+                    )
+                    error = "Could not send reset email. Please try again or contact support."
         except User.DoesNotExist:
             error = "No account found with that username."
 
