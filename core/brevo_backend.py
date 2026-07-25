@@ -119,11 +119,17 @@ class BrevoEmailBackend(BaseEmailBackend):
             method='POST'
         )
 
+        import logging as _logging
+        _log = _logging.getLogger('django.security')
         try:
             with urllib.request.urlopen(req, timeout=15) as response:
                 resp_body = response.read().decode('utf-8')
-                if response.status not in (200, 201):
+                if response.status in (200, 201):
+                    _log.info(f"Brevo email accepted: {resp_body[:200]}")
+                else:
+                    _log.warning(f"Brevo API non-2xx: {response.status} body={resp_body[:300]}")
                     raise Exception(f'Brevo API error {response.status}: {resp_body}')
         except urllib.error.HTTPError as e:
             error_body = e.read().decode('utf-8') if e.fp else str(e)
+            _log.error(f"Brevo API FAILED: HTTP {e.code} body={error_body[:300]}")
             raise Exception(f'Brevo API HTTP error {e.code}: {error_body}')
