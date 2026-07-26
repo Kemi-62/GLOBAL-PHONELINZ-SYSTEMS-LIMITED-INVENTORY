@@ -64,19 +64,30 @@ class BrevoEmailBackend(BaseEmailBackend):
         cc_list = [{'email': addr} for addr in (message.cc or [])]
         bcc_list = [{'email': addr} for addr in (message.bcc or [])]
 
-        # Get sender — Brevo requires verified senders for deliverability
+        # Get sender — Brevo requires verified/domain-authenticated senders.
+        # Avoid @gmail.com senders: Gmail's DMARC policy rejects them when sent
+        # through Brevo (deliverability: 0%). Use a domain you own instead.
         from_email = message.from_email or settings.DEFAULT_FROM_EMAIL
         brevo_sender = getattr(settings, 'BREVO_SENDER_EMAIL', '')
         if brevo_sender:
-            sender = {'name': 'GPSL Automation', 'email': brevo_sender}
+            sender_email = brevo_sender
         else:
-            # Parse "Name <email>" format
             if '<' in from_email and '>' in from_email:
-                name_part = from_email[:from_email.find('<')].strip().strip('"')
-                email_part = from_email[from_email.find('<')+1:from_email.find('>')]
-                sender = {'name': name_part, 'email': email_part}
+                sender_email = from_email[from_email.find('<')+1:from_email.find('>')]
             else:
-                sender = {'name': 'GPSL Automation', 'email': from_email}
+                sender_email = from_email
+
+        # Warn clearly in logs if using a public email provider as sender
+        sender_domain = sender_email.split('@')[-1].lower()
+        if sender_domain in ('gmail.com', 'googlemail.com', 'yahoo.com', 'outlook.com', 'hotmail.com', 'live.com'):
+            _log.warning(
+                f"Sending from public email {sender_email} via Brevo. "
+                "This usually fails DMARC and lands in spam or is dropped. "
+                "Set BREVO_SENDER_EMAIL to a domain-authenticated address like "
+                f"noreply@{getattr(settings, 'BREVO_SENDER_DOMAIN', 'yourdomain.com')}."
+            )
+
+        sender = {'name': 'GPSL Business Suite', 'email': sender_email}
 
         # Build payload
         payload = {

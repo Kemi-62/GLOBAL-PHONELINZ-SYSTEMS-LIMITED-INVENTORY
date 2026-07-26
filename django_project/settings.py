@@ -243,9 +243,14 @@ EMAIL_HOST_USER = config('EMAIL_HOST_USER', default='')
 EMAIL_HOST_PASSWORD = config('EMAIL_HOST_PASSWORD', default='')
 DEFAULT_FROM_EMAIL = config('DEFAULT_FROM_EMAIL', default=EMAIL_HOST_USER)
 
-# Brevo: verified sender email (required for deliverability on free tier)
-# Go to app.brevo.com -> Senders -> add and verify this address
-BREVO_SENDER_EMAIL = config('BREVO_SENDER_EMAIL', default=DEFAULT_FROM_EMAIL)
+# Brevo domain-authenticated sender (strongly recommended over a Gmail address).
+# Sending from @gmail.com via Brevo usually fails Gmail DMARC checks.
+# Set BREVO_SENDER_DOMAIN to the domain you authenticated in Brevo.
+BREVO_SENDER_DOMAIN = config('BREVO_SENDER_DOMAIN', default='globalphonelinz.com')
+
+# Brevo: verified sender email. Prefer a domain-authenticated address like
+# noreply@globalphonelinz.com. If unset, falls back to DEFAULT_FROM_EMAIL.
+BREVO_SENDER_EMAIL = config('BREVO_SENDER_EMAIL', default=f'noreply@{BREVO_SENDER_DOMAIN}')
 
 # ═══════════════════════════════════════════════════════
 # RATE LIMITING CONFIG
