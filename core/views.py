@@ -4987,7 +4987,8 @@ def keepalive_ping(request):
     from django.http import JsonResponse as _JR
     # Require either cron secret or authenticated staff
     if not _check_cron_secret(request):
-        if not request.user.is_authenticated:
+        user = getattr(request, 'user', None)
+        if not user or not getattr(user, 'is_authenticated', False):
             return _JR({"status": "error", "detail": "Unauthorized"}, status=403)
     try:
         from django.db import connection as _conn
