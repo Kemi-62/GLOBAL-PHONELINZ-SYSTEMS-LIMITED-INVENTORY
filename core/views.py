@@ -2538,6 +2538,26 @@ from django.contrib.auth.views import PasswordResetConfirmView as DjPRCV
 class CustomPasswordResetConfirmView(DjPRCV):
     template_name = "registration/password_reset_confirm.html"
 
+    def dispatch(self, request, *args, **kwargs):
+        import logging as _logging
+        _log = _logging.getLogger('django.security')
+
+        # Log token validation outcome for debugging
+        user = self.get_user(kwargs.get('uidb64'))
+        token = kwargs.get('token')
+        if user is not None:
+            is_valid = self.token_generator.check_token(user, token)
+            _log.info(
+                f"Password reset confirm requested: user={user.username} "
+                f"host={request.get_host()} valid={is_valid}"
+            )
+        else:
+            _log.warning(
+                f"Password reset confirm: user not found for uidb64={kwargs.get('uidb64')} "
+                f"host={request.get_host()}"
+            )
+        return super().dispatch(request, *args, **kwargs)
+
     def form_valid(self, form):
         user = form.save()
         # Force save using set_password properly
@@ -5920,12 +5940,16 @@ def custom_password_reset(request):
             if user.email.lower() != email:
                 error = "The email address does not match our records for this username."
             else:
-                # Build reset URL using SITE_URL (reliable on Render)
+                # Build reset URL using the current request host so the token is
+                # generated and validated on the same environment (Replit vs Render).
                 token = default_token_generator.make_token(user)
                 uid   = urlsafe_base64_encode(force_bytes(user.pk))
-                site_url = getattr(django_settings, 'SITE_URL', '').rstrip('/')
-                if not site_url:
-                    site_url = f"https://{request.get_host()}"
+                scheme = (
+                    'https' if request.is_secure() or
+                    request.META.get('HTTP_X_FORWARDED_PROTO') == 'https'
+                    else 'http'
+                )
+                site_url = f"{scheme}://{request.get_host()}"
                 reset_url = f"{site_url}/reset/{uid}/{token}/"
 
                 subject = "GPSL Business Suite — Password Reset"
