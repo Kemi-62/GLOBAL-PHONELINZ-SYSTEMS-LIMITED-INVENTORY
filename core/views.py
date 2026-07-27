@@ -5954,15 +5954,18 @@ If you did not request this, ignore this email.
                     )
                     success = True
                 except Exception as e:
+                    err_detail = f"{type(e).__name__}: {str(e)[:300]}"
                     security_logger.error(
-                        f"Password reset email FAILED for {user.email}: {type(e).__name__}: {str(e)[:200]}"
+                        f"Password reset email FAILED for {user.email}: {err_detail}"
                     )
                     error = "Could not send reset email. Please try again or contact support."
+                    error_detail = err_detail
         except User.DoesNotExist:
             error = "No account found with that username."
 
     return render(request, 'registration/password_reset_form.html', {
         'error': error,
+        'error_detail': error_detail if 'error_detail' in locals() else None,
         'success': success,
         'custom_reset': True,
     })
