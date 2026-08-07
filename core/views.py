@@ -6158,7 +6158,7 @@ def my_online_sales(request):
     })
 
 
-@role_required('DIRECTOR', 'MANAGER')
+@role_required('DIRECTOR')
 def online_sales_overview(request):
     """Director/Manager sees all online sales with leaderboard."""
     from core.models import OnlineSaleLog, Branch
