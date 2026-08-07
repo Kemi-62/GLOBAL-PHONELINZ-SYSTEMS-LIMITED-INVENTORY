@@ -174,4 +174,7 @@ urlpatterns = [
     path('stock-transfer/', views.stock_transfer, name='stock_transfer'),
     path('director/stock-transfer-history/', views.stock_transfer_history, name='stock_transfer_history'),
     path('system/email-test/', views.email_diagnostic, name='email_diagnostic'),
+    path('online-sales/log/', views.log_online_sale, name='log_online_sale'),
+    path('online-sales/mine/', views.my_online_sales, name='my_online_sales'),
+    path('online-sales/overview/', views.online_sales_overview, name='online_sales_overview'),
 ]
