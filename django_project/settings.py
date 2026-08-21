@@ -35,7 +35,6 @@ CSRF_COOKIE_HTTPONLY = True
 
 # Cron job secret token (for cron-job.org / external schedulers)
 CRON_SECRET = config('CRON_SECRET', default='change-this-in-production')
-BACKUP_SECRET_KEY = config('BACKUP_SECRET_KEY', default='')
 
 CSRF_USE_SESSIONS = True
 CSRF_COOKIE_SAMESITE = 'Strict'

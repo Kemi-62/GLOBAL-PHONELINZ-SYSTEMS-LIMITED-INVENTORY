@@ -2538,26 +2538,6 @@ from django.contrib.auth.views import PasswordResetConfirmView as DjPRCV
 class CustomPasswordResetConfirmView(DjPRCV):
     template_name = "registration/password_reset_confirm.html"
 
-    def dispatch(self, request, *args, **kwargs):
-        import logging as _logging
-        _log = _logging.getLogger('django.security')
-
-        # Log token validation outcome for debugging
-        user = self.get_user(kwargs.get('uidb64'))
-        token = kwargs.get('token')
-        if user is not None:
-            is_valid = self.token_generator.check_token(user, token)
-            _log.info(
-                f"Password reset confirm requested: user={user.username} "
-                f"host={request.get_host()} valid={is_valid}"
-            )
-        else:
-            _log.warning(
-                f"Password reset confirm: user not found for uidb64={kwargs.get('uidb64')} "
-                f"host={request.get_host()}"
-            )
-        return super().dispatch(request, *args, **kwargs)
-
     def form_valid(self, form):
         user = form.save()
         # Force save using set_password properly
@@ -4987,8 +4967,7 @@ def keepalive_ping(request):
     from django.http import JsonResponse as _JR
     # Require either cron secret or authenticated staff
     if not _check_cron_secret(request):
-        user = getattr(request, 'user', None)
-        if not user or not getattr(user, 'is_authenticated', False):
+        if not request.user.is_authenticated:
             return _JR({"status": "error", "detail": "Unauthorized"}, status=403)
     try:
         from django.db import connection as _conn
@@ -5941,16 +5920,12 @@ def custom_password_reset(request):
             if user.email.lower() != email:
                 error = "The email address does not match our records for this username."
             else:
-                # Build reset URL using the current request host so the token is
-                # generated and validated on the same environment (Replit vs Render).
+                # Build reset URL using SITE_URL (reliable on Render)
                 token = default_token_generator.make_token(user)
                 uid   = urlsafe_base64_encode(force_bytes(user.pk))
-                scheme = (
-                    'https' if request.is_secure() or
-                    request.META.get('HTTP_X_FORWARDED_PROTO') == 'https'
-                    else 'http'
-                )
-                site_url = f"{scheme}://{request.get_host()}"
+                site_url = getattr(django_settings, 'SITE_URL', '').rstrip('/')
+                if not site_url:
+                    site_url = f"https://{request.get_host()}"
                 reset_url = f"{site_url}/reset/{uid}/{token}/"
 
                 subject = "GPSL Business Suite — Password Reset"
@@ -5979,18 +5954,15 @@ If you did not request this, ignore this email.
                     )
                     success = True
                 except Exception as e:
-                    err_detail = f"{type(e).__name__}: {str(e)[:300]}"
                     security_logger.error(
-                        f"Password reset email FAILED for {user.email}: {err_detail}"
+                        f"Password reset email FAILED for {user.email}: {type(e).__name__}: {str(e)[:200]}"
                     )
                     error = "Could not send reset email. Please try again or contact support."
-                    error_detail = err_detail
         except User.DoesNotExist:
             error = "No account found with that username."
 
     return render(request, 'registration/password_reset_form.html', {
         'error': error,
-        'error_detail': error_detail if 'error_detail' in locals() else None,
         'success': success,
         'custom_reset': True,
     })
@@ -6078,189 +6050,3 @@ def email_diagnostic(request):
         )
 
     return JsonResponse(results, json_dumps_params={'indent': 2})
-
-
-# ─────────────────────────────────────────
-# ONLINE SALES LOG
-# ─────────────────────────────────────────
-
-@login_required
-def log_online_sale(request):
-    """Any staff can log an online/social media sale."""
-    from core.models import OnlineSaleLog
-    from datetime import date
-
-    if request.method == 'POST':
-        try:
-            image = request.FILES.get('evidence_image')
-            sale = OnlineSaleLog(
-                staff=request.user,
-                branch=request.user.branch,
-                product_name=request.POST.get('product_name', '').strip(),
-                customer_name=request.POST.get('customer_name', '').strip(),
-                customer_phone=request.POST.get('customer_phone', '').strip(),
-                platform=request.POST.get('platform', 'whatsapp'),
-                amount=request.POST.get('amount', 0) or 0,
-                sale_date=request.POST.get('sale_date') or date.today(),
-                notes=request.POST.get('notes', '').strip(),
-            )
-            if image:
-                sale.evidence_image = image
-            sale.save()
-            messages.success(request, f"Online sale logged successfully — {sale.product_name}")
-        except Exception as e:
-            messages.error(request, f"Error: {e}")
-        return redirect('my_online_sales')
-
-    return render(request, 'online_sales/log_sale.html', {
-        'today': date.today(),
-        'platforms': OnlineSaleLog.PLATFORM_CHOICES,
-    })
-
-
-@login_required
-def my_online_sales(request):
-    """Staff sees their own online sales log."""
-    from core.models import OnlineSaleLog
-    from django.db.models import Sum, Count
-    from datetime import date
-
-    sales = OnlineSaleLog.objects.filter(
-        staff=request.user
-    ).order_by('-sale_date', '-created_at')
-
-    # Stats
-    total_sales = sales.count()
-    total_amount = sales.aggregate(t=Sum('amount'))['t'] or 0
-    verified = sales.filter(is_verified=True).count()
-    this_month = sales.filter(
-        sale_date__month=date.today().month,
-        sale_date__year=date.today().year
-    )
-    month_amount = this_month.aggregate(t=Sum('amount'))['t'] or 0
-
-    # Filter
-    platform_flt = request.GET.get('platform', '')
-    if platform_flt:
-        sales = sales.filter(platform=platform_flt)
-
-    from core.models import OnlineSaleLog as OSL
-    return render(request, 'online_sales/my_sales.html', {
-        'sales': sales,
-        'total_sales': total_sales,
-        'total_amount': total_amount,
-        'verified': verified,
-        'month_amount': month_amount,
-        'month_count': this_month.count(),
-        'platforms': OSL.PLATFORM_CHOICES,
-        'platform_flt': platform_flt,
-        'today': date.today(),
-    })
-
-
-@role_required('DIRECTOR')
-def online_sales_overview(request):
-    """Director/Manager sees all online sales with leaderboard."""
-    from core.models import OnlineSaleLog, Branch
-    from django.db.models import Sum, Count
-    from datetime import date
-
-    today = date.today()
-
-    # Filters
-    staff_flt    = request.GET.get('staff', '')
-    branch_flt   = request.GET.get('branch', '')
-    platform_flt = request.GET.get('platform', '')
-    date_from    = request.GET.get('date_from', '')
-    date_to      = request.GET.get('date_to', '')
-    verified_flt = request.GET.get('verified', '')
-
-    sales = OnlineSaleLog.objects.select_related(
-        'staff', 'branch', 'verified_by'
-    ).order_by('-sale_date', '-created_at')
-
-    # Managers see their branch only
-    if request.user.role == 'MANAGER' and request.user.branch:
-        sales = sales.filter(branch=request.user.branch)
-    elif branch_flt:
-        sales = sales.filter(branch_id=branch_flt)
-
-    if staff_flt:
-        sales = sales.filter(staff_id=staff_flt)
-    if platform_flt:
-        sales = sales.filter(platform=platform_flt)
-    if date_from:
-        sales = sales.filter(sale_date__gte=date_from)
-    if date_to:
-        sales = sales.filter(sale_date__lte=date_to)
-    if verified_flt == '1':
-        sales = sales.filter(is_verified=True)
-    elif verified_flt == '0':
-        sales = sales.filter(is_verified=False)
-
-    # Leaderboard — top staff by count and amount this month
-    leaderboard = OnlineSaleLog.objects.filter(
-        sale_date__month=today.month,
-        sale_date__year=today.year,
-    )
-    if request.user.role == 'MANAGER' and request.user.branch:
-        leaderboard = leaderboard.filter(branch=request.user.branch)
-
-    leaderboard = leaderboard.values(
-        'staff__username', 'staff__id', 'branch__name'
-    ).annotate(
-        count=Count('id'),
-        total=Sum('amount'),
-        verified=Count('id', filter=Q(is_verified=True))
-    ).order_by('-count')[:10]
-
-    # Verify/unverify action
-    if request.method == 'POST' and request.user.role in ['DIRECTOR', 'MANAGER']:
-        sale_id = request.POST.get('sale_id')
-        action  = request.POST.get('action')
-        try:
-            sale = OnlineSaleLog.objects.get(id=sale_id)
-            if action == 'verify':
-                sale.is_verified = True
-                sale.verified_by = request.user
-                sale.save()
-                messages.success(request, f"Sale verified — {sale.product_name}")
-            elif action == 'unverify':
-                sale.is_verified = False
-                sale.verified_by = None
-                sale.save()
-                messages.success(request, "Verification removed.")
-        except OnlineSaleLog.DoesNotExist:
-            messages.error(request, "Sale not found.")
-        return redirect(request.get_full_path())
-
-    # Totals
-    total_count  = sales.count()
-    total_amount = sales.aggregate(t=Sum('amount'))['t'] or 0
-    verified_count = sales.filter(is_verified=True).count()
-
-    branches   = Branch.objects.all()
-    staff_list = User.objects.filter(
-        role__in=['RETAIL', 'TELECOM', 'MULTICHOICE', 'MANAGER']
-    ).order_by('username')
-    if request.user.role == 'MANAGER' and request.user.branch:
-        staff_list = staff_list.filter(branch=request.user.branch)
-
-    from core.models import OnlineSaleLog as OSL
-    return render(request, 'online_sales/overview.html', {
-        'sales': sales[:100],
-        'leaderboard': leaderboard,
-        'total_count': total_count,
-        'total_amount': total_amount,
-        'verified_count': verified_count,
-        'branches': branches,
-        'staff_list': staff_list,
-        'platforms': OSL.PLATFORM_CHOICES,
-        'staff_flt': staff_flt,
-        'branch_flt': branch_flt,
-        'platform_flt': platform_flt,
-        'date_from': date_from,
-        'date_to': date_to,
-        'verified_flt': verified_flt,
-        'today': today,
-    })
