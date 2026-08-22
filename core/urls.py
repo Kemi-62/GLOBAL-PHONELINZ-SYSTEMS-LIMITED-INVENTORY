@@ -13,7 +13,7 @@ urlpatterns = [
     path('password-reset/done/', auth_views.PasswordResetDoneView.as_view(
         template_name='registration/password_reset_done.html',
     ), name='password_reset_done'),
-    path('reset/<uidb64>/<token>/', auth_views.PasswordResetConfirmView.as_view(
+    path('reset/<uidb64>/<token>/', views.CustomPasswordResetConfirmView.as_view(
         template_name='registration/password_reset_confirm.html',
     ), name='password_reset_confirm'),
     path('reset/done/', auth_views.PasswordResetCompleteView.as_view(
@@ -174,4 +174,7 @@ urlpatterns = [
     path('stock-transfer/', views.stock_transfer, name='stock_transfer'),
     path('director/stock-transfer-history/', views.stock_transfer_history, name='stock_transfer_history'),
     path('system/email-test/', views.email_diagnostic, name='email_diagnostic'),
+    path('online-sales/log/', views.log_online_sale, name='log_online_sale'),
+    path('online-sales/mine/', views.my_online_sales, name='my_online_sales'),
+    path('online-sales/overview/', views.online_sales_overview, name='online_sales_overview'),
 ]
