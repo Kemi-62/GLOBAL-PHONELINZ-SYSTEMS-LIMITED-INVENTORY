@@ -1,0 +1,46 @@
+{% extends "base.html" %}
+{% block content %}
+<style>
+.page-title{font-size:1.2rem;font-weight:700;color:#004F9F;margin:0}
+.card{background:#fff;border:1px solid #e2e8f0;border-radius:10px;padding:1.1rem 1.3rem;margin-bottom:1rem}
+.card-title{font-size:.92rem;font-weight:700;margin:0 0 .85rem}
+.btn-sm{padding:.5rem 1rem;font-size:.85rem;border-radius:6px;border:none;cursor:pointer;font-weight:600;text-decoration:none;display:inline-block}
+.wa-preview{background:#e5ddd5;border-radius:10px;padding:1rem;font-size:.88rem;line-height:1.6;white-space:pre-wrap;font-family:inherit;color:#111;}
+.wa-bubble{background:#fff;border-radius:8px;padding:.8rem 1rem;box-shadow:0 1px 2px rgba(0,0,0,.15);white-space:pre-wrap;}
+</style>
+
+<div style="display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:.75rem;margin-bottom:1.25rem">
+  <h1 class="page-title">📱 WhatsApp Report</h1>
+  <form method="GET" style="display:flex;gap:.5rem;align-items:center;">
+    <input type="date" name="date" value="{{ report_date|date:'Y-m-d' }}"
+           style="padding:.45rem .7rem;border:1px solid #d1d5db;border-radius:6px;font-size:.83rem;">
+    <button type="submit" class="btn-sm" style="background:#004F9F;color:#fff;">Preview</button>
+  </form>
+</div>
+
+{% if messages %}{% for m in messages %}
+<div style="background:{% if m.tags == 'error' %}#fee2e2{% else %}#dcfce7{% endif %};border-radius:7px;padding:.65rem 1rem;font-size:.83rem;margin-bottom:1rem;">{{ m }}</div>
+{% endfor %}{% endif %}
+
+<div class="card">
+  <p class="card-title">Preview - {{ report_date|date:"d M Y" }}</p>
+  <div class="wa-preview">
+    <div class="wa-bubble">{{ report_message }}</div>
+  </div>
+</div>
+
+<div class="card">
+  <p class="card-title">Send It</p>
+  <div style="display:flex;gap:.75rem;flex-wrap:wrap;">
+    <form method="POST" action="{% url 'send_daily_report_whatsapp' %}">
+      {% csrf_token %}
+      <button type="submit" class="btn-sm" style="background:#25D366;color:#fff;">📤 Send via CallMeBot to Director</button>
+    </form>
+    <a href="{{ wa_link }}" target="_blank" class="btn-sm" style="background:#128C7E;color:#fff;">💬 Open in WhatsApp App</a>
+  </div>
+  <p style="font-size:.78rem;color:#6b7280;margin:.75rem 0 0;">
+    "Send via CallMeBot" only works if <code>DIRECTOR_WHATSAPP</code> and <code>CALLMEBOT_API_KEY</code>
+    are set in your environment. "Open in WhatsApp App" always works.
+  </p>
+</div>
+{% endblock %}

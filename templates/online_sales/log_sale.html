@@ -24,53 +24,5 @@
 <div style="background:{% if m.tags == 'error' %}#fee2e2{% else %}#dcfce7{% endif %};border-radius:7px;padding:.65rem 1rem;font-size:.83rem;margin-bottom:1rem;">{{ m }}</div>
 {% endfor %}{% endif %}
 
-<div class="card">
-  <form method="POST" enctype="multipart/form-data">
-    {% csrf_token %}
-    <div class="form-row">
-      <div class="fg">
-        <label>Product / Service Sold *</label>
-        <input type="text" name="product_name" required placeholder="e.g. iPhone 14, DStv Compact, MTN SIM">
-      </div>
-      <div class="fg">
-        <label>Amount (₦) *</label>
-        <input type="number" name="amount" step="0.01" min="0" required placeholder="Sale amount">
-      </div>
-    </div>
-    <div class="form-row">
-      <div class="fg">
-        <label>Customer Name *</label>
-        <input type="text" name="customer_name" required placeholder="Customer full name">
-      </div>
-      <div class="fg">
-        <label>Customer Phone *</label>
-        <input type="tel" name="customer_phone" required placeholder="08012345678">
-      </div>
-    </div>
-    <div class="form-row">
-      <div class="fg">
-        <label>Sale Date *</label>
-        <input type="date" name="sale_date" value="{{ today|date:'Y-m-d' }}" required>
-      </div>
-      <div class="fg">
-        <label>Platform *</label>
-        <select name="platform">
-          {% for val, label in platforms %}
-          <option value="{{ val }}">{{ label }}</option>
-          {% endfor %}
-        </select>
-      </div>
-    </div>
-    <div class="fg">
-      <label>Evidence (Screenshot / Photo) *</label>
-      <input type="file" name="evidence_image" accept="image/*" capture="environment" required>
-      <p style="font-size:.72rem;color:#64748b;margin-top:.25rem">Upload a screenshot or photo proving the sale was made online.</p>
-    </div>
-    <div class="fg">
-      <label>Notes (optional)</label>
-      <textarea name="notes" rows="2" placeholder="Any extra details about this sale..."></textarea>
-    </div>
-    <button type="submit" class="btn-p">Submit Online Sale</button>
-  </form>
-</div>
+{% include "partials/online_sale_form.html" %}
 {% endblock %}

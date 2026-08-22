@@ -74,6 +74,15 @@
       </select>
     </div>
     <div>
+      <span class="filter-label">Staff</span>
+      <select name="staff">
+        <option value="">All Staff</option>
+        {% for s in staff_list %}
+        <option value="{{ s.id }}" {% if staff_flt == s.id|stringformat:"s" %}selected{% endif %}>{{ s.username }} ({{ s.role|title }})</option>
+        {% endfor %}
+      </select>
+    </div>
+    <div>
       <span class="filter-label">Sort By</span>
       <select name="sort">
         <option value="-last_purchase"   {% if sort_by == "-last_purchase"   %}selected{% endif %}>Most Recent</option>
@@ -86,10 +95,11 @@
     <a href="{% url 'customer_crm' %}" class="btn-sm btn-outline" style="align-self:flex-end;">Clear</a>
   </form>
 
-  {% if search or date_from or date_to or source or branch_flt %}
+  {% if search or date_from or date_to or source or branch_flt or staff_flt %}
   <div style="background:#eff6ff;border:1px solid #93c5fd;border-radius:6px;padding:.5rem .9rem;font-size:.82rem;color:#1e40af;margin-bottom:1rem;">
     Filtered results
     {% if source %} — Source: <strong>{{ source }}</strong>{% endif %}
+    {% if staff_flt %} — Staff: <strong>{{ staff_flt }}</strong>{% endif %}
     {% if date_from %} — From: <strong>{{ date_from }}</strong>{% endif %}
     {% if date_to %} — To: <strong>{{ date_to }}</strong>{% endif %}
     {% if search %} — Search: <strong>{{ search }}</strong>{% endif %}
@@ -154,11 +164,11 @@
   {% if customers.has_other_pages %}
   <div style="display:flex;justify-content:center;gap:.5rem;margin-top:1rem;flex-wrap:wrap;">
     {% if customers.has_previous %}
-    <a href="?page={{ customers.previous_page_number }}&search={{ search }}&date_from={{ date_from }}&date_to={{ date_to }}&source={{ source }}&branch={{ branch_flt }}&sort={{ sort_by }}" class="btn-sm btn-outline">← Prev</a>
+    <a href="?page={{ customers.previous_page_number }}&search={{ search }}&date_from={{ date_from }}&date_to={{ date_to }}&source={{ source }}&branch={{ branch_flt }}&staff={{ staff_flt }}&sort={{ sort_by }}" class="btn-sm btn-outline">← Prev</a>
     {% endif %}
     <span style="padding:.5rem 1rem;font-size:.85rem;color:#6b7280;">Page {{ customers.number }} of {{ customers.paginator.num_pages }}</span>
     {% if customers.has_next %}
-    <a href="?page={{ customers.next_page_number }}&search={{ search }}&date_from={{ date_from }}&date_to={{ date_to }}&source={{ source }}&branch={{ branch_flt }}&sort={{ sort_by }}" class="btn-sm btn-outline">Next →</a>
+    <a href="?page={{ customers.next_page_number }}&search={{ search }}&date_from={{ date_from }}&date_to={{ date_to }}&source={{ source }}&branch={{ branch_flt }}&staff={{ staff_flt }}&sort={{ sort_by }}" class="btn-sm btn-outline">Next →</a>
     {% endif %}
   </div>
   {% endif %}

@@ -277,6 +277,10 @@ WHATSAPP_ENABLED = config('WHATSAPP_ENABLED', default=False, cast=bool)
 WHATSAPP_API_KEY = config('WHATSAPP_API_KEY', default='')
 WHATSAPP_PHONE_NUMBER_ID = config('WHATSAPP_PHONE_NUMBER_ID', default='')
 
+# CallMeBot -- used for the Manager WhatsApp Report page.
+DIRECTOR_WHATSAPP = config('DIRECTOR_WHATSAPP', default='')
+CALLMEBOT_API_KEY = config('CALLMEBOT_API_KEY', default='')
+
 # ═══════════════════════════════════════════════════════
 # MISC
 # ═══════════════════════════════════════════════════════

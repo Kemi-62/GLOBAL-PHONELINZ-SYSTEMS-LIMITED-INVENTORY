@@ -1397,6 +1397,80 @@ def send_stock_request_whatsapp(request):
 
 
 # ─────────────────────────────────────────
+# ───────────────────────────────────
+# WHATSAPP REPORT - DEDICATED PAGE + CRON
+# ───────────────────────────────────
+
+def _build_daily_report_message(branch, report_date):
+    """Build the WhatsApp-formatted daily report text for one branch."""
+    sales = RetailSale.objects.filter(branch=branch, date=report_date, is_voided=False)
+    total_qty = sales.aggregate(t=Sum("quantity"))["t"] or 0
+    total_rev = sales.aggregate(t=Sum(F("quantity") * F("selling_price")))["t"] or 0
+    mc_rev = MultiChoiceSale.objects.filter(branch=branch, date=report_date).aggregate(t=Sum("amount"))["t"] or 0
+    expenses = Expense.objects.filter(branch=branch, date=report_date).aggregate(t=Sum("amount"))["t"] or 0
+    pending_requests = StockRequest.objects.filter(branch=branch, status="PENDING").count()
+
+    lines = [
+        "📊 *DAILY BRANCH REPORT*",
+        "Branch: " + branch.name,
+        "Date: " + report_date.strftime("%d %B %Y"),
+        "",
+        "🛍️ Retail Sales: " + str(total_qty) + " items",
+        "💰 Retail Revenue: ₦{:,.0f}".format(total_rev),
+        "📺 MultiChoice: ₦{:,.0f}".format(mc_rev),
+        "💸 Expenses: ₦{:,.0f}".format(expenses),
+        "📦 Pending Stock Requests: " + str(pending_requests),
+        "",
+        "Net (Retail - Expenses): ₦{:,.0f}".format(total_rev - expenses),
+    ]
+    return "\n".join(lines)
+
+
+def _build_all_branches_report_message(report_date):
+    """One combined WhatsApp report covering every branch - used by the cron job."""
+    lines = ["📊 *GPSL COMPANY DAILY REPORT*", report_date.strftime("%d %B %Y"), ""]
+    grand_rev = 0
+    grand_qty = 0
+    for branch in Branch.objects.all():
+        sales = RetailSale.objects.filter(branch=branch, date=report_date, is_voided=False)
+        qty = sales.aggregate(t=Sum("quantity"))["t"] or 0
+        rev = sales.aggregate(t=Sum(F("quantity") * F("selling_price")))["t"] or 0
+        if qty or rev:
+            lines.append("🏪 *" + branch.name + "*: " + str(qty) + " items — ₦{:,.0f}".format(rev))
+        grand_rev += rev
+        grand_qty += qty
+    lines.append("")
+    lines.append("💰 *Total Revenue*: ₦{:,.0f}".format(grand_rev))
+    lines.append("🛍️ *Total Items Sold*: " + str(grand_qty))
+    return "\n".join(lines)
+
+
+@role_required("MANAGER")
+def whatsapp_report_page(request):
+    """Dedicated page: preview today's (or a chosen date's) branch report,
+    then send it to the Director via CallMeBot or open it directly in WhatsApp."""
+    from urllib.parse import quote
+
+    branch = request.user.branch
+    date_str = request.GET.get("date", "")
+    if date_str:
+        try:
+            report_date = timezone.datetime.strptime(date_str, "%Y-%m-%d").date()
+        except ValueError:
+            report_date = timezone.now().date()
+    else:
+        report_date = timezone.now().date()
+
+    message = _build_daily_report_message(branch, report_date)
+    wa_link = "https://wa.me/?text=" + quote(message)
+
+    return render(request, "whatsapp_report.html", {
+        "report_message": message,
+        "report_date": report_date,
+        "wa_link": wa_link,
+    })
+
+
 # DIRECTOR — ALL BRANCH STOCK VIEW
 # ─────────────────────────────────────────
 
@@ -2286,6 +2360,10 @@ def multichoice_dashboard(request):
         _s.computed_expiry = _exp
         _s.computed_days_left = (_exp - _today).days if _exp else None
 
+    from core.models import MultiChoiceHardwareStock, MultiChoiceHardwareSale
+    hardware_stock = MultiChoiceHardwareStock.objects.filter(staff=request.user).order_by("item_type")
+    hardware_sales_today = MultiChoiceHardwareSale.objects.filter(staff=request.user, date=today).order_by("-time")
+
     return render(request, "multichoice_dashboard.html", {
         "today_sales": today_sales,
         "all_sales": all_sales_page,
@@ -2302,10 +2380,79 @@ def multichoice_dashboard(request):
         "date_to": date_to,
         "check_logs": CheckInOutLog.objects.filter(staff=request.user).order_by("-date", "-check_in_time")[:20],
         "checkinout_logs": CheckInOutLog.objects.filter(staff=request.user).order_by("-date", "-check_in_time")[:20],
+        "hardware_stock": hardware_stock,
+        "hardware_sales_today": hardware_sales_today,
+        "hardware_item_choices": MultiChoiceHardwareStock.ITEM_CHOICES,
     })
 
 
 # ─────────────────────────────────────────
+# ───────────────────────────────────
+# MULTICHOICE HARDWARE SALES + INVENTORY
+# ───────────────────────────────────
+
+@role_required("MULTICHOICE")
+def record_multichoice_hardware_sale(request):
+    from core.models import MultiChoiceHardwareSale, MultiChoiceHardwareStock
+
+    if request.method == "POST":
+        item_type = request.POST.get("item_type", "")
+        other_description = request.POST.get("other_description", "").strip()
+        quantity = int(request.POST.get("quantity", 1) or 1)
+        amount = request.POST.get("amount") or 0
+        iuc_number = request.POST.get("iuc_number", "").strip()
+        customer_name = request.POST.get("customer_name", "").strip()
+        customer_phone = request.POST.get("customer_phone", "").strip()
+        notes = request.POST.get("notes", "").strip()
+
+        if item_type == "OTHER" and not other_description:
+            messages.error(request, "Please specify what was sold when choosing 'Other'.")
+            return redirect("multichoice_dashboard")
+
+        MultiChoiceHardwareSale.objects.create(
+            staff=request.user, branch=request.user.branch,
+            item_type=item_type, other_description=other_description,
+            quantity=quantity, amount=amount, iuc_number=iuc_number,
+            customer_name=customer_name, customer_phone=customer_phone,
+            notes=notes,
+        )
+
+        stock = MultiChoiceHardwareStock.objects.filter(
+            staff=request.user, item_type=item_type, other_description=other_description
+        ).first()
+        if stock:
+            stock.quantity = max(0, stock.quantity - quantity)
+            stock.save()
+
+        label = other_description if item_type == "OTHER" else dict(MultiChoiceHardwareSale.ITEM_CHOICES).get(item_type, item_type)
+        messages.success(request, f"Hardware sale recorded: {quantity}x {label} \u2014 \u20a6{float(amount):,.0f}")
+    return redirect("multichoice_dashboard")
+
+
+@role_required("MULTICHOICE")
+def add_multichoice_hardware_stock(request):
+    from core.models import MultiChoiceHardwareStock
+
+    if request.method == "POST":
+        item_type = request.POST.get("item_type", "")
+        other_description = request.POST.get("other_description", "").strip()
+        quantity = int(request.POST.get("quantity", 0) or 0)
+
+        if item_type == "OTHER" and not other_description:
+            messages.error(request, "Please specify the item name when choosing 'Other'.")
+            return redirect("multichoice_dashboard")
+
+        stock, _ = MultiChoiceHardwareStock.objects.get_or_create(
+            staff=request.user, item_type=item_type, other_description=other_description,
+            defaults={"branch": request.user.branch, "quantity": 0},
+        )
+        stock.quantity = stock.quantity + quantity
+        stock.branch = request.user.branch
+        stock.save()
+        messages.success(request, f"Stock updated: {stock.quantity} units now on hand.")
+    return redirect("multichoice_dashboard")
+
+
 # DEVICE COMMISSION — with history
 # ─────────────────────────────────────────
 
@@ -3748,6 +3895,7 @@ def customer_crm(request):
     search     = request.GET.get("search", "")
     source     = request.GET.get("source", "")   # RETAIL, MULTICHOICE, TELECOM
     branch_flt = request.GET.get("branch", "")
+    staff_flt  = request.GET.get("staff", "")     # filter by the specific staff member who made the sale
     sort_by    = request.GET.get("sort", "-last_purchase")  # or -total_spent, -purchase_count
 
     customers = Customer.objects.all().order_by(sort_by)
@@ -3780,6 +3928,24 @@ def customer_crm(request):
         ).distinct()
         customers = customers.filter(phone_number__in=phones)
 
+    # Filter by the specific staff member who handled the sale — checks
+    # across all three sale types so it works regardless of the source filter above.
+    if staff_flt:
+        staff_phones = set()
+        staff_phones.update(
+            RetailSale.objects.filter(staff_id=staff_flt, is_voided=False)
+            .values_list("customer_phone", flat=True).distinct()
+        )
+        staff_phones.update(
+            MultiChoiceSale.objects.filter(staff_id=staff_flt)
+            .values_list("customer_phone", flat=True).distinct()
+        )
+        staff_phones.update(
+            ServiceActivity.objects.filter(staff_id=staff_flt)
+            .values_list("customer_phone", flat=True).distinct()
+        )
+        customers = customers.filter(phone_number__in=staff_phones)
+
     paginator = Paginator(customers, 30)
     page = paginator.get_page(request.GET.get("page"))
 
@@ -3791,8 +3957,12 @@ def customer_crm(request):
         "date_to": date_to,
         "source": source,
         "branch_flt": branch_flt,
+        "staff_flt": staff_flt,
         "sort_by": sort_by,
         "branches": Branch.objects.all(),
+        "staff_list": User.objects.filter(
+            role__in=["RETAIL", "TELECOM", "MULTICHOICE"]
+        ).order_by("username"),
     })
 
 
@@ -4955,6 +5125,22 @@ def cron_monthly_reset(request):
     except Exception as e:
         return JsonResponse({'ok': False, 'error': str(e)}, status=500)
 
+
+
+def cron_whatsapp_report(request):
+    if not _check_cron_secret(request):
+        return JsonResponse({'error': 'Unauthorized'}, status=403)
+    try:
+        report_date = timezone.now().date()
+        message = _build_all_branches_report_message(report_date)
+        phone = _get_director_phone()
+        sent = send_whatsapp(phone, message)
+        return JsonResponse({
+            'ok': bool(sent),
+            'message': 'WhatsApp report sent' if sent else 'Could not send - check DIRECTOR_WHATSAPP/CALLMEBOT_API_KEY',
+        })
+    except Exception as e:
+        return JsonResponse({'ok': False, 'error': str(e)}, status=500)
 
 
 def offline_page(request):

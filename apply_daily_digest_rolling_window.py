@@ -1,8 +1,66 @@
-"""Management command: send director daily digest email.
+"""
+apply_daily_digest_rolling_window.py
+======================================
+Fixes the daily digest missing evening sales. Keeps your 7pm WAT schedule
+but makes the digest itself smarter: it now reports everything that
+happened SINCE the last digest was sent, up to right now - so an 8:40pm
+sale made yesterday shows up in TODAY's digest instead of being skipped
+forever.
+
+WHAT CHANGED
+- Digest no longer filters strictly by "today's calendar date" for Retail
+  Sales, MultiChoice Sales, and New Customers. It now uses a rolling
+  window: (last digest's send time) -> (this run's send time).
+- If this is the very first digest ever sent (no prior record), it
+  defaults to covering the last 24 hours.
+- The email header now shows the actual period covered.
+- The cron stays at 7pm WAT (0 18 * * 1-6) — this script does NOT touch
+  the schedule, since capturing the full history via the rolling window
+  is the actual fix, not a later send time.
+
+A SCHEMA LIMIT WORTH KNOWING
+  Telecom Activity (ServiceActivity) and Expenses only store a DATE, not
+  a time-of-day, so they still filter by calendar day only for now. Run
+  apply_digest_full_coverage.py after this one to close that gap too
+  (it adds a `time` field to both via migration).
+
+HOW TO RUN (Replit Shell)
+    python apply_daily_digest_rolling_window.py
+
+Then:
+    python manage.py check
+    git add . && git commit -m "Daily digest: rolling window instead of missing evening sales" && git push
+
+IDEMPOTENT - safe to run twice.
+"""
+
+import os
+import sys
+
+BASE_DIR = os.path.dirname(os.path.abspath(__file__))
+
+
+def read(path):
+    full = os.path.join(BASE_DIR, path)
+    if not os.path.exists(full):
+        print("XX Could not find " + path + " - are you running this from your project root?")
+        sys.exit(1)
+    with open(full, "r", encoding="utf-8") as f:
+        return f.read()
+
+
+def write(path, content):
+    full = os.path.join(BASE_DIR, path)
+    with open(full, "w", encoding="utf-8") as f:
+        f.write(content)
+
+
+NEW_DIGEST_MARKER = "ROLLING WINDOW DIGEST v1"
+
+NEW_DIGEST_FILE = '''"""Management command: send director daily digest email.
 Detailed HTML version - per-branch breakdown, products sold, telecom/multichoice activity.
 
 # ROLLING WINDOW DIGEST v1
-# FULL COVERAGE v1 - Expenses + Telecom Activity also use the rolling window
 Reports everything since the last digest was sent (not just "today"), so
 evening sales made after the previous run are never silently dropped.
 
@@ -72,13 +130,9 @@ class Command(BaseCommand):
         mc_sales_all = _window_qs(MultiChoiceSale, MultiChoiceSale.objects.all())
         mc_revenue_all = mc_sales_all.aggregate(t=Sum("amount"))["t"] or 0
 
-        # FULL COVERAGE v1 - Expenses and Telecom Activity now have a time
-        # field too, so they get the same rolling-window treatment.
-        expenses_all = _window_qs(Expense, Expense.objects.all())
-        total_expenses_all = expenses_all.aggregate(
+        total_expenses_all = Expense.objects.filter(date=end_date).aggregate(
             t=Sum("amount")
         )["t"] or 0
-        service_activities_all = _window_qs(ServiceActivity, ServiceActivity.objects.all())
 
         new_customers = Customer.objects.filter(
             last_purchase__gt=period_start_aware, last_purchase__lte=period_end_aware
@@ -112,7 +166,7 @@ class Command(BaseCommand):
             b_mc_revenue = b_mc.aggregate(t=Sum("amount"))["t"] or 0
             b_mc_count = b_mc.count()
 
-            b_activities = service_activities_all.filter(branch=branch)
+            b_activities = ServiceActivity.objects.filter(branch=branch, date=end_date)
             b_activity_summary = (
                 b_activities.values("service_type")
                 .annotate(qty=Sum("quantity"))
@@ -124,7 +178,7 @@ class Command(BaseCommand):
             b_late = b_att.filter(is_late=True).count()
             b_absent = b_att.filter(is_absent=True).count()
 
-            b_expenses = expenses_all.filter(branch=branch).aggregate(
+            b_expenses = Expense.objects.filter(branch=branch, date=end_date).aggregate(
                 t=Sum("amount")
             )["t"] or 0
 
@@ -167,7 +221,7 @@ class Command(BaseCommand):
                     </div>
                     <div style="background:#dbeafe;border-radius:6px;padding:8px 14px;font-size:13px;">
                         <strong style="color:#1e40af;">{b_present} present</strong><br>
-                        <span style="color:#6b7280;">{b_late} late \u00b7 {b_absent} absent</span>
+                        <span style="color:#6b7280;">{b_late} late \\u00b7 {b_absent} absent</span>
                     </div>
                 </div>
 
@@ -205,7 +259,7 @@ class Command(BaseCommand):
         else:
             date_label = (
                 period_start_naive.strftime("%a %d %b, %I:%M%p")
-                + " \u2192 "
+                + " \\u2192 "
                 + period_end_naive.strftime("%a %d %b, %I:%M%p")
             )
 
@@ -245,13 +299,13 @@ class Command(BaseCommand):
                 {stock_html}
 
                 <p style="font-size:12px;color:#9ca3af;text-align:center;margin-top:24px;border-top:1px solid #e5e7eb;padding-top:14px;">
-                    Automated daily digest from GPSL ERP \u00b7 Log in to your dashboard for full details.
+                    Automated daily digest from GPSL ERP \\u00b7 Log in to your dashboard for full details.
                 </p>
             </div>
         </div>
         """
 
-        plain_text = f"GPSL Daily Digest - {date_label}\n\nView this email in HTML for full details.\nTotal Revenue: N{(retail_revenue_all + mc_revenue_all):,.0f}"
+        plain_text = f"GPSL Daily Digest - {date_label}\\n\\nView this email in HTML for full details.\\nTotal Revenue: N{(retail_revenue_all + mc_revenue_all):,.0f}"
 
         try:
             msg = EmailMessage(
@@ -272,7 +326,7 @@ class Command(BaseCommand):
                     "total_retail_revenue": retail_revenue_all,
                     "total_multichoice_sales": mc_sales_all.count(),
                     "total_multichoice_revenue": mc_revenue_all,
-                    "total_service_activities": service_activities_all.count(),
+                    "total_service_activities": ServiceActivity.objects.filter(date=end_date).count(),
                     "total_new_customers": new_customers,
                     "total_stock_alerts": stock_alerts.count(),
                     "total_attendance_records": Attendance.objects.filter(date=end_date).count(),
@@ -288,3 +342,31 @@ class Command(BaseCommand):
             self.stdout.write(self.style.SUCCESS(f"Detailed daily digest sent to {email} (covering {date_label})"))
         except Exception as e:
             self.stderr.write(self.style.ERROR(f"Failed to send digest: {e}"))
+'''
+
+
+def main():
+    print("-- Applying Rolling-Window Daily Digest --\n")
+
+    digest_path = os.path.join(BASE_DIR, "core", "management", "commands", "daily_digest.py")
+    if not os.path.exists(digest_path):
+        print("XX Could not find core/management/commands/daily_digest.py")
+        sys.exit(1)
+    current = read("core/management/commands/daily_digest.py")
+    if NEW_DIGEST_MARKER in current:
+        print("SKIP  daily_digest.py: rolling-window version already in place, skipping.")
+    else:
+        write("core/management/commands/daily_digest.py", NEW_DIGEST_FILE)
+        print("OK    daily_digest.py: replaced with rolling-window version")
+
+    print("\n-- Done --")
+    print("Next steps:")
+    print("  python manage.py check")
+    print("  git add . && git commit -m 'Daily digest: rolling window' && git push")
+    print("")
+    print("Optional manual test of a specific calendar day:")
+    print("  python manage.py daily_digest --email=you@example.com --date=2026-08-04")
+
+
+if __name__ == "__main__":
+    main()

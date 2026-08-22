@@ -55,6 +55,9 @@ pre{background:#f5f5f5;padding:.8rem;border-radius:6px;font-size:.75rem;overflow
     <h1 class="dash-title">Retail Dashboard</h1>
     <p class="dash-sub">{{ request.user.username }} &nbsp;·&nbsp; {{ request.user.branch.name }} &nbsp;·&nbsp; {% now "D, d M Y" %}</p>
   </div>
+  <div style="display:flex;gap:.6rem;flex-wrap:wrap;align-items:center;">
+    {% include "partials/attendance_widget.html" %}
+  </div>
 </div>
 
 <!-- KPI CARDS -->
@@ -85,6 +88,7 @@ pre{background:#f5f5f5;padding:.8rem;border-radius:6px;font-size:.75rem;overflow
   <button class="tab-btn" onclick="switchTab('attendance',this)">📍 Attendance</button>
   <button class="tab-btn" onclick="switchTab('checkinout',this)">🚶 Check In/Out</button>
   <button class="tab-btn" onclick="switchTab('requests',this)">📬 Stock Requests</button>
+  <button class="tab-btn" onclick="switchTab('onlinesales',this)">📱 Online Sales</button>
 </div>
 
 <!-- ══════════ TAB: RECORD SALE ══════════ -->
@@ -442,6 +446,10 @@ Generic Cable,Type-C Cable,Accessories,Cables,2500,10,</pre>
       <button type="submit" class="btn-sm btn-primary" style="margin-top:.5rem;">Send Request</button>
     </form>
   </div>
+</div>
+
+<div id="tab-onlinesales" class="tab-panel">
+  {% include "partials/online_sale_form.html" %}
 </div>
 
 <script>

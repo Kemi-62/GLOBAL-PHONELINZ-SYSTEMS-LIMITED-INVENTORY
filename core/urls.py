@@ -175,6 +175,12 @@ urlpatterns = [
     path('director/stock-transfer-history/', views.stock_transfer_history, name='stock_transfer_history'),
     path('system/email-test/', views.email_diagnostic, name='email_diagnostic'),
     path('online-sales/log/', views.log_online_sale, name='log_online_sale'),
+    path('multichoice/hardware-sale/', views.record_multichoice_hardware_sale, name='record_multichoice_hardware_sale'),
+    path('multichoice/hardware-stock/add/', views.add_multichoice_hardware_stock, name='add_multichoice_hardware_stock'),
     path('online-sales/mine/', views.my_online_sales, name='my_online_sales'),
     path('online-sales/overview/', views.online_sales_overview, name='online_sales_overview'),
+    path('manager/send-daily-report-whatsapp/', views.send_daily_report_whatsapp, name='send_daily_report_whatsapp'),
+    path('manager/send-stock-request-whatsapp/', views.send_stock_request_whatsapp, name='send_stock_request_whatsapp'),
+    path('manager/whatsapp-report/', views.whatsapp_report_page, name='whatsapp_report_page'),
+    path('cron/whatsapp-report/', views.cron_whatsapp_report, name='cron_whatsapp_report'),
 ]

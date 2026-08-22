@@ -1,0 +1,19 @@
+name: GPSL WhatsApp Report
+
+on:
+  schedule:
+    - cron: '15 18 * * 1-6'
+  workflow_dispatch:
+
+jobs:
+  whatsapp-report:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Wake Render app
+        run: |
+          curl -s --max-time 60 "https://app.globalphonelinz.com/system/keepalive/" || true
+          sleep 15
+      - name: Send WhatsApp report
+        run: |
+          curl -s --max-time 120 \
+            "https://app.globalphonelinz.com/cron/whatsapp-report/?key=gpsl2026backup"

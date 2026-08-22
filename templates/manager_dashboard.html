@@ -85,7 +85,8 @@
     <h1 class="dash-title">Manager Dashboard</h1>
     <p class="dash-sub">Branch: <strong>{{ request.user.branch.name }}</strong> &nbsp;·&nbsp; {% now "D, d M Y" %}</p>
   </div>
-  <div style="display:flex;gap:.6rem;flex-wrap:wrap;">
+  <div style="display:flex;gap:.6rem;flex-wrap:wrap;align-items:center;">
+    <a href="{% url 'whatsapp_report_page' %}" class="btn-sm" style="background:#25D366;color:#fff;text-decoration:none;">📱 WhatsApp Report</a>
     {% include "partials/attendance_widget.html" %}
   </div>
 </div>
@@ -133,6 +134,7 @@
   <button class="tab-btn" onclick="switchTab('expenses',this)">💸 Expenses</button>
   <button class="tab-btn" onclick="switchTab('bulk',this)">📂 Bulk Upload</button>
   <button class="tab-btn" onclick="switchTab('staff',this)">👥 Staff Actions</button>
+  <button class="tab-btn" onclick="switchTab('onlinesales',this)">📱 Online Sales</button>
 </div>
 
 <!-- ══════════ TAB: TELECOM ══════════ -->
@@ -600,6 +602,10 @@ Type-C Cable,Accessories,Cables,1200,2500,20</pre>
     
 
   
+<div id="tab-onlinesales" class="tab-panel">
+  {% include "partials/online_sale_form.html" %}
+</div>
+
 <script>
 function switchTab(name, btn) {
   document.querySelectorAll('.tab-panel').forEach(p => p.classList.remove('active'));

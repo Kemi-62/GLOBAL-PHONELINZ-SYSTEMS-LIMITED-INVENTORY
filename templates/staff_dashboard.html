@@ -46,6 +46,9 @@
     <h1 class="dash-title">Telecom Dashboard</h1>
     <p class="dash-sub">{{ request.user.username }} &nbsp;·&nbsp; {{ request.user.branch.name }} &nbsp;·&nbsp; {% now "D, d M Y" %}</p>
   </div>
+  <div style="display:flex;gap:.6rem;flex-wrap:wrap;align-items:center;">
+    {% include "partials/attendance_widget.html" %}
+  </div>
 </div>
 
 <!-- KPIs -->
@@ -83,6 +86,7 @@
   <button class="tab-btn" onclick="switchTab('checkinout',this)">🚶 Check In/Out</button>
   <button class="tab-btn" onclick="switchTab('devices',this)">📦 Device Stock</button>
   <button class="tab-btn" onclick="switchTab('sell-device',this)">💸 Sell Device</button>
+  <button class="tab-btn" onclick="switchTab('onlinesales',this)">📱 Online Sales</button>
 </div>
 
 <!-- ══ TAB: RECORD ══ -->
@@ -267,7 +271,6 @@
 
 <!-- ══ TAB: ATTENDANCE ══ -->
 <div id="tab-attendance" class="tab-panel">
-  {% include "partials/attendance_widget.html" %}
   <div class="card">
     <p class="card-title">📅 Recent Attendance</p>
     <table class="data-table">
@@ -522,6 +525,10 @@
     <p style="text-align:center;color:#9ca3af;padding:1.5rem 0;">No device sales recorded yet.</p>
     {% endif %}
   </div>
+</div>
+
+<div id="tab-onlinesales" class="tab-panel">
+  {% include "partials/online_sale_form.html" %}
 </div>
 
 <script>

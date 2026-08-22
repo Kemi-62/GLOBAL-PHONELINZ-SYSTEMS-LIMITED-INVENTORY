@@ -145,6 +145,7 @@ class ServiceActivity(models.Model):
     device_tag = models.ForeignKey(DeviceTag, on_delete=models.CASCADE, null=True, blank=True)
     quantity = models.PositiveIntegerField()
     date = models.DateField(auto_now_add=True)
+    time = models.TimeField(auto_now_add=True)
 
     approved = models.BooleanField(default=False)
     customer_phone = models.CharField(max_length=20, blank=True, default='')
@@ -209,6 +210,7 @@ class Expense(models.Model):
     amount = models.DecimalField(max_digits=12, decimal_places=2)
     description = models.TextField(blank=True)
     date = models.DateField(auto_now_add=True)
+    time = models.TimeField(auto_now_add=True)
 
     def __str__(self):
         return f"{self.category} - {self.amount} at {self.branch.name}"
@@ -432,6 +434,55 @@ class StockAlert(models.Model):
 
     def __str__(self):
         return f"{self.product.model_name} - {self.alert_type}"
+
+
+class MultiChoiceHardwareStock(models.Model):
+    """A MultiChoice staff member's personal decoder/accessory inventory."""
+    ITEM_CHOICES = [
+        ('GOTV_DECODER_SET', 'Complete GOtv Decoder Set'),
+        ('DSTV_DECODER_SET', 'Complete DStv Decoder Set'),
+        ('SINGLE_DECODER',   'Single Decoder'),
+        ('REMOTE',           'Remote'),
+        ('ADAPTER',          'Adapter'),
+        ('ANTENNA',          'Antenna'),
+        ('WIRE',             'Wire'),
+        ('OTHER',            'Other'),
+    ]
+    staff = models.ForeignKey('User', on_delete=models.CASCADE, related_name='mc_hardware_stock')
+    branch = models.ForeignKey('Branch', on_delete=models.CASCADE, related_name='mc_hardware_stock')
+    item_type = models.CharField(max_length=20, choices=ITEM_CHOICES)
+    other_description = models.CharField(max_length=150, blank=True, default='')
+    quantity = models.IntegerField(default=0)
+    updated_at = models.DateTimeField(auto_now=True)
+
+    class Meta:
+        unique_together = ('staff', 'item_type', 'other_description')
+
+    def __str__(self):
+        label = self.other_description if self.item_type == 'OTHER' else self.get_item_type_display()
+        return f"{self.staff.username} - {label} ({self.quantity})"
+
+
+class MultiChoiceHardwareSale(models.Model):
+    """A hardware sale (decoder, accessory) recorded by a MultiChoice staff member."""
+    ITEM_CHOICES = MultiChoiceHardwareStock.ITEM_CHOICES
+
+    staff = models.ForeignKey('User', on_delete=models.CASCADE, related_name='mc_hardware_sales')
+    branch = models.ForeignKey('Branch', on_delete=models.CASCADE, related_name='mc_hardware_sales')
+    item_type = models.CharField(max_length=20, choices=ITEM_CHOICES)
+    other_description = models.CharField(max_length=150, blank=True, default='')
+    quantity = models.PositiveIntegerField(default=1)
+    amount = models.DecimalField(max_digits=12, decimal_places=2)
+    iuc_number = models.CharField(max_length=30, blank=True, default='')
+    customer_name = models.CharField(max_length=150, blank=True, default='')
+    customer_phone = models.CharField(max_length=20, blank=True, default='')
+    notes = models.TextField(blank=True, default='')
+    date = models.DateField(auto_now_add=True)
+    time = models.TimeField(auto_now_add=True)
+
+    def __str__(self):
+        label = self.other_description if self.item_type == 'OTHER' else self.get_item_type_display()
+        return f"{label} x{self.quantity} - {self.staff.username}"
 
 
 class DeviceTagCommission(models.Model):

@@ -57,9 +57,9 @@
     <h1 class="dash-title">MultiChoice Dashboard</h1>
     <p class="dash-sub">{{ request.user.username }} &nbsp;·&nbsp; {{ request.user.branch.name }} &nbsp;·&nbsp; {% now "D, d M Y" %}</p>
   </div>
-  <div style="display:flex;gap:.6rem;flex-wrap:wrap;">
+  <div style="display:flex;gap:.6rem;flex-wrap:wrap;align-items:center;">
     <a href="{% url 'my_commissions' %}" class="btn-sm btn-purple">💰 My Commissions</a>
-    <a href="{% url 'attendance_history' %}" class="btn-sm btn-outline">📋 Attendance</a>
+    {% include "partials/attendance_widget.html" %}
   </div>
 </div>
 
@@ -133,6 +133,9 @@
   <button class="tab-btn" onclick="switchTab('balance',this)">💰 Balance Log</button>
   <button class="tab-btn" onclick="switchTab('attendance',this)">📍 Attendance</button>
   <button class="tab-btn" onclick="switchTab('checkinout',this)">🚶 Check In/Out</button>
+  <button class="tab-btn" onclick="switchTab('hardware-sales',this)">🔌 Hardware Sales</button>
+  <button class="tab-btn" onclick="switchTab('hardware-inventory',this)">📦 Inventory</button>
+  <button class="tab-btn" onclick="switchTab('onlinesales',this)">📱 Online Sales</button>
 </div>
 
 <!-- ══ TAB: RECORD ══ -->
@@ -368,7 +371,6 @@
 
 <!-- ══ TAB: ATTENDANCE ══ -->
 <div id="tab-attendance" class="tab-panel">
-  {% include "partials/attendance_widget.html" %}
   <div class="card">
     <p class="card-title">📅 Recent Attendance</p>
     <table class="data-table">
@@ -409,6 +411,139 @@
       </tbody>
     </table>
   </div>
+</div>
+
+<!-- ══ TAB: HARDWARE SALES ══ -->
+<div id="tab-hardware-sales" class="tab-panel">
+  <div class="card">
+    <p class="card-title">🔌 Record Hardware Sale</p>
+    <form method="POST" action="{% url 'record_multichoice_hardware_sale' %}" id="hw-sale-form">
+      {% csrf_token %}
+      <div class="form-row">
+        <div class="form-group">
+          <label>Item *</label>
+          <select name="item_type" id="hw-sale-item" required onchange="document.getElementById('hw-sale-other-wrap').style.display = this.value === 'OTHER' ? 'block' : 'none';">
+            {% for val, label in hardware_item_choices %}
+            <option value="{{ val }}">{{ label }}</option>
+            {% endfor %}
+          </select>
+        </div>
+        <div class="form-group">
+          <label>Quantity *</label>
+          <input type="number" name="quantity" min="1" value="1" required>
+        </div>
+      </div>
+      <div class="form-group" id="hw-sale-other-wrap" style="display:none;">
+        <label>Specify what was sold *</label>
+        <input type="text" name="other_description" placeholder="e.g. HDMI splitter">
+      </div>
+      <div class="form-row">
+        <div class="form-group">
+          <label>Amount (₦) *</label>
+          <input type="number" name="amount" min="0" step="0.01" required>
+        </div>
+        <div class="form-group">
+          <label>IUC Number</label>
+          <input type="text" name="iuc_number" placeholder="If linked to a subscription">
+        </div>
+      </div>
+      <div class="form-row">
+        <div class="form-group">
+          <label>Customer Name</label>
+          <input type="text" name="customer_name">
+        </div>
+        <div class="form-group">
+          <label>Customer Phone</label>
+          <input type="text" name="customer_phone">
+        </div>
+      </div>
+      <div class="form-group">
+        <label>Notes</label>
+        <textarea name="notes" rows="2" placeholder="Optional"></textarea>
+      </div>
+      <button type="submit" class="btn-sm btn-primary">Record Sale</button>
+    </form>
+  </div>
+
+  <div class="card">
+    <p class="card-title">📋 Today's Hardware Sales</p>
+    <div style="overflow-x:auto;">
+      <table class="data-table">
+        <thead><tr><th>Time</th><th>Item</th><th style="text-align:center;">Qty</th><th style="text-align:right;">Amount</th><th>Customer</th><th>IUC</th></tr></thead>
+        <tbody>
+          {% for s in hardware_sales_today %}
+          <tr>
+            <td style="font-size:.78rem;">{{ s.time|time:"H:i" }}</td>
+            <td><strong>{% if s.item_type == 'OTHER' %}{{ s.other_description }}{% else %}{{ s.get_item_type_display }}{% endif %}</strong></td>
+            <td style="text-align:center;">{{ s.quantity }}</td>
+            <td style="text-align:right;">₦{{ s.amount|floatformat:0 }}</td>
+            <td>{{ s.customer_name|default:"—" }}</td>
+            <td>{{ s.iuc_number|default:"—" }}</td>
+          </tr>
+          {% empty %}
+          <tr><td colspan="6" style="text-align:center;color:#9ca3af;">No hardware sales recorded today.</td></tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+  </div>
+</div>
+
+<!-- ══ TAB: HARDWARE INVENTORY ══ -->
+<div id="tab-hardware-inventory" class="tab-panel">
+  <div class="card">
+    <p class="card-title">📦 Add / Receive Stock</p>
+    <form method="POST" action="{% url 'add_multichoice_hardware_stock' %}" id="hw-stock-form">
+      {% csrf_token %}
+      <div class="form-row">
+        <div class="form-group">
+          <label>Item *</label>
+          <select name="item_type" id="hw-stock-item" required onchange="document.getElementById('hw-stock-other-wrap').style.display = this.value === 'OTHER' ? 'block' : 'none';">
+            {% for val, label in hardware_item_choices %}
+            <option value="{{ val }}">{{ label }}</option>
+            {% endfor %}
+          </select>
+        </div>
+        <div class="form-group">
+          <label>Quantity Received *</label>
+          <input type="number" name="quantity" min="1" required>
+        </div>
+      </div>
+      <div class="form-group" id="hw-stock-other-wrap" style="display:none;">
+        <label>Specify item *</label>
+        <input type="text" name="other_description" placeholder="e.g. HDMI splitter">
+      </div>
+      <button type="submit" class="btn-sm btn-primary">Add to Inventory</button>
+    </form>
+  </div>
+
+  <div class="card">
+    <p class="card-title">📊 Current Inventory</p>
+    <div style="overflow-x:auto;">
+      <table class="data-table">
+        <thead><tr><th>Item</th><th style="text-align:center;">Quantity On Hand</th><th>Last Updated</th></tr></thead>
+        <tbody>
+          {% for stock in hardware_stock %}
+          <tr>
+            <td><strong>{% if stock.item_type == 'OTHER' %}{{ stock.other_description }}{% else %}{{ stock.get_item_type_display }}{% endif %}</strong></td>
+            <td style="text-align:center;">
+              {% if stock.quantity <= 0 %}<span class="badge" style="background:#fee2e2;color:#991b1b;">{{ stock.quantity }}</span>
+              {% elif stock.quantity <= 2 %}<span class="badge" style="background:#fef3c7;color:#92400e;">{{ stock.quantity }}</span>
+              {% else %}<span class="badge" style="background:#dcfce7;color:#065f46;">{{ stock.quantity }}</span>{% endif %}
+            </td>
+            <td style="font-size:.78rem;color:#6b7280;">{{ stock.updated_at|date:"d M Y H:i" }}</td>
+          </tr>
+          {% empty %}
+          <tr><td colspan="3" style="text-align:center;color:#9ca3af;">No inventory tracked yet — add stock above.</td></tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+  </div>
+</div>
+
+<div id="tab-onlinesales" class="tab-panel">
+  {% include "partials/online_sale_form.html" %}
 </div>
 
 <script>
