@@ -89,6 +89,7 @@ pre{background:#f5f5f5;padding:.8rem;border-radius:6px;font-size:.75rem;overflow
   <button class="tab-btn" onclick="switchTab('checkinout',this)">🚶 Check In/Out</button>
   <button class="tab-btn" onclick="switchTab('requests',this)">📬 Stock Requests</button>
   <button class="tab-btn" onclick="switchTab('onlinesales',this)">📱 Online Sales</button>
+  <button class="tab-btn" onclick="switchTab('myhistory',this)">📈 My Monthly History</button>
 </div>
 
 <!-- ══════════ TAB: RECORD SALE ══════════ -->
@@ -450,6 +451,11 @@ Generic Cable,Type-C Cable,Accessories,Cables,2500,10,</pre>
 
 <div id="tab-onlinesales" class="tab-panel">
   {% include "partials/online_sale_form.html" %}
+</div>
+
+<div id="tab-myhistory" class="tab-panel">
+  {% load monthly_history_tags %}
+  {% staff_monthly_history %}
 </div>
 
 <script>

@@ -1,0 +1,58 @@
+<div class="card">
+  <p class="card-title">📈 My Monthly History</p>
+
+  {% if not has_my_history %}
+  <p style="font-size:.83rem;color:#9ca3af;">No monthly history yet — this builds up automatically as each month closes.</p>
+  {% else %}
+  <div style="overflow-x:auto;">
+    <table class="data-table">
+      <thead><tr><th>Month</th><th style="text-align:right;">Total Revenue</th><th style="text-align:center;">Present</th><th style="text-align:center;">Late</th><th style="text-align:center;">Absent</th></tr></thead>
+      <tbody>
+        {% for row in my_history %}
+        <tr>
+          <td><strong>{{ row.month|date:"F Y" }}</strong></td>
+          <td style="text-align:right;">₦{{ row.total_revenue|floatformat:0 }}</td>
+          <td style="text-align:center;">{{ row.days_present }}</td>
+          <td style="text-align:center;">{{ row.days_late }}</td>
+          <td style="text-align:center;">{{ row.days_absent }}</td>
+        </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+  {% endif %}
+</div>
+
+{% if my_all_months|length > 1 %}
+<div class="card">
+  <p class="card-title">🔀 Compare Two Months</p>
+  <form method="GET" style="display:flex;gap:.6rem;flex-wrap:wrap;align-items:center;margin-bottom:1rem;">
+    <select name="my_month_a" style="padding:.45rem .7rem;border:1px solid #d1d5db;border-radius:6px;font-size:.83rem;">
+      {% for m in my_all_months %}<option value="{{ m|date:'Y-m-d' }}" {% if my_compare_a == m|date:'Y-m-d' %}selected{% endif %}>{{ m|date:"F Y" }}</option>{% endfor %}
+    </select>
+    <span style="font-size:.8rem;color:#6b7280;">vs</span>
+    <select name="my_month_b" style="padding:.45rem .7rem;border:1px solid #d1d5db;border-radius:6px;font-size:.83rem;">
+      {% for m in my_all_months %}<option value="{{ m|date:'Y-m-d' }}" {% if my_compare_b == m|date:'Y-m-d' %}selected{% endif %}>{{ m|date:"F Y" }}</option>{% endfor %}
+    </select>
+    <button type="submit" class="btn-sm btn-primary">Compare</button>
+  </form>
+
+  {% if my_comparison %}
+  <table class="data-table">
+    <thead><tr><th></th><th>{{ my_comparison.a.month|date:"F Y" }}</th><th>{{ my_comparison.b.month|date:"F Y" }}</th><th>Change</th></tr></thead>
+    <tbody>
+      <tr>
+        <td>Total Revenue</td>
+        <td>₦{{ my_comparison.a.total_revenue|floatformat:0 }}</td>
+        <td>₦{{ my_comparison.b.total_revenue|floatformat:0 }}</td>
+        <td>
+          {% if my_comparison.revenue_change > 0 %}<span class="badge" style="background:#dcfce7;color:#065f46;">↑ {{ my_comparison.revenue_change }}%</span>
+          {% elif my_comparison.revenue_change < 0 %}<span class="badge" style="background:#fee2e2;color:#991b1b;">↓ {{ my_comparison.revenue_change }}%</span>
+          {% else %}<span class="badge" style="background:#f1f5f9;color:#475569;">—</span>{% endif %}
+        </td>
+      </tr>
+    </tbody>
+  </table>
+  {% endif %}
+</div>
+{% endif %}

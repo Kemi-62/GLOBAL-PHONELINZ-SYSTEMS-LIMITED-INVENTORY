@@ -1,0 +1,23 @@
+name: GPSL Monthly Performance Archive
+
+on:
+  schedule:
+    - cron: '10 0 1 * *'
+  workflow_dispatch:
+
+jobs:
+  archive-monthly:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Wake Render app
+        run: |
+          curl -s --max-time 60 "https://app.globalphonelinz.com/system/keepalive/" || true
+          sleep 15
+      - name: Archive previous month
+        run: |
+          curl -s --max-time 120 \
+            "https://app.globalphonelinz.com/cron/archive-monthly-performance/?key=gpsl2026backup"
+      - name: Archive + email staff performance
+        run: |
+          curl -s --max-time 120 \
+            "https://app.globalphonelinz.com/cron/archive-staff-monthly-performance/?key=gpsl2026backup"

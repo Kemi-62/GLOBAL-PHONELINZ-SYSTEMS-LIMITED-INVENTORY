@@ -183,4 +183,7 @@ urlpatterns = [
     path('manager/send-stock-request-whatsapp/', views.send_stock_request_whatsapp, name='send_stock_request_whatsapp'),
     path('manager/whatsapp-report/', views.whatsapp_report_page, name='whatsapp_report_page'),
     path('cron/whatsapp-report/', views.cron_whatsapp_report, name='cron_whatsapp_report'),
+    path('director/monthly-performance/', views.monthly_performance, name='monthly_performance'),
+    path('cron/archive-monthly-performance/', views.cron_archive_monthly_performance, name='cron_archive_monthly_performance'),
+    path('cron/archive-staff-monthly-performance/', views.cron_archive_staff_monthly_performance, name='cron_archive_staff_monthly_performance'),
 ]

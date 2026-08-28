@@ -485,6 +485,77 @@ class MultiChoiceHardwareSale(models.Model):
         return f"{label} x{self.quantity} - {self.staff.username}"
 
 
+class MonthlyPerformanceArchive(models.Model):
+    """A permanently-stored snapshot of one month's performance, per branch
+    and company-wide (branch=NULL). Once a month is archived here, its
+    numbers don't change -- this is the historical record for
+    month-to-month comparison."""
+    month = models.DateField(help_text="Always the 1st of the archived month")
+    branch = models.ForeignKey(
+        'Branch', on_delete=models.CASCADE, null=True, blank=True,
+        related_name='monthly_archives',
+        help_text="Null = company-wide total row for this month"
+    )
+    retail_revenue = models.DecimalField(max_digits=14, decimal_places=2, default=0)
+    retail_quantity = models.IntegerField(default=0)
+    retail_gross_profit = models.DecimalField(max_digits=14, decimal_places=2, default=0)
+    multichoice_revenue = models.DecimalField(max_digits=14, decimal_places=2, default=0)
+    multichoice_quantity = models.IntegerField(default=0)
+    total_expenses = models.DecimalField(max_digits=14, decimal_places=2, default=0)
+    net_profit = models.DecimalField(max_digits=14, decimal_places=2, default=0)
+    new_customers = models.IntegerField(default=0)
+    generated_at = models.DateTimeField(auto_now=True)
+
+    class Meta:
+        unique_together = ('month', 'branch')
+        ordering = ['-month']
+
+    def __str__(self):
+        scope = self.branch.name if self.branch else "Company-wide"
+        return f"{scope} - {self.month.strftime('%B %Y')}"
+
+
+class StaffMonthlyPerformanceArchive(models.Model):
+    """A permanently-stored snapshot of one staff member's performance for
+    one month -- their historical record, independent of the raw sales
+    tables, and the source for their monthly emailed report."""
+    staff = models.ForeignKey(
+        'User', on_delete=models.CASCADE, related_name='monthly_archives'
+    )
+    month = models.DateField(help_text="Always the 1st of the archived month")
+    branch = models.ForeignKey('Branch', on_delete=models.SET_NULL, null=True, blank=True)
+
+    retail_revenue = models.DecimalField(max_digits=14, decimal_places=2, default=0)
+    retail_quantity = models.IntegerField(default=0)
+    multichoice_revenue = models.DecimalField(max_digits=14, decimal_places=2, default=0)
+    multichoice_quantity = models.IntegerField(default=0)
+    hardware_revenue = models.DecimalField(max_digits=14, decimal_places=2, default=0)
+    hardware_quantity = models.IntegerField(default=0)
+    online_sales_count = models.IntegerField(default=0)
+    online_sales_revenue = models.DecimalField(max_digits=14, decimal_places=2, default=0)
+    telecom_activity_count = models.IntegerField(default=0)
+
+    days_present = models.IntegerField(default=0)
+    days_late = models.IntegerField(default=0)
+    days_absent = models.IntegerField(default=0)
+
+    email_sent = models.BooleanField(default=False)
+    email_sent_at = models.DateTimeField(null=True, blank=True)
+    generated_at = models.DateTimeField(auto_now=True)
+
+    class Meta:
+        unique_together = ('staff', 'month')
+        ordering = ['-month']
+
+    @property
+    def total_revenue(self):
+        return (self.retail_revenue or 0) + (self.multichoice_revenue or 0) + \
+               (self.hardware_revenue or 0) + (self.online_sales_revenue or 0)
+
+    def __str__(self):
+        return f"{self.staff.username} - {self.month.strftime('%B %Y')}"
+
+
 class DeviceTagCommission(models.Model):
     branch = models.ForeignKey(Branch, on_delete=models.CASCADE)
     device_tag = models.ForeignKey(DeviceTag, on_delete=models.CASCADE)

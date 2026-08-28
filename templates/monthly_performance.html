@@ -1,0 +1,127 @@
+{% extends "base.html" %}
+{% block content %}
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+<style>
+.page-title{font-size:1.2rem;font-weight:700;color:#004F9F;margin:0}
+.card{background:#fff;border:1px solid #e2e8f0;border-radius:10px;padding:1.1rem 1.3rem;margin-bottom:1rem}
+.card-title{font-size:.92rem;font-weight:700;margin:0 0 .85rem}
+.badge{display:inline-block;padding:.2rem .55rem;border-radius:999px;font-size:.72rem;font-weight:700}
+.up{background:#dcfce7;color:#065f46}
+.down{background:#fee2e2;color:#991b1b}
+.flat{background:#f1f5f9;color:#475569}
+table.data-table{width:100%;border-collapse:collapse;font-size:.85rem}
+table.data-table th{text-align:left;padding:.5rem;background:#f9fafb;color:#374151;font-size:.78rem}
+table.data-table td{padding:.5rem;border-bottom:1px solid #f3f4f6}
+</style>
+
+<div style="margin-bottom:1.25rem">
+  <h1 class="page-title">📈 Monthly Performance</h1>
+  <p style="font-size:.85rem;color:#6b7280;margin:.3rem 0 0;">Historical month-by-month archive, trends, and comparison.</p>
+</div>
+
+{% if not has_history %}
+<div class="card" style="background:#fef3c7;border-color:#fde68a;">
+  <p style="margin:0;font-size:.85rem;color:#92400e;">
+    No archived months yet. Run <code>python manage.py archive_monthly_performance --backfill-months=6</code>
+    in your Shell to build your history from existing records, then this page fills in automatically.
+    From next month onward, archiving happens automatically on the 1st of every month.
+  </p>
+</div>
+{% endif %}
+
+<div class="card">
+  <p class="card-title">📅 {{ live_month_label }} (In Progress — Not Yet Finalized)</p>
+  <div style="display:flex;gap:1.5rem;flex-wrap:wrap;">
+    <div><p style="font-size:.72rem;color:#9ca3af;margin:0 0 .2rem;">Revenue So Far</p><p style="font-size:1.15rem;font-weight:700;margin:0;">₦{{ live_revenue|floatformat:0 }}</p></div>
+    <div><p style="font-size:.72rem;color:#9ca3af;margin:0 0 .2rem;">Expenses So Far</p><p style="font-size:1.15rem;font-weight:700;margin:0;">₦{{ live_expenses|floatformat:0 }}</p></div>
+    <div><p style="font-size:.72rem;color:#9ca3af;margin:0 0 .2rem;">Net So Far</p><p style="font-size:1.15rem;font-weight:700;margin:0;color:#065f46;">₦{{ live_net|floatformat:0 }}</p></div>
+  </div>
+  <p style="font-size:.75rem;color:#9ca3af;margin:.6rem 0 0;">This month finalizes and locks into the archive automatically on the 1st of next month.</p>
+</div>
+
+{% if trend_labels %}
+<div class="card">
+  <p class="card-title">12-Month Trend</p>
+  <canvas id="trendChart" style="max-height:280px;"></canvas>
+</div>
+{% endif %}
+
+{% if all_months|length > 1 %}
+<div class="card">
+  <p class="card-title">🔀 Compare Two Months</p>
+  <form method="GET" style="display:flex;gap:.6rem;flex-wrap:wrap;align-items:center;margin-bottom:1rem;">
+    <select name="month_a" style="padding:.45rem .7rem;border:1px solid #d1d5db;border-radius:6px;font-size:.83rem;">
+      {% for m in all_months %}<option value="{{ m|date:'Y-m-d' }}" {% if compare_a == m|date:'Y-m-d' %}selected{% endif %}>{{ m|date:"F Y" }}</option>{% endfor %}
+    </select>
+    <span style="font-size:.8rem;color:#6b7280;">vs</span>
+    <select name="month_b" style="padding:.45rem .7rem;border:1px solid #d1d5db;border-radius:6px;font-size:.83rem;">
+      {% for m in all_months %}<option value="{{ m|date:'Y-m-d' }}" {% if compare_b == m|date:'Y-m-d' %}selected{% endif %}>{{ m|date:"F Y" }}</option>{% endfor %}
+    </select>
+    <button type="submit" class="badge flat" style="border:none;cursor:pointer;padding:.5rem .9rem;">Compare</button>
+  </form>
+
+  {% if comparison %}
+  <table class="data-table">
+    <thead><tr><th></th><th>{{ comparison.a.month|date:"F Y" }}</th><th>{{ comparison.b.month|date:"F Y" }}</th><th>Change</th></tr></thead>
+    <tbody>
+      <tr>
+        <td>Revenue</td>
+        <td>₦{{ comparison.a.retail_revenue|add:comparison.a.multichoice_revenue|floatformat:0 }}</td>
+        <td>₦{{ comparison.b.retail_revenue|add:comparison.b.multichoice_revenue|floatformat:0 }}</td>
+        <td>{% if comparison.revenue_change > 0 %}<span class="badge up">↑ {{ comparison.revenue_change }}%</span>{% elif comparison.revenue_change < 0 %}<span class="badge down">↓ {{ comparison.revenue_change }}%</span>{% else %}<span class="badge flat">—</span>{% endif %}</td>
+      </tr>
+      <tr>
+        <td>Expenses</td>
+        <td>₦{{ comparison.a.total_expenses|floatformat:0 }}</td>
+        <td>₦{{ comparison.b.total_expenses|floatformat:0 }}</td>
+        <td>{% if comparison.expense_change > 0 %}<span class="badge down">↑ {{ comparison.expense_change }}%</span>{% elif comparison.expense_change < 0 %}<span class="badge up">↓ {{ comparison.expense_change }}%</span>{% else %}<span class="badge flat">—</span>{% endif %}</td>
+      </tr>
+      <tr style="background:#f0fdf4;">
+        <td><strong>Net Profit</strong></td>
+        <td><strong>₦{{ comparison.a.net_profit|floatformat:0 }}</strong></td>
+        <td><strong>₦{{ comparison.b.net_profit|floatformat:0 }}</strong></td>
+        <td>{% if comparison.net_change > 0 %}<span class="badge up">↑ {{ comparison.net_change }}%</span>{% elif comparison.net_change < 0 %}<span class="badge down">↓ {{ comparison.net_change }}%</span>{% else %}<span class="badge flat">—</span>{% endif %}</td>
+      </tr>
+      <tr><td>New Customers</td><td>{{ comparison.a.new_customers }}</td><td>{{ comparison.b.new_customers }}</td><td>—</td></tr>
+    </tbody>
+  </table>
+  {% endif %}
+</div>
+{% endif %}
+
+{% if branch_breakdown %}
+<div class="card">
+  <p class="card-title">🏪 Branch Breakdown — {{ latest_month|date:"F Y" }}</p>
+  <table class="data-table">
+    <thead><tr><th>Branch</th><th style="text-align:right;">Revenue</th><th style="text-align:right;">Expenses</th><th style="text-align:right;">Net Profit</th></tr></thead>
+    <tbody>
+      {% for row in branch_breakdown %}
+      <tr>
+        <td><strong>{{ row.branch.name }}</strong></td>
+        <td style="text-align:right;">₦{{ row.retail_revenue|add:row.multichoice_revenue|floatformat:0 }}</td>
+        <td style="text-align:right;">₦{{ row.total_expenses|floatformat:0 }}</td>
+        <td style="text-align:right;font-weight:700;color:{% if row.net_profit >= 0 %}#065f46{% else %}#991b1b{% endif %};">₦{{ row.net_profit|floatformat:0 }}</td>
+      </tr>
+      {% endfor %}
+    </tbody>
+  </table>
+</div>
+{% endif %}
+
+{% if trend_labels %}
+<script>
+new Chart(document.getElementById('trendChart'), {
+  type: 'line',
+  data: {
+    labels: {{ trend_labels|safe }},
+    datasets: [
+      { label: 'Revenue', data: {{ trend_revenue|safe }}, borderColor: '#004F9F', backgroundColor: 'rgba(0,79,159,.08)', tension: .3, fill: true },
+      { label: 'Expenses', data: {{ trend_expenses|safe }}, borderColor: '#ef4444', backgroundColor: 'rgba(239,68,68,.05)', tension: .3, fill: true },
+      { label: 'Net Profit', data: {{ trend_net|safe }}, borderColor: '#10b981', backgroundColor: 'rgba(16,185,129,.08)', tension: .3, fill: true },
+    ]
+  },
+  options: { responsive: true, plugins: { legend: { position: 'bottom' } } }
+});
+</script>
+{% endif %}
+{% endblock %}

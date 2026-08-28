@@ -1471,6 +1471,134 @@ def whatsapp_report_page(request):
     })
 
 
+# ───────────────────────────────────
+# MONTHLY PERFORMANCE ARCHIVE + TRENDS
+# ───────────────────────────────────
+
+def cron_archive_monthly_performance(request):
+    if not _check_cron_secret(request):
+        return JsonResponse({'error': 'Unauthorized'}, status=403)
+    try:
+        from django.core.management import call_command
+        call_command('archive_monthly_performance')
+        return JsonResponse({'ok': True, 'message': 'Previous month archived'})
+    except Exception as e:
+        return JsonResponse({'ok': False, 'error': str(e)}, status=500)
+
+
+@role_required("DIRECTOR")
+def monthly_performance(request):
+    """Month-to-month comparison, 12-month trend, and branch breakdown,
+    backed by the permanent MonthlyPerformanceArchive history."""
+    from core.models import MonthlyPerformanceArchive
+    from dateutil.relativedelta import relativedelta
+    from django.db.models import Sum, F, ExpressionWrapper, DecimalField
+
+    today_first = timezone.now().date().replace(day=1)
+
+    company_rows = list(
+        MonthlyPerformanceArchive.objects.filter(branch__isnull=True)
+        .order_by("-month")[:12]
+    )
+    company_rows.reverse()
+    trend_labels = [r.month.strftime("%b %Y") for r in company_rows]
+    trend_revenue = [float(r.retail_revenue + r.multichoice_revenue) for r in company_rows]
+    trend_expenses = [float(r.total_expenses) for r in company_rows]
+    trend_net = [float(r.net_profit) for r in company_rows]
+
+    profit_expr = ExpressionWrapper(
+        (F("selling_price") - F("product__cost_price")) * F("quantity"), output_field=DecimalField()
+    )
+    live_retail = RetailSale.objects.filter(date__gte=today_first, is_voided=False)
+    live_mc = MultiChoiceSale.objects.filter(date__gte=today_first)
+    live_exp = Expense.objects.filter(date__gte=today_first)
+    live_revenue = (live_retail.aggregate(t=Sum(F("quantity") * F("selling_price")))["t"] or 0) + \
+                   (live_mc.aggregate(t=Sum("amount"))["t"] or 0)
+    live_expenses = live_exp.aggregate(t=Sum("amount"))["t"] or 0
+    live_gross = live_retail.aggregate(t=Sum(profit_expr))["t"] or 0
+    live_mc_rev = live_mc.aggregate(t=Sum("amount"))["t"] or 0
+    live_net = (live_gross or 0) + (live_mc_rev or 0) - (live_expenses or 0)
+
+    compare_a = request.GET.get("month_a", "")
+    compare_b = request.GET.get("month_b", "")
+    all_months = list(
+        MonthlyPerformanceArchive.objects.filter(branch__isnull=True)
+        .order_by("-month").values_list("month", flat=True)
+    )
+
+    def _get_month_row(month_val):
+        if not month_val:
+            return None
+        try:
+            from datetime import date as _date
+            m = _date.fromisoformat(month_val)
+        except ValueError:
+            return None
+        return MonthlyPerformanceArchive.objects.filter(branch__isnull=True, month=m).first()
+
+    if not compare_a and len(all_months) >= 1:
+        compare_a = all_months[0].isoformat()
+    if not compare_b and len(all_months) >= 2:
+        compare_b = all_months[1].isoformat()
+
+    row_a = _get_month_row(compare_a)
+    row_b = _get_month_row(compare_b)
+
+    def _pct_change(new_val, old_val):
+        if not old_val:
+            return None
+        return round(((float(new_val) - float(old_val)) / float(old_val)) * 100, 1)
+
+    comparison = None
+    if row_a and row_b:
+        rev_a = float(row_a.retail_revenue + row_a.multichoice_revenue)
+        rev_b = float(row_b.retail_revenue + row_b.multichoice_revenue)
+        comparison = {
+            "a": row_a, "b": row_b,
+            "revenue_change": _pct_change(rev_a, rev_b),
+            "expense_change": _pct_change(row_a.total_expenses, row_b.total_expenses),
+            "net_change": _pct_change(row_a.net_profit, row_b.net_profit),
+        }
+
+    latest_month = all_months[0] if all_months else None
+    branch_breakdown = []
+    if latest_month:
+        branch_breakdown = list(
+            MonthlyPerformanceArchive.objects.filter(
+                branch__isnull=False, month=latest_month
+            ).select_related("branch").order_by("-net_profit")
+        )
+
+    return render(request, "monthly_performance.html", {
+        "trend_labels": trend_labels,
+        "trend_revenue": trend_revenue,
+        "trend_expenses": trend_expenses,
+        "trend_net": trend_net,
+        "live_month_label": today_first.strftime("%B %Y"),
+        "live_revenue": live_revenue,
+        "live_expenses": live_expenses,
+        "live_net": live_net,
+        "all_months": all_months,
+        "compare_a": compare_a,
+        "compare_b": compare_b,
+        "comparison": comparison,
+        "latest_month": latest_month,
+        "branch_breakdown": branch_breakdown,
+        "has_history": len(all_months) > 0,
+    })
+
+
+def cron_archive_staff_monthly_performance(request):
+    if not _check_cron_secret(request):
+        return JsonResponse({'error': 'Unauthorized'}, status=403)
+    try:
+        from django.core.management import call_command
+        call_command('archive_staff_monthly_performance', send_email=True)
+        return JsonResponse({'ok': True, 'message': 'Previous month archived and emailed for all staff'})
+    except Exception as e:
+        return JsonResponse({'ok': False, 'error': str(e)}, status=500)
+
+
 # DIRECTOR — ALL BRANCH STOCK VIEW
 # ─────────────────────────────────────────
 
