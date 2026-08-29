@@ -186,4 +186,5 @@ urlpatterns = [
     path('director/monthly-performance/', views.monthly_performance, name='monthly_performance'),
     path('cron/archive-monthly-performance/', views.cron_archive_monthly_performance, name='cron_archive_monthly_performance'),
     path('cron/archive-staff-monthly-performance/', views.cron_archive_staff_monthly_performance, name='cron_archive_staff_monthly_performance'),
+    path('my-customers/export/', views.export_my_customers_csv, name='export_my_customers_csv'),
 ]

@@ -1599,6 +1599,35 @@ def cron_archive_staff_monthly_performance(request):
         return JsonResponse({'ok': False, 'error': str(e)}, status=500)
 
 
+@login_required
+def export_my_customers_csv(request):
+    """Download the logged-in staff member's own (optionally filtered)
+    customer list as CSV -- for bulk messaging or spreadsheet use."""
+    from core.templatetags.customer_tags import get_my_customers_data
+
+    search = request.GET.get("cust_search", "").strip()
+    month_str = request.GET.get("cust_month", "")
+    data = get_my_customers_data(request.user, search, month_str)
+
+    response = HttpResponse(content_type="text/csv")
+    filename = "my_customers"
+    if month_str:
+        filename += "_" + month_str
+    response["Content-Disposition"] = f'attachment; filename="{filename}.csv"'
+
+    writer = csv.writer(response)
+    writer.writerow(["Name", "Phone", "Purchases", "Total Spent", "Last Purchase"])
+    for c in data["my_customers"]:
+        writer.writerow([
+            c["name"],
+            c["phone"],
+            c["purchase_count"],
+            f'{c["total_spent"]:.2f}',
+            c["last_purchase"].strftime("%Y-%m-%d") if c["last_purchase"] else "",
+        ])
+    return response
+
+
 # DIRECTOR — ALL BRANCH STOCK VIEW
 # ─────────────────────────────────────────
 

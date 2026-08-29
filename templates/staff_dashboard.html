@@ -88,6 +88,7 @@
   <button class="tab-btn" onclick="switchTab('sell-device',this)">💸 Sell Device</button>
   <button class="tab-btn" onclick="switchTab('onlinesales',this)">📱 Online Sales</button>
   <button class="tab-btn" onclick="switchTab('myhistory',this)">📈 My Monthly History</button>
+  <button class="tab-btn" onclick="switchTab('mycustomers',this)">👥 My Customers</button>
 </div>
 
 <!-- ══ TAB: RECORD ══ -->
@@ -535,6 +536,11 @@
 <div id="tab-myhistory" class="tab-panel">
   {% load monthly_history_tags %}
   {% staff_monthly_history %}
+</div>
+
+<div id="tab-mycustomers" class="tab-panel">
+  {% load customer_tags %}
+  {% my_customers_page %}
 </div>
 
 <script>

@@ -1,0 +1,50 @@
+<div class="card">
+  <p class="card-title">👥 My Customers</p>
+  <p style="font-size:.8rem;color:#6b7280;margin:-.5rem 0 1rem;">Customers you've personally sold to — separate from company-wide records. Great for month-end check-ins.</p>
+
+  <form method="GET" style="display:flex;gap:.6rem;flex-wrap:wrap;align-items:center;margin-bottom:1rem;">
+    <input type="text" name="cust_search" value="{{ cust_search }}" placeholder="Search name or phone"
+           style="padding:.45rem .7rem;border:1px solid #d1d5db;border-radius:6px;font-size:.83rem;flex:1;min-width:160px;">
+    {% if available_months %}
+    <select name="cust_month" style="padding:.45rem .7rem;border:1px solid #d1d5db;border-radius:6px;font-size:.83rem;">
+      <option value="">All Time</option>
+      {% for m in available_months %}
+      <option value="{{ m|date:'Y-m-d' }}" {% if cust_month == m|date:'Y-m-d' %}selected{% endif %}>Sold to in {{ m|date:"F Y" }}</option>
+      {% endfor %}
+    </select>
+    {% endif %}
+    <button type="submit" class="btn-sm btn-primary">Filter</button>
+    {% if cust_search or cust_month %}<a href="?" class="btn-sm btn-outline">Clear</a>{% endif %}
+    <a href="{% url 'export_my_customers_csv' %}?cust_search={{ cust_search }}&cust_month={{ cust_month }}" class="btn-sm btn-outline">⬇️ Export CSV</a>
+  </form>
+
+  {% if month_filter_active %}
+  <p style="font-size:.78rem;color:#004F9F;background:#eff6ff;padding:.5rem .8rem;border-radius:6px;margin-bottom:1rem;">
+    Showing {{ total_customers_count }} customer(s) you sold to that month — good list for a month-end thank-you message.
+  </p>
+  {% endif %}
+
+  <div style="overflow-x:auto;">
+    <table class="data-table">
+      <thead><tr><th>Customer</th><th>Phone</th><th style="text-align:center;">Purchases</th><th style="text-align:right;">Total Spent</th><th>Last Purchase</th><th></th></tr></thead>
+      <tbody>
+        {% for c in my_customers %}
+        <tr>
+          <td><strong>{{ c.name }}</strong></td>
+          <td style="font-size:.82rem;color:#6b7280;">{{ c.phone }}</td>
+          <td style="text-align:center;">{{ c.purchase_count }}</td>
+          <td style="text-align:right;">₦{{ c.total_spent|floatformat:0 }}</td>
+          <td style="font-size:.8rem;color:#6b7280;">{{ c.last_purchase|date:"d M Y"|default:"—" }}</td>
+          <td>
+            {% if c.wa_number %}
+            <a href="https://wa.me/{{ c.wa_number }}?text={{ c.wa_message }}" target="_blank" class="btn-sm" style="background:#25D366;color:#fff;text-decoration:none;padding:.35rem .7rem;font-size:.78rem;">💬 Message</a>
+            {% endif %}
+          </td>
+        </tr>
+        {% empty %}
+        <tr><td colspan="6" style="text-align:center;color:#9ca3af;padding:1.5rem;">No customers found{% if cust_search or cust_month %} for this filter{% endif %}.</td></tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+</div>
