@@ -294,6 +294,11 @@ class MultiChoiceSale(models.Model):
     date = models.DateField(auto_now_add=True)
     time = models.TimeField(auto_now_add=True)
 
+    is_voided = models.BooleanField(default=False)
+    void_reason = models.TextField(blank=True, default='')
+    voided_by = models.ForeignKey('User', on_delete=models.SET_NULL, null=True, blank=True, related_name='voided_mc_sales')
+    voided_at = models.DateTimeField(null=True, blank=True)
+
     def __str__(self):
         return f"{self.customer_name} - {self.package_type}"
 

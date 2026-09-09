@@ -306,114 +306,47 @@ def product_catalog(request):
 # MULTICHOICE DASHBOARD
 # ─────────────────────────────────────────
 @login_required
+# GUARD::def close_weekly_report(request):
 def close_weekly_report(request):
-    if request.method == "POST" and request.user.role == "MULTICHOICE":
-        today = timezone.now().date()
-        week_start = today - timedelta(days=today.weekday())
-        report = MultiChoiceWeeklyReport.objects.filter(staff=request.user, week_start_date=week_start).first()
-        if report and not report.is_closed:
-            report.closing_balance = request.POST.get("closing_balance")
-            week_total = MultiChoiceSale.objects.filter(
-                staff=request.user, date__range=[week_start, today]
-            ).aggregate(total=Sum("amount"))["total"] or 0
-            report.total_subscriptions = week_total
-            report.calculate_commission()
-            report.is_closed = True
-            report.save()
-            messages.success(request, f"Week closed. Commission: ₦{report.commission:,.2f}")
+    messages.info(request, "Weeks now close automatically every Sunday at 10pm -- no manual action needed.")
     return redirect("multichoice_dashboard")
+
+
 @role_required("MULTICHOICE")
+# GUARD::def record_balance(request):
 def record_balance(request):
-    if request.method == "POST":
-        weekly_report = MultiChoiceWeeklyReport.objects.filter(
-            staff=request.user, branch=request.user.branch, is_closed=False
-        ).order_by("-id").first()
-        balance = request.POST.get("current_balance")
-        if weekly_report and balance:
-            latest = MultiChoiceBalance.objects.filter(
-                weekly_report=weekly_report
-            ).order_by("-date", "-time", "-id").first()
-            before = latest.balance_after_sale if latest and latest.balance_after_sale is not None else weekly_report.opening_balance + weekly_report.additional_funds
-            after = Decimal(balance)
-            MultiChoiceBalance.objects.create(
-                weekly_report=weekly_report,
-                balance_amount=before,
-                balance_after_sale=after,
-                sale_cost_price=Decimal("0"),
-                notes=request.POST.get("notes", ""),
-            )
-            weekly_report.closing_balance = after
-            weekly_report.save(update_fields=["closing_balance"])
-            messages.success(request, f"Balance ₦{balance} recorded.")
-        else:
-            messages.error(request, "No active weekly report or invalid balance.")
+    messages.info(request, "Manual balance entry has been disabled -- your balance updates automatically with each sale.")
     return redirect("multichoice_dashboard")
 
 
 @login_required
+# GUARD::def record_daily_balance(request):
 def record_daily_balance(request):
-    if request.method == "POST" and request.user.role == "MULTICHOICE":
-        balance = Decimal(request.POST.get("balance", 0))
-        today = timezone.now().date()
-        week_start = today - timedelta(days=today.weekday())
-        weekly_report = (
-            MultiChoiceWeeklyReport.objects.filter(
-                staff=request.user,
-                branch=request.user.branch,
-                week_start_date=week_start,
-            )
-            .order_by("-id")
-            .first()
-        )
-        if weekly_report is None:
-            weekly_report = MultiChoiceWeeklyReport.objects.create(
-                staff=request.user,
-                branch=request.user.branch,
-                week_start_date=week_start,
-                opening_balance=Decimal("0"),
-                additional_funds=Decimal("0"),
-            )
-        balance_record = MultiChoiceBalance.objects.create(
-            weekly_report=weekly_report, balance_amount=balance,
-            balance_after_sale=balance,
-            sale_cost_price=Decimal("0"),
-            notes=request.POST.get("notes", ""),
-        )
-        prev = MultiChoiceBalance.objects.filter(
-            weekly_report=weekly_report
-        ).order_by("-date", "-time", "-id").first()
-        if prev and balance > prev.balance_amount:
-            commission_amt = balance - prev.balance_amount
-            balance_record.is_commission_payment = True
-            balance_record.save()
-            CommissionPayment.objects.create(
-                staff=request.user, branch=request.user.branch,
-                balance_record=balance_record,
-                previous_balance=prev.balance_amount,
-                current_balance=balance,
-                commission_detected=commission_amt,
-                date_paid=today,
-            )
-            messages.success(request, f"Commission detected: ₦{commission_amt:,.2f}")
-        else:
-            messages.success(request, f"Balance ₦{balance:,.2f} recorded.")
-        weekly_report.closing_balance = balance
-        weekly_report.save(update_fields=["closing_balance"])
+    messages.info(request, "Manual balance entry has been disabled -- your balance updates automatically with each sale.")
     return redirect("multichoice_dashboard")
 
 
 @login_required
 def my_commissions(request):
-    if request.user.role != "MULTICHOICE":
-        return HttpResponseForbidden()
-    commissions = CommissionPayment.objects.filter(staff=request.user).order_by("-date_detected")
-    total_earned = commissions.aggregate(total=Sum("commission_detected"))["total"] or 0
-    return render(request, "my_commissions.html", {"commissions": commissions, "total_earned": total_earned})
+    from django.db.models import Sum
+    from django.utils import timezone as _tz
 
+    reports = MultiChoiceWeeklyReport.objects.filter(
+        staff=request.user
+    ).order_by("-week_start_date")
 
-# ─────────────────────────────────────────
-# STOCK MANAGEMENT
-# ─────────────────────────────────────────
+    total_earned = reports.filter(is_closed=True).aggregate(t=Sum("commission"))["t"] or 0
+    this_month = _tz.now().date().replace(day=1)
+    month_earned = reports.filter(
+        is_closed=True, week_start_date__gte=this_month
+    ).aggregate(t=Sum("commission"))["t"] or 0
+
+    return render(request, "my_commissions.html", {
+        "reports": reports,
+        "total_earned": total_earned,
+        "month_earned": month_earned,
+    })
+
 
 @role_required("MANAGER")
 def add_stock_to_safe(request):
@@ -1628,6 +1561,112 @@ def export_my_customers_csv(request):
     return response
 
 
+# ───────────────────────────────────
+# MULTICHOICE COMMISSION REDESIGN -- VOID + AUTO WEEKLY CYCLE
+# ───────────────────────────────────
+
+def _recompute_mc_weekly_balance(weekly_report):
+    """Replay all non-voided sales for this weekly report in chronological
+    order to recompute the running balance and total subscriptions from
+    scratch -- keeps the balance correct regardless of which sale in the
+    week's sequence was voided, and works whether the week is still open
+    or already closed (recalculates commission too in that case)."""
+    from datetime import timedelta
+    from decimal import Decimal
+
+    week_end = weekly_report.week_start_date + timedelta(days=7)
+    sales = MultiChoiceSale.objects.filter(
+        staff=weekly_report.staff,
+        branch=weekly_report.branch,
+        date__gte=weekly_report.week_start_date,
+        date__lt=week_end,
+        is_voided=False,
+    ).order_by("date", "time", "id")
+
+    running_balance = weekly_report.opening_balance + weekly_report.additional_funds
+    total_subscriptions = Decimal("0")
+    for sale in sales:
+        running_balance = running_balance - sale.cost_price
+        total_subscriptions += sale.amount
+
+    weekly_report.closing_balance = running_balance
+    weekly_report.total_subscriptions = total_subscriptions
+    if weekly_report.is_closed:
+        weekly_report.calculate_commission()
+        weekly_report.save(update_fields=["closing_balance", "total_subscriptions", "commission"])
+    else:
+        weekly_report.save(update_fields=["closing_balance", "total_subscriptions"])
+
+
+@login_required
+def void_multichoice_sale(request, sale_id):
+    """Void a MultiChoice subscription sale and reverse its balance impact.
+    MultiChoice staff can only void their OWN sale, and only from TODAY.
+    Director (or superuser) can void any sale, any day, for oversight."""
+    from datetime import timedelta
+    from django.urls import reverse
+
+    sale = get_object_or_404(MultiChoiceSale, id=sale_id)
+    is_director = request.user.role == "DIRECTOR" or request.user.is_superuser
+    is_own_today = (
+        request.user.role == "MULTICHOICE"
+        and sale.staff_id == request.user.id
+        and sale.date == timezone.now().date()
+    )
+    fallback_url = request.META.get("HTTP_REFERER") or reverse("multichoice_dashboard")
+
+    if not (is_director or is_own_today):
+        return HttpResponseForbidden("You don't have permission to void this sale.")
+
+    if sale.is_voided:
+        messages.info(request, "This sale has already been voided.")
+        return redirect(fallback_url)
+
+    if request.method == "POST":
+        reason = request.POST.get("reason", "").strip()
+        if not reason:
+            messages.error(request, "Please provide a reason for voiding this sale.")
+            return redirect(fallback_url)
+
+        sale.is_voided = True
+        sale.void_reason = reason
+        sale.voided_by = request.user
+        sale.voided_at = timezone.now()
+        sale.save(update_fields=["is_voided", "void_reason", "voided_by", "voided_at"])
+
+        week_start = sale.date - timedelta(days=sale.date.weekday())
+        weekly_report = MultiChoiceWeeklyReport.objects.filter(
+            staff=sale.staff, branch=sale.branch, week_start_date=week_start
+        ).first()
+        if weekly_report:
+            _recompute_mc_weekly_balance(weekly_report)
+
+        messages.success(request, f"Subscription voided. \u20a6{sale.cost_price:,.2f} added back to the balance.")
+    return redirect(fallback_url)
+
+
+def cron_close_multichoice_week(request):
+    if not _check_cron_secret(request):
+        return JsonResponse({'error': 'Unauthorized'}, status=403)
+    try:
+        from django.core.management import call_command
+        call_command('close_multichoice_week')
+        return JsonResponse({'ok': True, 'message': 'MultiChoice weekly reports closed; next week started for each staff member'})
+    except Exception as e:
+        return JsonResponse({'ok': False, 'error': str(e)}, status=500)
+
+
+def cron_ensure_multichoice_open_week(request):
+    if not _check_cron_secret(request):
+        return JsonResponse({'error': 'Unauthorized'}, status=403)
+    try:
+        from django.core.management import call_command
+        call_command('ensure_multichoice_open_week')
+        return JsonResponse({'ok': True, 'message': 'Ensured every MultiChoice staff member has an open weekly report'})
+    except Exception as e:
+        return JsonResponse({'ok': False, 'error': str(e)}, status=500)
+
+
 # DIRECTOR — ALL BRANCH STOCK VIEW
 # ─────────────────────────────────────────
 
@@ -1778,40 +1817,9 @@ def director_all_activities(request):
 # ─────────────────────────────────────────
 
 @login_required
+# GUARD::def start_weekly_report(request):
 def start_weekly_report(request):
-    if request.method == "POST" and request.user.role == "MULTICHOICE":
-        today = timezone.now().date()
-        week_start = today - timedelta(days=today.weekday())
-
-        # Auto carry-forward: this week's opening balance is whatever was
-        # left as the closing balance of the last closed week -- no manual
-        # typing needed. First-ever week (no prior closed report) starts at 0.
-        last_closed = MultiChoiceWeeklyReport.objects.filter(
-            staff=request.user, branch=request.user.branch, is_closed=True
-        ).order_by("-week_start_date").first()
-        if last_closed and last_closed.closing_balance is not None:
-            opening_balance = last_closed.closing_balance
-        else:
-            opening_balance = Decimal("0")
-
-        try:
-            additional_funds = Decimal(request.POST.get("additional_funds") or "0")
-        except Exception:
-            additional_funds = Decimal("0")
-
-        obj, created = MultiChoiceWeeklyReport.objects.get_or_create(
-            staff=request.user,
-            branch=request.user.branch,
-            week_start_date=week_start,
-            defaults={
-                "opening_balance": opening_balance,
-                "additional_funds": additional_funds,
-            }
-        )
-        if created:
-            messages.success(request, f"Weekly report started. Opening balance (carried forward): ₦{opening_balance:,.2f}")
-        else:
-            messages.info(request, "A weekly report already exists for this week.")
+    messages.info(request, "Weekly reports now start automatically -- no manual action needed.")
     return redirect("multichoice_dashboard")
 
 
@@ -4165,40 +4173,41 @@ def customer_crm(request):
 
 @role_required("DIRECTOR")
 def commission_tracking(request):
-    date_from   = request.GET.get("date_from", "")
-    date_to     = request.GET.get("date_to", "")
-    branch_flt  = request.GET.get("branch", "")
-    comm_type   = request.GET.get("type", "")  # TELECOM or MULTICHOICE
+    from django.db.models import Sum
 
-    # MultiChoice commissions
-    mc_commissions = CommissionPayment.objects.select_related(
-        "staff", "branch"
-    ).order_by("-date_detected")
+    date_from  = request.GET.get("date_from", "")
+    date_to    = request.GET.get("date_to", "")
+    branch_flt = request.GET.get("branch", "")
+    comm_type  = request.GET.get("type", "")
 
-    # Device tag (Telecom) commissions
+    mc_reports = MultiChoiceWeeklyReport.objects.filter(
+        is_closed=True
+    ).select_related("staff", "branch").order_by("-week_start_date")
+
     telecom_commissions = DeviceTagCommission.objects.select_related(
         "device_tag", "branch", "created_by"
     ).order_by("-created_at")
 
     if date_from:
-        mc_commissions = mc_commissions.filter(date_detected__date__gte=date_from)
+        mc_reports = mc_reports.filter(week_start_date__gte=date_from)
         telecom_commissions = telecom_commissions.filter(created_at__date__gte=date_from)
     if date_to:
-        mc_commissions = mc_commissions.filter(date_detected__date__lte=date_to)
+        mc_reports = mc_reports.filter(week_start_date__lte=date_to)
         telecom_commissions = telecom_commissions.filter(created_at__date__lte=date_to)
     if branch_flt:
-        mc_commissions = mc_commissions.filter(branch_id=branch_flt)
+        mc_reports = mc_reports.filter(branch_id=branch_flt)
         telecom_commissions = telecom_commissions.filter(branch_id=branch_flt)
 
-    total_mc = mc_commissions.aggregate(
-        t=Sum("commission_detected")
-    )["t"] or 0
-    total_telecom = telecom_commissions.aggregate(
-        t=Sum("commission_amount")
-    )["t"] or 0
+    total_mc = mc_reports.aggregate(t=Sum("commission"))["t"] or 0
+    total_telecom = telecom_commissions.aggregate(t=Sum("commission_amount"))["t"] or 0
+
+    today = timezone.now().date()
+    todays_mc_sales = MultiChoiceSale.objects.filter(
+        date=today
+    ).select_related("staff", "branch").order_by("-time")
 
     return render(request, "commission_tracking.html", {
-        "mc_commissions": mc_commissions,
+        "mc_reports": mc_reports,
         "telecom_commissions": telecom_commissions,
         "total_mc": total_mc,
         "total_telecom": total_telecom,
@@ -4208,12 +4217,9 @@ def commission_tracking(request):
         "date_to": date_to,
         "branch_flt": branch_flt,
         "comm_type": comm_type,
+        "todays_mc_sales": todays_mc_sales,
     })
 
-
-# ─────────────────────────────────────────
-# RETAIL DASHBOARD — with stock alerts
-# ─────────────────────────────────────────
 
 @role_required("RETAIL")
 def retail_dashboard(request):

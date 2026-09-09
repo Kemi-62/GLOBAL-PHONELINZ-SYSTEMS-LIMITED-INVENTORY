@@ -188,4 +188,7 @@ urlpatterns = [
     path('cron/archive-staff-monthly-performance/', views.cron_archive_staff_monthly_performance, name='cron_archive_staff_monthly_performance'),
     path('my-customers/export/', views.export_my_customers_csv, name='export_my_customers_csv'),
     path('multichoice/add-weekly-funds/', views.add_weekly_funds, name='add_weekly_funds'),
+    path('multichoice/void-sale/<int:sale_id>/', views.void_multichoice_sale, name='void_multichoice_sale'),
+    path('cron/close-multichoice-week/', views.cron_close_multichoice_week, name='cron_close_multichoice_week'),
+    path('cron/ensure-multichoice-open-week/', views.cron_ensure_multichoice_open_week, name='cron_ensure_multichoice_open_week'),
 ]
