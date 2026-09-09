@@ -1782,11 +1782,18 @@ def start_weekly_report(request):
     if request.method == "POST" and request.user.role == "MULTICHOICE":
         today = timezone.now().date()
         week_start = today - timedelta(days=today.weekday())
-        # Safely parse decimal values — default to 0 if empty
-        try:
-            opening_balance = Decimal(request.POST.get("opening_balance") or "0")
-        except Exception:
+
+        # Auto carry-forward: this week's opening balance is whatever was
+        # left as the closing balance of the last closed week -- no manual
+        # typing needed. First-ever week (no prior closed report) starts at 0.
+        last_closed = MultiChoiceWeeklyReport.objects.filter(
+            staff=request.user, branch=request.user.branch, is_closed=True
+        ).order_by("-week_start_date").first()
+        if last_closed and last_closed.closing_balance is not None:
+            opening_balance = last_closed.closing_balance
+        else:
             opening_balance = Decimal("0")
+
         try:
             additional_funds = Decimal(request.POST.get("additional_funds") or "0")
         except Exception:
@@ -1802,9 +1809,37 @@ def start_weekly_report(request):
             }
         )
         if created:
-            messages.success(request, f"Weekly report started. Opening balance: ₦{opening_balance:,.2f}")
+            messages.success(request, f"Weekly report started. Opening balance (carried forward): ₦{opening_balance:,.2f}")
         else:
             messages.info(request, "A weekly report already exists for this week.")
+    return redirect("multichoice_dashboard")
+
+
+@role_required("MULTICHOICE")
+def add_weekly_funds(request):
+    """Add funds to the CURRENT open week at any point during the week --
+    not just at Monday's start. Used when a staff member runs low before
+    the week closes and gets topped up."""
+    if request.method == "POST":
+        weekly_report = MultiChoiceWeeklyReport.objects.filter(
+            staff=request.user, branch=request.user.branch, is_closed=False
+        ).order_by("-id").first()
+        if not weekly_report:
+            messages.error(request, "No active weekly report — start your week first.")
+            return redirect("multichoice_dashboard")
+        try:
+            amount = Decimal(request.POST.get("amount") or "0")
+        except Exception:
+            amount = Decimal("0")
+        if amount <= 0:
+            messages.error(request, "Enter a valid amount to add.")
+            return redirect("multichoice_dashboard")
+        weekly_report.additional_funds = (weekly_report.additional_funds or Decimal("0")) + amount
+        weekly_report.save(update_fields=["additional_funds"])
+        messages.success(
+            request,
+            f"₦{amount:,.2f} added. Total additional funds this week: ₦{weekly_report.additional_funds:,.2f}"
+        )
     return redirect("multichoice_dashboard")
 
 

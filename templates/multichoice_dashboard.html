@@ -70,6 +70,13 @@
     <p class="balance-label">Current Running Balance</p>
     <p class="balance-value">₦{{ current_balance|floatformat:2 }}</p>
     <p class="balance-sub">Reduces with each subscription cost. Commission detected at week close.</p>
+    <form method="POST" action="{% url 'add_weekly_funds' %}" style="margin-top:.6rem;display:flex;gap:.4rem;align-items:center;">
+      {% csrf_token %}
+      <input type="number" name="amount" step="0.01" min="0.01" placeholder="Amount" required
+             style="width:110px;padding:.35rem .5rem;border-radius:6px;border:1px solid rgba(255,255,255,.4);background:rgba(255,255,255,.15);color:#fff;font-size:.8rem;">
+      <button type="submit" style="padding:.35rem .8rem;border-radius:6px;border:none;background:#fff;color:#004F9F;font-weight:700;font-size:.8rem;cursor:pointer;">+ Add Funds</button>
+    </form>
+    <p style="font-size:.72rem;opacity:.65;margin:.4rem 0 0;">Additional funds so far this week: ₦{{ weekly_report.additional_funds|floatformat:2 }}</p>
   </div>
   <div style="text-align:right;">
     <p style="font-size:.78rem;opacity:.75;margin:0 0 .2rem;">Week started</p>
@@ -111,11 +118,15 @@
 <div class="week-status week-none">
   <strong>⚠️ No active weekly report.</strong> Start one before recording subscriptions.
   {% if is_monday %}
+  {% load mc_balance_tags %}
+  {% mc_carried_forward_balance request.user as cfb %}
   <form method="POST" action="{% url 'start_weekly_report' %}" style="margin-top:.8rem;">
     {% csrf_token %}
+    <p style="font-size:.85rem;color:#374151;margin:0 0 .6rem;">
+      Opening balance (carried forward from last week's close): <strong>₦{{ cfb|floatformat:2 }}</strong>
+    </p>
     <div class="form-row">
-      <div class="form-group"><label>Opening Balance (₦) *</label><input type="number" name="opening_balance" step="0.01" min="0" placeholder="Cash/balance you start with" required></div>
-      <div class="form-group"><label>Additional Funds (₦)</label><input type="number" name="additional_funds" step="0.01" min="0" placeholder="0.00"></div>
+      <div class="form-group"><label>Additional Funds Now (₦)</label><input type="number" name="additional_funds" step="0.01" min="0" placeholder="0.00 (optional)"></div>
     </div>
     <button type="submit" class="btn-sm btn-success">▶ Start This Week</button>
   </form>
