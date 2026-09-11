@@ -2,6 +2,9 @@
   Include this partial in any dashboard that needs check-in/out:
   {% include "partials/attendance_widget.html" %}
 {% endcomment %}
+{% load momo_tags %}
+{% momo_has_history request.user as has_momo_history_flag %}
+<script>window.HAS_MOMO_HISTORY = {{ has_momo_history_flag|yesno:"true,false" }};</script>
 
 <!-- ATTENDANCE TOAST NOTIFICATION -->
 <div id="att-toast" style="display:none;position:fixed;top:1rem;right:1rem;z-index:9999;max-width:340px;border-radius:10px;padding:1rem 1.2rem;box-shadow:0 4px 20px rgba(0,0,0,.15);font-size:.88rem;font-weight:500;transition:all .3s;">
@@ -41,6 +44,15 @@
         <label style="font-size:.78rem;font-weight:600;color:#374151;display:block;margin-bottom:.3rem;">Selfie Photo *</label>
         <input type="file" name="selfie" accept="image/*" capture="user" required
                style="width:100%;padding:.4rem;border:1px solid #d1d5db;border-radius:6px;font-size:.83rem;">
+      </div>
+      <div id="momo-section" style="display:none;margin-bottom:.8rem;padding:.7rem;background:#f9fafb;border-radius:8px;">
+        <label style="font-size:.78rem;font-weight:600;color:#374151;display:block;margin-bottom:.3rem;" id="momo-closing-label">Momo Closing Balance (₦)</label>
+        <input type="number" name="momo_closing_balance" id="momo-closing-input" step="0.01" min="0" placeholder="Your Momo balance right now"
+               style="width:100%;padding:.4rem;border:1px solid #d1d5db;border-radius:6px;font-size:.83rem;margin-bottom:.5rem;">
+        <label style="font-size:.78rem;font-weight:600;color:#374151;display:block;margin-bottom:.3rem;">Additional Funds Received Today (₦)</label>
+        <input type="number" name="momo_additional_funds" step="0.01" min="0" placeholder="0.00 (if you received a top-up today)"
+               style="width:100%;padding:.4rem;border:1px solid #d1d5db;border-radius:6px;font-size:.83rem;">
+        <p id="momo-help-text" style="font-size:.72rem;color:#9ca3af;margin:.4rem 0 0;">If you don't carry a Momo float, leave this blank.</p>
       </div>
       <div style="display:flex;gap:.6rem;">
         <button type="submit" id="att-submit-btn" class="btn-sm btn-success" style="flex:1;" disabled>Submit</button>

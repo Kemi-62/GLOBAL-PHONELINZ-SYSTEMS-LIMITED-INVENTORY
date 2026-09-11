@@ -982,6 +982,52 @@ def check_out(request):
                 "allowed_radius": branch.allowed_radius,
             })
 
+        # Momo: if this staff member has ANY prior Momo history, entering
+        # today's closing balance is required to complete check-out. If
+        # they've never reported one before, it's optional (this is how
+        # tracking begins for a staff member the first time).
+        from core.models import DailyMomoBalance
+        from decimal import Decimal, InvalidOperation
+        from datetime import timedelta
+
+        has_momo_history = DailyMomoBalance.objects.filter(staff=user).exists()
+        momo_closing_str = request.POST.get("momo_closing_balance", "").strip()
+
+        if has_momo_history and not momo_closing_str:
+            return JsonResponse({"error": "Please enter your Momo closing balance to check out."})
+
+        if momo_closing_str:
+            try:
+                momo_closing = Decimal(momo_closing_str)
+            except InvalidOperation:
+                return JsonResponse({"error": "Momo closing balance must be a valid number."})
+
+            momo_additional_str = request.POST.get("momo_additional_funds", "").strip()
+            try:
+                momo_additional = Decimal(momo_additional_str) if momo_additional_str else Decimal("0")
+            except InvalidOperation:
+                momo_additional = Decimal("0")
+
+            yesterday = today - timedelta(days=1)
+            yesterday_record = DailyMomoBalance.objects.filter(
+                staff=user, date=yesterday, is_closed=True
+            ).first()
+            opening_balance = (
+                yesterday_record.closing_balance
+                if yesterday_record and yesterday_record.closing_balance is not None
+                else Decimal("0")
+            )
+
+            momo_record, _ = DailyMomoBalance.objects.get_or_create(
+                staff=user, date=today,
+                defaults={"branch": branch, "opening_balance": opening_balance},
+            )
+            momo_record.additional_funds = momo_additional
+            momo_record.closing_balance = momo_closing
+            momo_record.is_closed = True
+            momo_record.recorded_at = timezone.now()
+            momo_record.save()
+
         attendance.check_out_time = timezone.now()
         if selfie:
             attendance.selfie = selfie
@@ -1665,6 +1711,51 @@ def cron_ensure_multichoice_open_week(request):
         return JsonResponse({'ok': True, 'message': 'Ensured every MultiChoice staff member has an open weekly report'})
     except Exception as e:
         return JsonResponse({'ok': False, 'error': str(e)}, status=500)
+
+
+# ───────────────────────────────────
+# MOMO BALANCE OVERSIGHT (DIRECTOR)
+# ───────────────────────────────────
+
+@role_required("DIRECTOR")
+def momo_oversight(request):
+    """Every staff member who carries a Momo float: their latest reported
+    balance, and how many days it's been since they last reported."""
+    from core.models import DailyMomoBalance, User
+    from datetime import timedelta
+
+    branch_flt = request.GET.get("branch", "")
+
+    staff_ids = DailyMomoBalance.objects.values_list("staff_id", flat=True).distinct()
+    staff_qs = User.objects.filter(id__in=staff_ids).select_related("branch")
+    if branch_flt:
+        staff_qs = staff_qs.filter(branch_id=branch_flt)
+
+    today = timezone.now().date()
+    staff_rows = []
+    for staff in staff_qs:
+        latest = DailyMomoBalance.objects.filter(staff=staff, is_closed=True).order_by("-date").first()
+        days_since = (today - latest.date).days if latest else None
+        staff_rows.append({
+            "staff": staff,
+            "latest": latest,
+            "days_since": days_since,
+            "is_stale": days_since is not None and days_since >= 2,
+        })
+    staff_rows.sort(key=lambda r: (r["days_since"] is None, -(r["days_since"] or 0)), reverse=True)
+
+    recent_records = DailyMomoBalance.objects.filter(
+        is_closed=True
+    ).select_related("staff", "branch").order_by("-date", "-recorded_at")[:50]
+    if branch_flt:
+        recent_records = recent_records.filter(branch_id=branch_flt)
+
+    return render(request, "momo_oversight.html", {
+        "staff_rows": staff_rows,
+        "recent_records": recent_records,
+        "branches": Branch.objects.all(),
+        "branch_flt": branch_flt,
+    })
 
 
 # DIRECTOR — ALL BRANCH STOCK VIEW

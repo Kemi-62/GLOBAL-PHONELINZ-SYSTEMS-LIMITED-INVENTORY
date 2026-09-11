@@ -561,6 +561,27 @@ class StaffMonthlyPerformanceArchive(models.Model):
         return f"{self.staff.username} - {self.month.strftime('%B %Y')}"
 
 
+class DailyMomoBalance(models.Model):
+    """A staff member's daily Momo (virtual card) float balance, recorded
+    at evening check-out. Opening balance auto-carries from the previous
+    day's closing balance -- staff never re-type it."""
+    staff = models.ForeignKey('User', on_delete=models.CASCADE, related_name='momo_balances')
+    branch = models.ForeignKey('Branch', on_delete=models.SET_NULL, null=True, blank=True)
+    date = models.DateField()
+    opening_balance = models.DecimalField(max_digits=12, decimal_places=2, default=0)
+    additional_funds = models.DecimalField(max_digits=12, decimal_places=2, default=0)
+    closing_balance = models.DecimalField(max_digits=12, decimal_places=2, null=True, blank=True)
+    is_closed = models.BooleanField(default=False)
+    recorded_at = models.DateTimeField(null=True, blank=True)
+
+    class Meta:
+        unique_together = ('staff', 'date')
+        ordering = ['-date']
+
+    def __str__(self):
+        return f"{self.staff.username} - {self.date}"
+
+
 class DeviceTagCommission(models.Model):
     branch = models.ForeignKey(Branch, on_delete=models.CASCADE)
     device_tag = models.ForeignKey(DeviceTag, on_delete=models.CASCADE)

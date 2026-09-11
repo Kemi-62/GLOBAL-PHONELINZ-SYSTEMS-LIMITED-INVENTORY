@@ -149,6 +149,7 @@
   <button class="tab-btn" onclick="switchTab('onlinesales',this)">📱 Online Sales</button>
   <button class="tab-btn" onclick="switchTab('myhistory',this)">📈 My Monthly History</button>
   <button class="tab-btn" onclick="switchTab('mycustomers',this)">👥 My Customers</button>
+  <button class="tab-btn" onclick="switchTab('momo',this)">💳 Momo History</button>
 </div>
 
 <!-- ══ TAB: RECORD ══ -->
@@ -567,6 +568,11 @@
 <div id="tab-mycustomers" class="tab-panel">
   {% load customer_tags %}
   {% my_customers_page %}
+</div>
+
+<div id="tab-momo" class="tab-panel">
+  {% load momo_tags %}
+  {% momo_history_widget %}
 </div>
 
 <script>

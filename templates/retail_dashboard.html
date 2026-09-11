@@ -91,6 +91,7 @@ pre{background:#f5f5f5;padding:.8rem;border-radius:6px;font-size:.75rem;overflow
   <button class="tab-btn" onclick="switchTab('onlinesales',this)">📱 Online Sales</button>
   <button class="tab-btn" onclick="switchTab('myhistory',this)">📈 My Monthly History</button>
   <button class="tab-btn" onclick="switchTab('mycustomers',this)">👥 My Customers</button>
+  <button class="tab-btn" onclick="switchTab('momo',this)">💳 Momo History</button>
 </div>
 
 <!-- ══════════ TAB: RECORD SALE ══════════ -->
@@ -462,6 +463,11 @@ Generic Cable,Type-C Cable,Accessories,Cables,2500,10,</pre>
 <div id="tab-mycustomers" class="tab-panel">
   {% load customer_tags %}
   {% my_customers_page %}
+</div>
+
+<div id="tab-momo" class="tab-panel">
+  {% load momo_tags %}
+  {% momo_history_widget %}
 </div>
 
 <script>

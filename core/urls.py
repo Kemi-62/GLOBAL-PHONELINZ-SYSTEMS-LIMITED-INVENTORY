@@ -191,4 +191,5 @@ urlpatterns = [
     path('multichoice/void-sale/<int:sale_id>/', views.void_multichoice_sale, name='void_multichoice_sale'),
     path('cron/close-multichoice-week/', views.cron_close_multichoice_week, name='cron_close_multichoice_week'),
     path('cron/ensure-multichoice-open-week/', views.cron_ensure_multichoice_open_week, name='cron_ensure_multichoice_open_week'),
+    path('director/momo-oversight/', views.momo_oversight, name='momo_oversight'),
 ]

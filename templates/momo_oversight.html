@@ -1,0 +1,75 @@
+{% extends "base.html" %}
+{% block content %}
+<style>
+.page-title{font-size:1.2rem;font-weight:700;color:#004F9F;margin:0}
+.card{background:#fff;border:1px solid #e2e8f0;border-radius:10px;padding:1.1rem 1.3rem;margin-bottom:1rem}
+.card-title{font-size:.92rem;font-weight:700;margin:0 0 .85rem}
+table.data-table{width:100%;border-collapse:collapse;font-size:.85rem}
+table.data-table th{text-align:left;padding:.5rem;background:#f9fafb;color:#374151;font-size:.78rem}
+table.data-table td{padding:.5rem;border-bottom:1px solid #f3f4f6}
+</style>
+
+<div style="margin-bottom:1.25rem">
+  <h1 class="page-title">💳 Momo Oversight</h1>
+  <p style="font-size:.85rem;color:#6b7280;margin:.3rem 0 0;">Every staff member's Momo float, and how long since they last reported it.</p>
+</div>
+
+<div class="card">
+  <form method="GET" style="display:flex;gap:.6rem;flex-wrap:wrap;align-items:center;">
+    <select name="branch" style="padding:.45rem .7rem;border:1px solid #d1d5db;border-radius:6px;font-size:.83rem;">
+      <option value="">All Branches</option>
+      {% for b in branches %}<option value="{{ b.id }}" {% if branch_flt == b.id|stringformat:"s" %}selected{% endif %}>{{ b.name }}</option>{% endfor %}
+    </select>
+    <button type="submit" class="btn-sm btn-primary">Filter</button>
+  </form>
+</div>
+
+<div class="card">
+  <p class="card-title">📋 Staff Momo Status</p>
+  <div style="overflow-x:auto;">
+    <table class="data-table">
+      <thead><tr><th>Staff</th><th>Branch</th><th style="text-align:right;">Latest Closing Balance</th><th>Last Reported</th><th>Status</th></tr></thead>
+      <tbody>
+        {% for row in staff_rows %}
+        <tr>
+          <td><strong>{{ row.staff.username }}</strong></td>
+          <td>{{ row.staff.branch.name|default:"—" }}</td>
+          <td style="text-align:right;">{% if row.latest %}₦{{ row.latest.closing_balance|floatformat:2 }}{% else %}—{% endif %}</td>
+          <td>{% if row.latest %}{{ row.latest.date|date:"d M Y" }} ({{ row.days_since }} day{{ row.days_since|pluralize }} ago){% else %}Never{% endif %}</td>
+          <td>
+            {% if row.is_stale %}<span class="badge" style="background:#fee2e2;color:#991b1b;padding:.25rem .6rem;border-radius:999px;font-size:.72rem;">⚠️ Not reporting</span>
+            {% elif row.latest %}<span class="badge" style="background:#d1fae5;color:#065f46;padding:.25rem .6rem;border-radius:999px;font-size:.72rem;">Up to date</span>
+            {% else %}<span class="badge" style="background:#f1f5f9;color:#475569;padding:.25rem .6rem;border-radius:999px;font-size:.72rem;">No history</span>{% endif %}
+          </td>
+        </tr>
+        {% empty %}
+        <tr><td colspan="5" style="text-align:center;color:#9ca3af;padding:1.5rem;">No staff have started Momo tracking yet.</td></tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+</div>
+
+<div class="card">
+  <p class="card-title">📅 Recent Daily Records</p>
+  <div style="overflow-x:auto;">
+    <table class="data-table">
+      <thead><tr><th>Date</th><th>Staff</th><th>Branch</th><th style="text-align:right;">Opening</th><th style="text-align:right;">Additional Funds</th><th style="text-align:right;">Closing</th></tr></thead>
+      <tbody>
+        {% for r in recent_records %}
+        <tr>
+          <td>{{ r.date|date:"d M Y" }}</td>
+          <td><strong>{{ r.staff.username }}</strong></td>
+          <td>{{ r.branch.name|default:"—" }}</td>
+          <td style="text-align:right;">₦{{ r.opening_balance|floatformat:2 }}</td>
+          <td style="text-align:right;">₦{{ r.additional_funds|floatformat:2 }}</td>
+          <td style="text-align:right;font-weight:700;">₦{{ r.closing_balance|floatformat:2 }}</td>
+        </tr>
+        {% empty %}
+        <tr><td colspan="6" style="text-align:center;color:#9ca3af;padding:1.5rem;">No records yet.</td></tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+</div>
+{% endblock %}
