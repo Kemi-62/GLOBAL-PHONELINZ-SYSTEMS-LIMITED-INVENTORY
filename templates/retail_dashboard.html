@@ -376,6 +376,15 @@ Generic Cable,Type-C Cable,Accessories,Cables,2500,10,</pre>
             <label>Selfie Photo *</label>
             <input type="file" name="selfie" accept="image/*" capture="user" required>
           </div>
+          <div style="margin:.8rem 0;padding:.7rem;background:#f9fafb;border-radius:8px;">
+            <label style="font-size:.78rem;font-weight:600;color:#374151;display:block;margin-bottom:.3rem;" id="momo-closing-label-tab">Momo Closing Balance (₦)</label>
+            <input type="number" name="momo_closing_balance" id="momo-closing-input-tab" step="0.01" min="0" placeholder="Your Momo balance right now"
+                   style="width:100%;padding:.4rem;border:1px solid #d1d5db;border-radius:6px;font-size:.83rem;margin-bottom:.5rem;">
+            <label style="font-size:.78rem;font-weight:600;color:#374151;display:block;margin-bottom:.3rem;">Additional Funds Received Today (₦)</label>
+            <input type="number" name="momo_additional_funds" step="0.01" min="0" placeholder="0.00 (if you received a top-up today)"
+                   style="width:100%;padding:.4rem;border:1px solid #d1d5db;border-radius:6px;font-size:.83rem;">
+            <p style="font-size:.72rem;color:#9ca3af;margin:.4rem 0 0;">If you don't carry a Momo float, leave this blank.</p>
+          </div>
           <button type="submit" class="btn-sm btn-danger" style="width:100%;">Submit Check-Out</button>
         </form>
       </div>
@@ -575,6 +584,19 @@ function startAttendance(type) {
   const latId = type === 'in' ? 'ci-lat' : 'co-lat';
   const lonId = type === 'in' ? 'ci-lon' : 'co-lon';
   document.getElementById(formId).style.display = 'block';
+  if (type === 'out') {
+    var momoInputTab = document.getElementById('momo-closing-input-tab');
+    var momoLabelTab = document.getElementById('momo-closing-label-tab');
+    if (momoInputTab) {
+      if (window.HAS_MOMO_HISTORY) {
+        momoInputTab.required = true;
+        momoLabelTab.textContent = 'Momo Closing Balance (\u20a6) *';
+      } else {
+        momoInputTab.required = false;
+        momoLabelTab.textContent = 'Momo Closing Balance (\u20a6)';
+      }
+    }
+  }
   if (navigator.geolocation) {
     navigator.geolocation.getCurrentPosition(function(pos) {
       document.getElementById(latId).value = pos.coords.latitude;
