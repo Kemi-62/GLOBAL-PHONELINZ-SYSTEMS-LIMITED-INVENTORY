@@ -13,20 +13,28 @@ BASE_DIR = Path(__file__).resolve().parent.parent
 # SECURITY CONFIGURATION — READ-ONLY IN PRODUCTION
 # ═══════════════════════════════════════════════════════
 
-# SECRET_KEY: development fallback that logs a warning.
-# In production, set SECRET_KEY in environment and IS_PRODUCTION=True.
-SECRET_KEY = config('SECRET_KEY', default='dev-only-unsafe-secret-change-in-production')
+# SECRET_KEY: use the configured Django key, or the workspace session secret
+# when deploying on Render. The final fallback is development-only.
+SECRET_KEY = config(
+    'SECRET_KEY',
+    default=config('SESSION_SECRET', default='dev-only-unsafe-secret-change-in-production')
+)
 
-# Production flag
-IS_PRODUCTION = config('IS_PRODUCTION', default=False, cast=bool)
+# Render exposes RENDER/RENDER_EXTERNAL_HOSTNAME. This keeps production
+# security enabled even when IS_PRODUCTION was not manually added yet.
+IS_PRODUCTION = config(
+    'IS_PRODUCTION',
+    default=bool(os.environ.get('RENDER') or os.environ.get('RENDER_EXTERNAL_HOSTNAME')),
+    cast=bool
+)
 
-# DEBUG: True in development, MUST be False in production via env var.
-DEBUG = config('DEBUG', default=True, cast=bool)
+# DEBUG is enabled only for local development unless explicitly overridden.
+DEBUG = config('DEBUG', default=not IS_PRODUCTION, cast=bool)
 
 # ALLOWED_HOSTS: NEVER wildcard in production. Only specific domains.
 ALLOWED_HOSTS = config(
     'ALLOWED_HOSTS',
-    default='localhost,127.0.0.1,.replit.dev,.repl.co,.replit.app,.worf.replit.dev,.pike.replit.dev,.riker.replit.dev,.globalphonelinz.com,.app.globalphonelinz.com',
+    default='localhost,127.0.0.1,testserver,.replit.dev,.repl.co,.replit.app,.worf.replit.dev,.pike.replit.dev,.riker.replit.dev,.globalphonelinz.com,.app.globalphonelinz.com',
     cast=Csv()
 )
 
@@ -34,7 +42,8 @@ ALLOWED_HOSTS = config(
 CSRF_COOKIE_HTTPONLY = True
 
 # Cron job secret token (for cron-job.org / external schedulers)
-CRON_SECRET = config('CRON_SECRET', default='change-this-in-production')
+# Empty by default so scheduled mutation endpoints fail closed until configured.
+CRON_SECRET = config('CRON_SECRET', default='')
 BACKUP_SECRET_KEY = config('BACKUP_SECRET_KEY', default='')
 
 CSRF_USE_SESSIONS = True

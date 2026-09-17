@@ -41,13 +41,13 @@ class LoginTest(TestCase):
 
     def test_login_success(self):
         """User can log in with correct credentials."""
-        response = self.client.post("/", {"username": "testuser", "password": "testpass123"})
+        response = self.client.post("/login/", {"username": "testuser", "password": "testpass123"})
         self.assertEqual(response.status_code, 302)
         self.assertIn("/retail/", response.url)
 
     def test_login_fail_wrong_password(self):
         """User cannot log in with wrong password."""
-        response = self.client.post("/", {"username": "testuser", "password": "wrongpass"})
+        response = self.client.post("/login/", {"username": "testuser", "password": "wrongpass"})
         self.assertEqual(response.status_code, 200)
         self.assertContains(response, "Invalid")
 

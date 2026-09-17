@@ -76,6 +76,10 @@ function openAttModal(type) {
   var submitBtn = document.getElementById('att-submit-btn');
   var form      = document.getElementById('att-form');
   var locStatus = document.getElementById('att-location-status');
+  var momoSection = document.getElementById('momo-section');
+  var momoInput = document.getElementById('momo-closing-input');
+  var momoLabel = document.getElementById('momo-closing-label');
+  var momoAdditionalInput = form.querySelector('[name="momo_additional_funds"]');
 
   title.textContent     = type === 'in' ? '🌅 Morning Check-In' : '🌆 Evening Check-Out';
   submitBtn.textContent = type === 'in' ? 'Submit Check-In' : 'Submit Check-Out';
@@ -83,6 +87,24 @@ function openAttModal(type) {
   submitBtn.style.flex  = '1';
   form.action           = type === 'in' ? '{% url "check_in" %}' : '{% url "check_out" %}';
   submitBtn.disabled    = true;
+
+  // Momo is recorded at check-out. The fields were deliberately hidden in
+  // the markup, so make the state explicit whenever the modal opens.
+  if (momoSection && momoInput) {
+    var isCheckout = type === 'out';
+    momoSection.style.display = isCheckout ? 'block' : 'none';
+    momoInput.required = isCheckout && Boolean(window.HAS_MOMO_HISTORY);
+    if (momoLabel) {
+      momoLabel.textContent = 'Momo Closing Balance (₦)' +
+        (momoInput.required ? ' *' : '');
+    }
+    if (momoAdditionalInput) {
+      momoAdditionalInput.value = '';
+    }
+    if (!isCheckout) {
+      momoInput.value = '';
+    }
+  }
 
   locStatus.style.background = '#eff6ff';
   locStatus.style.color      = '#1e40af';

@@ -49,7 +49,7 @@ class RateLimitMiddleware:
 
     def __call__(self, request):
         # Only check POST requests to login endpoint
-        if request.method == 'POST' and request.path in ['/accounts/login/', '/']:
+        if request.method == 'POST' and request.path in ['/login/', '/accounts/login/']:
             ip = self._get_client_ip(request)
             username = request.POST.get('username', '').strip().lower()
 
@@ -82,7 +82,7 @@ class RateLimitMiddleware:
         response = self.get_response(request)
 
         # Track failed login attempts
-        if request.method == 'POST' and request.path in ['/accounts/login/', '/']:
+        if request.method == 'POST' and request.path in ['/login/', '/accounts/login/']:
             if hasattr(response, 'status_code') and response.status_code in [200, 302]:
                 # Check if this was a failed login (stays on login page with error)
                 if hasattr(request, '_failed_login'):

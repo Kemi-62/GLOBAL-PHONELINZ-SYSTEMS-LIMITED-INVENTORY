@@ -270,11 +270,11 @@
     </div>
     {% endif %}
 
-    <form method="POST" autocomplete="off">
+    <form method="POST" autocomplete="on">
       {% csrf_token %}
       <div class="form-group">
         <label for="username">Username</label>
-        <input type="text" id="username" name="username"
+          <input type="text" id="username" name="username" autocomplete="username"
                value="{{ form.username.value|default:'' }}"
                placeholder="Enter your username"
                autofocus required>
@@ -282,7 +282,7 @@
       <div class="form-group">
         <label for="password">Password</label>
         <div class="password-wrap">
-          <input type="password" id="password" name="password"
+          <input type="password" id="password" name="password" autocomplete="current-password"
                  placeholder="Enter your password" required>
           <button type="button" class="toggle-password" onclick="togglePwd()">👁</button>
         </div>

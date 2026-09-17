@@ -1,0 +1,76 @@
+{% extends "base.html" %}
+{% block content %}
+<style>
+.page-title{font-size:1.2rem;font-weight:700;color:#004F9F;margin:0}
+.card{background:#fff;border:1px solid #e2e8f0;border-radius:10px;padding:1.1rem 1.3rem;margin-bottom:1rem}
+.table{width:100%;border-collapse:collapse;font-size:.82rem}
+.table th{background:#004F9F;color:#fff;padding:.55rem .7rem;text-align:left;font-weight:600}
+.table td{padding:.55rem .7rem;border-bottom:1px solid #f1f5f9;vertical-align:middle}
+.filter-bar{display:flex;gap:.6rem;flex-wrap:wrap;align-items:flex-end}
+.filter-bar label{display:block;font-size:.72rem;font-weight:600;color:#374151;margin-bottom:.2rem}
+.filter-bar input,.filter-bar select{padding:.45rem .65rem;border:1.5px solid #e2e8f0;border-radius:7px;font-size:.82rem}
+.btn-sm{padding:.4rem .8rem;font-size:.78rem;border-radius:6px;border:1px solid #d1d5db;cursor:pointer;font-weight:600;text-decoration:none;display:inline-block}
+.btn-primary{background:#004F9F;color:#fff;border-color:#004F9F}
+.badge{display:inline-block;padding:.18rem .5rem;border-radius:999px;background:#dbeafe;color:#1e40af;font-size:.66rem;font-weight:700}
+</style>
+
+<div style="display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:.75rem;margin-bottom:1.25rem">
+  <h1 class="page-title">📋 Stock Transfer History</h1>
+  <a href="{% url 'stock_transfer' %}" class="btn-sm">← Stock Transfer</a>
+</div>
+
+<div class="card">
+  <form method="GET" class="filter-bar">
+    <div><label for="date-from">From</label><input id="date-from" type="date" name="date_from" value="{{ date_from }}"></div>
+    <div><label for="date-to">To</label><input id="date-to" type="date" name="date_to" value="{{ date_to }}"></div>
+    <div>
+      <label for="branch">Branch</label>
+      <select id="branch" name="branch">
+        <option value="">All branches</option>
+        {% for branch in branches %}
+        <option value="{{ branch.id }}" {% if branch_flt == branch.id|stringformat:"s" %}selected{% endif %}>{{ branch.name }}</option>
+        {% endfor %}
+      </select>
+    </div>
+    <div>
+      <label for="transfer-type">Transfer type</label>
+      <select id="transfer-type" name="type">
+        <option value="">All types</option>
+        {% for value,label in transfer_types %}
+        <option value="{{ value }}" {% if type_flt == value %}selected{% endif %}>{{ label }}</option>
+        {% endfor %}
+      </select>
+    </div>
+    <button type="submit" class="btn-sm btn-primary">Filter</button>
+    <a href="{% url 'stock_transfer_history' %}" class="btn-sm">Clear</a>
+  </form>
+</div>
+
+<div class="card">
+  {% if transfers %}
+  <div style="overflow-x:auto">
+    <table class="table">
+      <thead>
+        <tr><th>Date</th><th>Product</th><th>Qty</th><th>From</th><th>To</th><th>Type</th><th>Initiated by</th><th>Notes</th></tr>
+      </thead>
+      <tbody>
+        {% for transfer in transfers %}
+        <tr>
+          <td style="white-space:nowrap">{{ transfer.created_at|date:"d M Y H:i" }}</td>
+          <td><strong>{{ transfer.product.model_name }}</strong></td>
+          <td>{{ transfer.quantity }}</td>
+          <td>{{ transfer.source_label }}</td>
+          <td>{{ transfer.destination_label }}</td>
+          <td><span class="badge">{{ transfer.get_transfer_type_display }}</span></td>
+          <td>{{ transfer.initiated_by.username }}</td>
+          <td>{{ transfer.notes|default:"—" }}</td>
+        </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+  {% else %}
+  <p style="color:#94a3b8;text-align:center;padding:2rem">No stock transfers match the selected filters.</p>
+  {% endif %}
+</div>
+{% endblock %}

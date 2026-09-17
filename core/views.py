@@ -951,6 +951,7 @@ def staff_monthly_activity(request):
     ).select_related("staff")
     return render(request, "manager_dashboard.html", {"activities": activities})
 
+@login_required
 def check_out(request):
     if request.method == "POST":
         user = request.user
@@ -6339,12 +6340,13 @@ def stock_transfer(request):
     # Recent transfers
     transfers = StockTransfer.objects.select_related(
         'product', 'from_branch', 'to_branch', 'to_staff', 'initiated_by'
-    ).order_by('-created_at')[:50]
+    ).order_by('-created_at')
 
     if request.user.role == 'MANAGER':
         transfers = transfers.filter(
             Q(from_branch=request.user.branch) | Q(to_branch=request.user.branch)
         )
+    transfers = transfers[:50]
 
     return render(request, 'stock_transfer.html', {
         'branches': branches,
