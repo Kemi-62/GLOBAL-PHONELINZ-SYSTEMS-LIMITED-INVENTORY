@@ -1,48 +1,50 @@
-"""Close every MultiChoice staff member's current open weekly report and
-immediately start next week's report with the closing balance carried
-forward as the new opening balance. Runs automatically every Sunday at
-10pm WAT -- see .github/workflows/mc_weekly_close.yml."""
-from datetime import timedelta
-from decimal import Decimal
+"""MC_WEEKLY_SELFHEAL_V1
 
+Close every MultiChoice staff member's open weekly report and start the next
+week with the closing balance carried forward as the new opening balance.
+Runs every Sunday at 10pm WAT -- see .github/workflows/mc_weekly_close.yml.
+Safe to run twice: already-closed weeks are skipped.
+
+    python manage.py close_multichoice_week --dry-run   (preview, saves nothing)
+"""
 from django.core.management.base import BaseCommand
-from django.db.models import Sum
+from django.db import transaction
 
-from core.models import MultiChoiceWeeklyReport, MultiChoiceSale
+from core.models import MultiChoiceWeeklyReport
+from core.mc_weekly import finalize_week, ensure_next_week, current_week_start
 
 
 class Command(BaseCommand):
     help = "Close all open MultiChoice weekly reports and auto-start next week."
 
+    def add_arguments(self, parser):
+        parser.add_argument("--dry-run", action="store_true",
+                            help="Show what would happen, then roll everything back.")
+
     def handle(self, *args, **options):
+        dry_run = options["dry_run"]
+        log = lambda msg: self.stdout.write(msg)
         closed_count = 0
-        open_reports = MultiChoiceWeeklyReport.objects.filter(is_closed=False)
 
-        for report in open_reports:
-            week_end = report.week_start_date + timedelta(days=7)
-            week_total = MultiChoiceSale.objects.filter(
-                staff=report.staff, branch=report.branch,
-                date__gte=report.week_start_date, date__lt=week_end,
-                is_voided=False,
-            ).aggregate(t=Sum("amount"))["t"] or Decimal("0")
-            report.total_subscriptions = week_total
-            if report.closing_balance is None:
-                report.closing_balance = report.opening_balance + report.additional_funds
-            report.calculate_commission()
-            report.is_closed = True
-            report.save()
-            closed_count += 1
+        with transaction.atomic():
+            # Never touch a FUTURE week: if this command runs twice on the same
+            # Sunday, the week it just opened must stay open.
+            open_reports = MultiChoiceWeeklyReport.objects.filter(
+                is_closed=False, week_start_date__lte=current_week_start()
+            ).select_related("staff", "branch").order_by("week_start_date", "id")
 
-            next_week_start = report.week_start_date + timedelta(days=7)
-            MultiChoiceWeeklyReport.objects.get_or_create(
-                staff=report.staff, branch=report.branch,
-                week_start_date=next_week_start,
-                defaults={
-                    "opening_balance": report.closing_balance,
-                    "additional_funds": Decimal("0"),
-                },
-            )
+            for report in list(open_reports):
+                log("%s / %s" % (report.staff.username, report.week_start_date))
+                finalize_week(report)
+                closed_count += 1
+                log("  CLOSED week %s (closing balance %s)" % (
+                    report.week_start_date, report.closing_balance))
+                ensure_next_week(report, repair=False, log=log)
 
+            if dry_run:
+                transaction.set_rollback(True)
+
+        prefix = "[DRY RUN - nothing saved] " if dry_run else ""
         self.stdout.write(self.style.SUCCESS(
-            f"Closed {closed_count} weekly report(s) and started next week for each."
+            prefix + "Closed %d weekly report(s) and started next week for each." % closed_count
         ))

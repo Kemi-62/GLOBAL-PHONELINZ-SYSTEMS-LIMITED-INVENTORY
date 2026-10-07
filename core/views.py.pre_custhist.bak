@@ -3823,10 +3823,6 @@ def _upsert_customer(phone, name, branch, amount=0, source="RETAIL"):
         return None
     phone = phone.strip()
     try:
-        # CUSTOMER_HISTORY_V1: one customer per real phone number, however it was typed
-        from core.customer_history import find_customer_by_phone, canonical_phone
-        _existing = find_customer_by_phone(phone)
-        phone = _existing.phone_number if _existing is not None else (canonical_phone(phone) or phone)
         customer, created = Customer.objects.get_or_create(
             phone_number=phone,
             defaults={
@@ -4220,18 +4216,43 @@ def customer_crm(request):
     if branch_flt:
         customers = customers.filter(branch_id=branch_flt)
 
-    # CUSTOMER_HISTORY_V1: match phones by real number (0803.. = +234803..), not exact text
-    from core.customer_history import (
-        filter_customers_by_source, filter_customers_by_staff, annotate_department_counts,
-    )
-    if source in ("RETAIL", "MULTICHOICE", "TELECOM"):
-        customers = filter_customers_by_source(customers, source)
+    # Filter by source — check if phone appears in that source
+    if source == "RETAIL":
+        phones = RetailSale.objects.filter(
+            is_voided=False
+        ).values_list("customer_phone", flat=True).distinct()
+        customers = customers.filter(phone_number__in=phones)
+    elif source == "MULTICHOICE":
+        phones = MultiChoiceSale.objects.values_list(
+            "customer_phone", flat=True
+        ).distinct()
+        customers = customers.filter(phone_number__in=phones)
+    elif source == "TELECOM":
+        phones = ServiceActivity.objects.values_list(
+            "customer_phone", flat=True
+        ).distinct()
+        customers = customers.filter(phone_number__in=phones)
+
+    # Filter by the specific staff member who handled the sale — checks
+    # across all three sale types so it works regardless of the source filter above.
     if staff_flt:
-        customers = filter_customers_by_staff(customers, staff_flt)
+        staff_phones = set()
+        staff_phones.update(
+            RetailSale.objects.filter(staff_id=staff_flt, is_voided=False)
+            .values_list("customer_phone", flat=True).distinct()
+        )
+        staff_phones.update(
+            MultiChoiceSale.objects.filter(staff_id=staff_flt)
+            .values_list("customer_phone", flat=True).distinct()
+        )
+        staff_phones.update(
+            ServiceActivity.objects.filter(staff_id=staff_flt)
+            .values_list("customer_phone", flat=True).distinct()
+        )
+        customers = customers.filter(phone_number__in=staff_phones)
 
     paginator = Paginator(customers, 30)
     page = paginator.get_page(request.GET.get("page"))
-    annotate_department_counts(page)
 
     return render(request, "customer_crm.html", {
         "customers": page,

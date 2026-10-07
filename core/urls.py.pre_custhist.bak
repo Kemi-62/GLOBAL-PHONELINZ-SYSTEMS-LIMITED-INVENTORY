@@ -1,7 +1,6 @@
 from django.urls import path, include
 from django.contrib.auth import views as auth_views
 from . import views
-from . import customer_views  # CUSTOMER_HISTORY_V1
 
 urlpatterns = [
     path('', views.landing_page, name='landing_page'),
@@ -104,8 +103,7 @@ urlpatterns = [
 
     # CRM
     path('customer-crm/', views.customer_crm, name='customer_crm'),
-    path('customer/<int:customer_id>/history/', customer_views.customer_history, name='customer_history'),  # CUSTOMER_HISTORY_V1
-    path('my-customers/history/', customer_views.my_customer_history, name='my_customer_history'),
+    path('customer/<int:customer_id>/history/', views.customer_history, name='customer_history'),
 
     # Commissions
     path('add-device-commission/', views.add_device_commission, name='add_device_commission'),

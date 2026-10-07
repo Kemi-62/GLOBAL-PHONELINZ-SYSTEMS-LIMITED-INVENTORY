@@ -1,7 +1,6 @@
-{# CUSTOMER_HISTORY_V1 #}
 <div class="card">
   <p class="card-title">👥 My Customers</p>
-  <p style="font-size:.8rem;color:#6b7280;margin:-.5rem 0 1rem;">Customers you've personally sold to — separate from company-wide records. Tap <strong>History</strong> to see everything bought in your department, including by colleagues.</p>
+  <p style="font-size:.8rem;color:#6b7280;margin:-.5rem 0 1rem;">Customers you've personally sold to — separate from company-wide records. Great for month-end check-ins.</p>
 
   <form method="GET" style="display:flex;gap:.6rem;flex-wrap:wrap;align-items:center;margin-bottom:1rem;">
     <input type="text" name="cust_search" value="{{ cust_search }}" placeholder="Search name or phone"
@@ -31,15 +30,12 @@
       <tbody>
         {% for c in my_customers %}
         <tr>
-          <td><strong>{{ c.name }}</strong>
-            {% if c.is_repeat %}<span title="{{ c.dept_purchase_count }} purchases in your department" style="margin-left:.35rem;background:#ede9fe;color:#6d28d9;border-radius:999px;padding:.1rem .5rem;font-size:.68rem;font-weight:700;white-space:nowrap;">🔁 Repeat ×{{ c.dept_purchase_count }}</span>{% endif %}
-          </td>
+          <td><strong>{{ c.name }}</strong></td>
           <td style="font-size:.82rem;color:#6b7280;">{{ c.phone }}</td>
           <td style="text-align:center;">{{ c.purchase_count }}</td>
           <td style="text-align:right;">₦{{ c.total_spent|floatformat:0 }}</td>
           <td style="font-size:.8rem;color:#6b7280;">{{ c.last_purchase|date:"d M Y"|default:"—" }}</td>
-          <td style="white-space:nowrap;">
-            <a href="{% url 'my_customer_history' %}?{{ c.history_query }}" class="btn-sm btn-outline" style="padding:.35rem .7rem;font-size:.78rem;">📜 History</a>
+          <td>
             {% if c.wa_number %}
             <a href="https://wa.me/{{ c.wa_number }}?text={{ c.wa_message }}" target="_blank" class="btn-sm" style="background:#25D366;color:#fff;text-decoration:none;padding:.35rem .7rem;font-size:.78rem;">💬 Message</a>
             {% endif %}

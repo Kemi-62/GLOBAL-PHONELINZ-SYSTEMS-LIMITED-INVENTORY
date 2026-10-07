@@ -1,0 +1,65 @@
+{# CUSTOMER_HISTORY_V1 #}{% extends "base.html" %}
+{% block content %}
+{% if missing_phone %}
+<div style="background:#fff;border:1px solid #e5e7eb;border-radius:10px;padding:2rem;text-align:center;color:#6b7280;">
+  No phone number was given, so there is no history to show.
+  <p style="margin:1rem 0 0;"><a href="javascript:history.back()" style="color:#004F9F;">← Go back</a></p>
+</div>
+{% else %}
+<div style="display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:.8rem;margin-bottom:1rem;">
+  <h1 style="font-size:1.3rem;font-weight:700;color:#004F9F;margin:0;">👤 {{ display_name }}
+    {% if summary.is_repeat %}<span style="margin-left:.4rem;background:#ede9fe;color:#6d28d9;border-radius:999px;padding:.15rem .6rem;font-size:.72rem;font-weight:700;vertical-align:middle;">🔁 Repeat customer</span>{% endif %}
+  </h1>
+  <a href="javascript:history.back()" style="padding:.45rem .9rem;font-size:.82rem;border-radius:6px;border:1px solid #d1d5db;color:#374151;text-decoration:none;background:#fff;">← Back</a>
+</div>
+<p style="font-size:.8rem;color:#6b7280;margin:0 0 1rem;">{{ phone }} · Showing: <strong>{{ scope_label }}</strong> (all staff)</p>
+
+<div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:1rem;margin-bottom:1.2rem;">
+  <div style="background:#fff;border-radius:10px;border:1px solid #e5e7eb;padding:1rem 1.2rem;border-left:4px solid #10b981;">
+    <p style="font-size:.72rem;text-transform:uppercase;color:#6b7280;margin:0 0 .3rem;">Total Spent</p>
+    <p style="font-size:1.4rem;font-weight:700;margin:0;">₦{{ summary.total_spent|floatformat:0 }}</p>
+  </div>
+  <div style="background:#fff;border-radius:10px;border:1px solid #e5e7eb;padding:1rem 1.2rem;border-left:4px solid #3b82f6;">
+    <p style="font-size:.72rem;text-transform:uppercase;color:#6b7280;margin:0 0 .3rem;">Transactions</p>
+    <p style="font-size:1.4rem;font-weight:700;margin:0;">{{ summary.count }}</p>
+    <p style="font-size:.72rem;color:#6b7280;margin:.2rem 0 0;">{{ my_count }} by you · {{ colleague_count }} by colleagues</p>
+  </div>
+  <div style="background:#fff;border-radius:10px;border:1px solid #e5e7eb;padding:1rem 1.2rem;border-left:4px solid #8b5cf6;">
+    <p style="font-size:.72rem;text-transform:uppercase;color:#6b7280;margin:0 0 .3rem;">Last Purchase</p>
+    <p style="font-size:1rem;font-weight:700;margin:0;">{{ summary.last_date|date:"d M Y"|default:"—" }}</p>
+  </div>
+</div>
+
+<div style="background:#fff;border:1px solid #e5e7eb;border-radius:10px;padding:1.2rem 1.4rem;">
+  <p style="font-size:1rem;font-weight:700;color:#111827;margin:0 0 1rem;">Purchase History</p>
+  <div style="overflow-x:auto;">
+    <table style="width:100%;border-collapse:collapse;font-size:.85rem;">
+      <thead><tr style="background:#f9fafb;">
+        <th style="padding:.65rem .9rem;text-align:left;border-bottom:1px solid #e5e7eb;font-weight:600;color:#374151;">Date</th>
+        <th style="padding:.65rem .9rem;text-align:left;border-bottom:1px solid #e5e7eb;font-weight:600;color:#374151;">Item / Service</th>
+        <th style="padding:.65rem .9rem;text-align:center;border-bottom:1px solid #e5e7eb;font-weight:600;color:#374151;">Qty</th>
+        <th style="padding:.65rem .9rem;text-align:right;border-bottom:1px solid #e5e7eb;font-weight:600;color:#374151;">Unit Price</th>
+        <th style="padding:.65rem .9rem;text-align:right;border-bottom:1px solid #e5e7eb;font-weight:600;color:#374151;">Amount</th>
+        <th style="padding:.65rem .9rem;text-align:left;border-bottom:1px solid #e5e7eb;font-weight:600;color:#374151;">Handled by</th>
+      </tr></thead>
+      <tbody>
+        {% for r in rows %}
+        <tr style="border-bottom:1px solid #f3f4f6;">
+          <td style="padding:.6rem .9rem;color:#9ca3af;white-space:nowrap;">{{ r.date|date:"d M Y" }}</td>
+          <td style="padding:.6rem .9rem;"><strong>{{ r.item }}</strong>{% if r.detail %}<br><span style="font-size:.72rem;color:#9ca3af;">{{ r.detail }}</span>{% endif %}
+            {% if summary.departments|length > 1 %}<br><span style="font-size:.7rem;color:#6d28d9;">{{ r.department_label }}</span>{% endif %}</td>
+          <td style="padding:.6rem .9rem;text-align:center;">{{ r.quantity }}</td>
+          <td style="padding:.6rem .9rem;text-align:right;">₦{{ r.unit_price|floatformat:0 }}</td>
+          <td style="padding:.6rem .9rem;text-align:right;font-weight:600;">₦{{ r.amount|floatformat:0 }}</td>
+          <td style="padding:.6rem .9rem;">{% if r.mine %}<strong>You</strong>{% else %}{{ r.staff }}{% endif %}
+            {% if r.branch %}<br><span style="font-size:.7rem;color:#9ca3af;">{{ r.branch }}</span>{% endif %}</td>
+        </tr>
+        {% empty %}
+        <tr><td colspan="6" style="text-align:center;color:#9ca3af;padding:2rem 0;">No purchases by this customer in {{ scope_label }}.</td></tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+</div>
+{% endif %}
+{% endblock %}
