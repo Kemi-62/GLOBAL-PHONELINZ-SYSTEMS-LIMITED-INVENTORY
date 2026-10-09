@@ -214,9 +214,36 @@ def request_stock(request):
 
 @login_required
 def staff_create_product(request):
-    # STOCK_APPROVALS_V1: now goes through the approval workflow (core/stock_approval_views.py)
-    from core import stock_approval_views as _sav
-    return _sav.staff_create_product(request)
+    if request.method == "POST" and request.user.role == "RETAIL":
+        try:
+            category = RetailCategory.objects.get(id=request.POST.get("category"))
+            subcategory, _ = RetailSubCategory.objects.get_or_create(
+                category=category, name=request.POST.get("new_subcategory")
+            )
+            subsubcategory = None
+            ssname = request.POST.get("new_subsubcategory")
+            if ssname:
+                subsubcategory, _ = RetailSubSubCategory.objects.get_or_create(subcategory=subcategory, name=ssname)
+
+            product = Product.objects.create(
+                subcategory=subcategory, subsubcategory=subsubcategory,
+                product_name=request.POST.get("product_name", ""),
+                model_name=request.POST.get("model_name"),
+                description=request.POST.get("description", ""),
+                imei_serial=request.POST.get("imei", ""),
+                color=request.POST.get("color", ""),
+                cost_price=0,
+                selling_price=float(request.POST.get("selling_price", 0)) or 0,
+            )
+            qty = int(request.POST.get("quantity", 1))
+            with transaction.atomic():
+                stock, _ = StaffStock.objects.get_or_create(staff=request.user, product=product)
+                stock.quantity += qty
+                stock.save()
+            messages.success(request, f"{product.model_name} created and added to your stock.")
+        except Exception as e:
+            messages.error(request, f"Error: {e}")
+    return redirect("retail_dashboard")
 
 
 @login_required
@@ -234,9 +261,24 @@ def edit_staff_stock_price(request, stock_id):
 
 @login_required
 def edit_staff_stock_quantity(request, stock_id):
-    # STOCK_APPROVALS_V1: now goes through the approval workflow (core/stock_approval_views.py)
-    from core import stock_approval_views as _sav
-    return _sav.staff_quantity_adjust(request, stock_id)
+    if request.user.role != "RETAIL":
+        return HttpResponseForbidden()
+    stock = get_object_or_404(StaffStock, id=stock_id, staff=request.user)
+    new_qty = request.GET.get("quantity")
+    if new_qty is not None and new_qty != "":
+        old_qty = stock.quantity
+        stock.quantity = max(int(new_qty), 0)
+        stock.save(update_fields=["quantity"])
+        log_action(
+            request.user,
+            "UPDATE",
+            "StaffStock",
+            stock.id,
+            f"Quantity updated from {old_qty} to {stock.quantity} for {stock.product.model_name}",
+            request,
+        )
+        messages.success(request, "Quantity updated.")
+    return redirect("retail_dashboard")
 
 
 @login_required
@@ -308,16 +350,70 @@ def my_commissions(request):
 
 @role_required("MANAGER")
 def add_stock_to_safe(request):
-    # STOCK_APPROVALS_V1: now goes through the approval workflow (core/stock_approval_views.py)
-    from core import stock_approval_views as _sav
-    return _sav.manager_add_stock(request)
+    if request.method == "POST":
+        try:
+            branch = request.user.branch
+            if request.POST.get("is_new_product") == "true":
+                category = RetailCategory.objects.get(id=request.POST.get("category"))
+                subcategory, _ = RetailSubCategory.objects.get_or_create(
+                    category=category, name=request.POST.get("new_subcategory")
+                )
+                subsubcategory = None
+                ssname = request.POST.get("new_subsubcategory")
+                if ssname:
+                    subsubcategory, _ = RetailSubSubCategory.objects.get_or_create(subcategory=subcategory, name=ssname)
+                product = Product.objects.create(
+                    subcategory=subcategory, subsubcategory=subsubcategory,
+                    product_name=request.POST.get("product_name", ""),
+                    model_name=request.POST.get("model_name"),
+                    description=request.POST.get("description", ""),
+                    imei_serial=request.POST.get("imei_serial", "") or None,
+                    cost_price=float(request.POST.get("cost_price", 0)) or 0,
+                    selling_price=float(request.POST.get("selling_price", 0)) or 0,
+                )
+            else:
+                product = get_object_or_404(Product, id=request.POST.get("product"))
+
+            quantity = int(request.POST.get("quantity", 0))
+            with transaction.atomic():
+                safe_stock, _ = BranchSafeStock.objects.get_or_create(branch=branch, product=product)
+                safe_stock.quantity += quantity
+                safe_stock.save()
+                StockMovement.objects.create(
+                    branch=branch, product=product, quantity=quantity,
+                    movement_type="IN", performed_by=request.user,
+                )
+            messages.success(request, f"Added {quantity} × {product.model_name} to safe.")
+        except Exception as e:
+            messages.error(request, f"Error: {e}")
+    return redirect("manager_dashboard")
 
 
 @role_required("MANAGER")
 def release_stock(request):
-    # STOCK_APPROVALS_V1: now goes through the approval workflow (core/stock_approval_views.py)
-    from core import stock_approval_views as _sav
-    return _sav.manager_release_stock(request)
+    if request.method == "POST":
+        branch = request.user.branch
+        product = get_object_or_404(Product, id=request.POST.get("product"))
+        staff = get_object_or_404(User, id=request.POST.get("staff"), branch=branch)
+        quantity = int(request.POST.get("quantity", 0))
+
+        safe_stock = get_object_or_404(BranchSafeStock, branch=branch, product=product)
+        if quantity > safe_stock.quantity:
+            messages.error(request, "Insufficient safe stock.")
+            return redirect("manager_dashboard")
+
+        with transaction.atomic():
+            safe_stock.quantity -= quantity
+            safe_stock.save()
+            staff_stock, _ = StaffStock.objects.get_or_create(staff=staff, product=product)
+            staff_stock.quantity += quantity
+            staff_stock.save()
+            StockMovement.objects.create(
+                branch=branch, product=product, quantity=quantity,
+                movement_type="OUT", performed_by=request.user,
+            )
+        messages.success(request, f"Released {quantity} × {product.model_name} to {staff.username}.")
+    return redirect("manager_dashboard")
 
 
 @role_required("MANAGER")
@@ -331,7 +427,7 @@ def approve_stock_request(request, request_id):
 
 @login_required
 def upload_stock_csv(request):
-    if request.user.role not in ["DIRECTOR"]:  # STOCK_APPROVALS_V1: managers can no longer overwrite branch stock
+    if request.user.role not in ["DIRECTOR", "MANAGER"]:
         return HttpResponseForbidden()
     redirect_to = "director_dashboard" if request.user.role == "DIRECTOR" else "manager_dashboard"
     if request.method == "POST":
@@ -1000,18 +1096,17 @@ def upload_retail_csv(request):
                             product.selling_price = selling_price
                             product.save(update_fields=["selling_price"])
 
-                    # STOCK_APPROVALS_V1: held until the manager approves
-                    from core.stock_approvals import submit_entry, batch_ref_for
-                    submit_entry(
-                        request.user, product, quantity, dest_tier="STAFF",
-                        source_type=("MANUAL_DIRECTOR" if request.POST.get("received_from") == "DIRECTOR" else "MANUAL_OTHER"),
-                        note="Bulk CSV upload", batch_ref=batch_ref_for(request),
-                    )
+                    with transaction.atomic():
+                        stock, _ = StaffStock.objects.get_or_create(
+                            staff=request.user, product=product
+                        )
+                        stock.quantity += quantity
+                        stock.save()
                     count += 1
                 except Exception as e:
                     errors.append(f"Row {i}: {e}")
 
-            msg = f"Submitted {count} product(s) for approval. They count as your stock once your manager approves."
+            msg = f"Uploaded {count} product(s) to your catalog."
             if errors:
                 msg += f" {len(errors)} row(s) had issues: {'; '.join(errors[:3])}"
             messages.success(request, msg)
@@ -1080,17 +1175,22 @@ def upload_manager_csv(request):
                             product.selling_price = selling_price
                         product.save(update_fields=["cost_price", "selling_price"])
 
-                    # STOCK_APPROVALS_V1: held until the Director approves
-                    from core.stock_approvals import submit_entry, batch_ref_for
-                    submit_entry(
-                        request.user, product, quantity, dest_tier="BRANCH", to_branch=branch,
-                        source_type="MANUAL_OTHER", note="Bulk CSV upload", batch_ref=batch_ref_for(request),
-                    )
+                    with transaction.atomic():
+                        safe_stock, _ = BranchSafeStock.objects.get_or_create(
+                            branch=branch, product=product
+                        )
+                        safe_stock.quantity += quantity
+                        safe_stock.save()
+                        StockMovement.objects.create(
+                            branch=branch, product=product,
+                            quantity=quantity, movement_type="IN",
+                            performed_by=request.user,
+                        )
                     count += 1
                 except Exception as e:
                     errors.append(f"Row {i}: {e}")
 
-            msg = f"Submitted {count} product(s) for Director approval. They join the branch safe once approved."
+            msg = f"Imported {count} product(s) to branch safe."
             if errors:
                 msg += f" {len(errors)} row(s) skipped: {'; '.join(errors[:3])}"
             messages.success(request, msg)
@@ -3471,9 +3571,120 @@ def manager_sales_today(request):
 
 @role_required("DIRECTOR")
 def director_release_stock(request):
-    # STOCK_APPROVALS_V1: now goes through the approval workflow (core/stock_approval_views.py)
-    from core import stock_approval_views as _sav
-    return _sav.director_release(request)
+    if request.method == "POST":
+        product_id   = request.POST.get("product_id")
+        quantity     = int(request.POST.get("quantity", 0))
+        release_type = request.POST.get("release_type")
+        branch_id    = request.POST.get("branch_id")
+        staff_id     = request.POST.get("staff_id")
+
+        if not product_id:
+            messages.error(request, "Please select a product.")
+            return redirect("director_safe_stock")
+
+        director_stock = DirectorSafeStock.objects.filter(
+            product_id=product_id
+        ).first()
+
+        if not director_stock:
+            messages.error(request, "Product not found in director safe.")
+            return redirect("director_safe_stock")
+
+        if quantity <= 0:
+            messages.error(request, "Quantity must be greater than 0.")
+            return redirect("director_safe_stock")
+
+        if quantity > director_stock.quantity:
+            messages.error(
+                request,
+                f"Only {director_stock.quantity} unit(s) of "
+                f"{director_stock.product.model_name} available in director safe."
+            )
+            return redirect("director_safe_stock")
+
+        product = director_stock.product
+        desc    = ""
+
+        with transaction.atomic():
+            # Reduce director safe
+            director_stock.quantity -= quantity
+            if director_stock.quantity == 0:
+                director_stock.delete()
+            else:
+                director_stock.save()
+
+            if release_type == "sale":
+                desc = (
+                    f"Director direct sale: {quantity}x {product.model_name}. "
+                    f"Branch: {Branch.objects.filter(id=branch_id).first().name if branch_id else 'N/A'}."
+                )
+                messages.success(
+                    request,
+                    f"Recorded direct sale of {quantity}x {product.model_name} from director safe."
+                )
+
+            elif release_type == "branch_safe":
+                if not branch_id:
+                    messages.error(request, "Please select a branch.")
+                    return redirect("director_safe_stock")
+                branch = get_object_or_404(Branch, id=branch_id)
+
+                # ADD to branch safe stock (not replace)
+                safe_stock, _ = BranchSafeStock.objects.get_or_create(
+                    branch=branch, product=product
+                )
+                safe_stock.quantity += quantity
+                safe_stock.save()
+
+                StockMovement.objects.create(
+                    branch=branch, product=product,
+                    quantity=quantity, movement_type="IN",
+                    performed_by=request.user,
+                )
+                desc = (
+                    f"Released {quantity}x {product.model_name} from director safe "
+                    f"to {branch.name} branch safe. New branch safe qty: {safe_stock.quantity}."
+                )
+                messages.success(request, desc)
+
+            elif release_type == "staff":
+                if not staff_id:
+                    messages.error(request, "Please select a staff member.")
+                    return redirect("director_safe_stock")
+                staff = get_object_or_404(User, id=staff_id)
+
+                # ADD to staff stock (not replace)
+                staff_stock, _ = StaffStock.objects.get_or_create(
+                    staff=staff, product=product
+                )
+                staff_stock.quantity += quantity
+                staff_stock.save()
+
+                desc = (
+                    f"Released {quantity}x {product.model_name} from director safe "
+                    f"directly to {staff.username} "
+                    f"({staff.branch.name if staff.branch else 'No branch'}). "
+                    f"Staff stock now: {staff_stock.quantity}."
+                )
+                messages.success(request, desc)
+
+            else:
+                messages.error(request, "Invalid release type selected.")
+                return redirect("director_safe_stock")
+
+            # Log to AuditLog
+            try:
+                from core.models import AuditLog
+                AuditLog.objects.create(
+                    user=request.user,
+                    action="UPDATE",
+                    model_name="DirectorSafeStock",
+                    description=desc,
+                )
+            except Exception:
+                pass
+
+    return redirect("director_safe_stock")
 
 
 @role_required("TELECOM")
@@ -5994,9 +6205,148 @@ def mc_subscription_retention(request):
 
 @role_required("DIRECTOR", "MANAGER")
 def stock_transfer(request):
-    # STOCK_APPROVALS_V1: now goes through the approval workflow (core/stock_approval_views.py)
-    from core import stock_approval_views as _sav
-    return _sav.stock_transfer_page(request)
+    """Record a stock transfer between any two parties."""
+    from core.models import (
+        StockTransfer, DirectorSafeStock, BranchSafeStock,
+        StaffStock, Product, Branch
+    )
+    from django.utils import timezone as _tz
+
+    branches = Branch.objects.all()
+    products = Product.objects.all().order_by('model_name')
+    staff_list = User.objects.filter(
+        role__in=['RETAIL', 'TELECOM', 'MULTICHOICE']
+    ).order_by('username')
+
+    # For managers, limit to their branch
+    if request.user.role == 'MANAGER':
+        staff_list = staff_list.filter(branch=request.user.branch)
+
+    if request.method == 'POST':
+        try:
+            transfer_type = request.POST.get('transfer_type')
+            product_id    = request.POST.get('product')
+            quantity      = int(request.POST.get('quantity', 0))
+            notes         = request.POST.get('notes', '').strip()
+            from_branch_id = request.POST.get('from_branch') or None
+            to_branch_id   = request.POST.get('to_branch') or None
+            to_staff_id    = request.POST.get('to_staff') or None
+
+            product  = get_object_or_404(Product, id=product_id)
+            from_branch = Branch.objects.get(id=from_branch_id) if from_branch_id else None
+            to_branch   = Branch.objects.get(id=to_branch_id) if to_branch_id else None
+            to_staff    = User.objects.get(id=to_staff_id) if to_staff_id else None
+
+            if quantity <= 0:
+                messages.error(request, 'Quantity must be greater than 0.')
+                return redirect('stock_transfer')
+
+            # Deduct from source
+            if transfer_type == 'DIRECTOR_TO_BRANCH':
+                src = DirectorSafeStock.objects.filter(product=product).first()
+                if not src or src.quantity < quantity:
+                    messages.error(request, f'Insufficient stock in Director Safe. Available: {src.quantity if src else 0}')
+                    return redirect('stock_transfer')
+                src.quantity -= quantity
+                src.save()
+                # Add to branch
+                dst, _ = BranchSafeStock.objects.get_or_create(product=product, branch=to_branch)
+                dst.quantity += quantity
+                dst.save()
+
+            elif transfer_type == 'BRANCH_TO_BRANCH':
+                src = BranchSafeStock.objects.filter(product=product, branch=from_branch).first()
+                if not src or src.quantity < quantity:
+                    messages.error(request, f'Insufficient stock in {from_branch.name}. Available: {src.quantity if src else 0}')
+                    return redirect('stock_transfer')
+                src.quantity -= quantity
+                src.save()
+                dst, _ = BranchSafeStock.objects.get_or_create(product=product, branch=to_branch)
+                dst.quantity += quantity
+                dst.save()
+
+            elif transfer_type == 'BRANCH_TO_STAFF':
+                src = BranchSafeStock.objects.filter(product=product, branch=from_branch).first()
+                if not src or src.quantity < quantity:
+                    messages.error(request, f'Insufficient stock in {from_branch.name}. Available: {src.quantity if src else 0}')
+                    return redirect('stock_transfer')
+                src.quantity -= quantity
+                src.save()
+                dst, _ = StaffStock.objects.get_or_create(product=product, staff=to_staff)
+                dst.quantity += quantity
+                dst.save()
+
+            elif transfer_type == 'BRANCH_TO_DIRECTOR':
+                src = BranchSafeStock.objects.filter(product=product, branch=from_branch).first()
+                if not src or src.quantity < quantity:
+                    messages.error(request, f'Insufficient stock in {from_branch.name}. Available: {src.quantity if src else 0}')
+                    return redirect('stock_transfer')
+                src.quantity -= quantity
+                src.save()
+                dst, _ = DirectorSafeStock.objects.get_or_create(product=product)
+                dst.quantity += quantity
+                dst.save()
+
+            elif transfer_type == 'STAFF_TO_BRANCH':
+                src = StaffStock.objects.filter(product=product, staff=to_staff).first()
+                if not src or src.quantity < quantity:
+                    messages.error(request, f'Insufficient stock with {to_staff.username}. Available: {src.quantity if src else 0}')
+                    return redirect('stock_transfer')
+                src.quantity -= quantity
+                src.save()
+                dst, _ = BranchSafeStock.objects.get_or_create(product=product, branch=to_branch)
+                dst.quantity += quantity
+                dst.save()
+
+            # Record transfer
+            StockTransfer.objects.create(
+                transfer_type=transfer_type,
+                product=product,
+                quantity=quantity,
+                status='COMPLETED',
+                notes=notes,
+                from_branch=from_branch,
+                to_branch=to_branch,
+                to_staff=to_staff,
+                initiated_by=request.user,
+                approved_by=request.user,
+                completed_at=_tz.now(),
+            )
+
+            # Audit log
+            try:
+                AuditLog.objects.create(
+                    user=request.user,
+                    action='TRANSFER',
+                    model_name='StockTransfer',
+                    description=f"Transferred {quantity}x {product.model_name}: {from_branch.name if from_branch else 'Director'} → {to_branch.name if to_branch else (to_staff.username if to_staff else 'Director')}"
+                )
+            except Exception:
+                pass
+
+            messages.success(request, f"Transfer complete: {quantity}x {product.model_name} moved successfully.")
+        except Exception as e:
+            messages.error(request, f"Transfer failed: {e}")
+        return redirect('stock_transfer')
+
+    # Recent transfers
+    transfers = StockTransfer.objects.select_related(
+        'product', 'from_branch', 'to_branch', 'to_staff', 'initiated_by'
+    ).order_by('-created_at')
+
+    if request.user.role == 'MANAGER':
+        transfers = transfers.filter(
+            Q(from_branch=request.user.branch) | Q(to_branch=request.user.branch)
+        )
+    transfers = transfers[:50]
+
+    return render(request, 'stock_transfer.html', {
+        'branches': branches,
+        'products': products,
+        'staff_list': staff_list,
+        'transfers': transfers,
+        'today': timezone.now().date(),
+    })
 
 
 @role_required("DIRECTOR")

@@ -1,7 +1,6 @@
 from django.urls import path, include
 from django.contrib.auth import views as auth_views
 from . import views
-from . import stock_approval_views as sav  # STOCK_APPROVALS_V1
 from . import customer_views  # CUSTOMER_HISTORY_V1
 
 urlpatterns = [
@@ -46,15 +45,6 @@ urlpatterns = [
     # Stock
     path('add-stock-safe/', views.add_stock_to_safe, name='add_stock_to_safe'),
     path('release-stock/', views.release_stock, name='release_stock'),
-
-    # STOCK_APPROVALS_V1
-    path('stock/approvals/', sav.stock_approvals, name='stock_approvals'),
-    path('stock/approvals/<int:req_id>/approve/', sav.stock_approval_approve, name='stock_approval_approve'),
-    path('stock/approvals/<int:req_id>/reject/', sav.stock_approval_reject, name='stock_approval_reject'),
-    path('stock/approvals/<int:req_id>/cancel/', sav.stock_approval_cancel, name='stock_approval_cancel'),
-    path('stock/approvals/<int:req_id>/edit/', sav.stock_approval_edit, name='stock_approval_edit'),
-    path('stock/approvals/batch/<str:batch_ref>/', sav.stock_approval_batch, name='stock_approval_batch'),
-    path('stock/audit/', sav.stock_audit, name='stock_audit'),
     path('approve-stock-request/<int:request_id>/', views.approve_stock_request, name='approve_stock_request'),
     path('request-stock/', views.request_stock, name='request_stock'),
     path('stock-log/', views.stock_movement_log, name='stock_movement_log'),

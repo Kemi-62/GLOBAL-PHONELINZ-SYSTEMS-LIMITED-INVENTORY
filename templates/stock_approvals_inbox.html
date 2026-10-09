@@ -1,0 +1,51 @@
+{# STOCK_APPROVALS_V1 #}{% extends "base.html" %}
+{% block content %}
+<div style="display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:.8rem;margin-bottom:1.2rem;">
+  <h1 style="font-size:1.3rem;font-weight:700;color:#004F9F;margin:0;">&#9989; Pending Approvals</h1>
+  {% if can_audit %}<a href="{% url 'stock_audit' %}" class="btn-sm btn-outline">&#128269; Stock Audit</a>{% endif %}
+</div>
+
+<div class="card" style="margin-bottom:1.2rem;">
+  <p class="card-title">Waiting for you ({{ actionable_count }})</p>
+  {% for g in actionable_groups %}
+    {% if g.batch and g.items|length > 1 %}
+    <div style="border:1px dashed #9ca3af;border-radius:10px;padding:.7rem;margin-bottom:.8rem;">
+      <div style="display:flex;gap:.5rem;flex-wrap:wrap;align-items:center;margin-bottom:.6rem;">
+        <strong style="font-size:.85rem;">Bulk upload by {{ g.items.0.requested_by.username }} &mdash; {{ g.items|length }} items</strong>
+        <form method="POST" action="{% url 'stock_approval_batch' g.batch %}">{% csrf_token %}<input type="hidden" name="action" value="approve">
+          <button type="submit" class="btn-sm btn-success" onclick="return confirm('Approve all {{ g.items|length }} items?')">&#10003; Approve all</button></form>
+        <form method="POST" action="{% url 'stock_approval_batch' g.batch %}" style="display:flex;gap:.4rem;">{% csrf_token %}<input type="hidden" name="action" value="reject">
+          <input type="text" name="reason" placeholder="Reason to reject all" required minlength="3" style="padding:.35rem .6rem;border:1px solid #d1d5db;border-radius:6px;font-size:.8rem;">
+          <button type="submit" class="btn-sm" style="background:#fee2e2;color:#b91c1c;border:1px solid #fecaca;">Reject all</button></form>
+      </div>
+      {% for r in g.items %}{% include "partials/stock_request_card.html" %}{% endfor %}
+    </div>
+    {% else %}
+      {% for r in g.items %}{% include "partials/stock_request_card.html" %}{% endfor %}
+    {% endif %}
+  {% empty %}
+  <p style="color:#9ca3af;font-size:.88rem;margin:.3rem 0;">Nothing is waiting for you.</p>
+  {% endfor %}
+</div>
+
+<div class="card" style="margin-bottom:1.2rem;">
+  <p class="card-title">My requests still pending ({{ mine|length }})</p>
+  {% for r in mine %}{% include "partials/stock_request_card.html" %}
+  {% empty %}<p style="color:#9ca3af;font-size:.88rem;margin:.3rem 0;">You have no pending requests.</p>{% endfor %}
+</div>
+
+{% if is_director %}
+<div class="card" style="margin-bottom:1.2rem;">
+  <p class="card-title">Waiting on others &mdash; oversight ({{ oversight|length }})</p>
+  <p style="font-size:.78rem;color:#6b7280;margin:-.3rem 0 .8rem;">A backlog here is a red flag. You can act on a manager's or staff member's behalf if needed; it is recorded that you did.</p>
+  {% for r in oversight %}{% include "partials/stock_request_card.html" %}
+  {% empty %}<p style="color:#9ca3af;font-size:.88rem;margin:.3rem 0;">Nothing is waiting on anyone else.</p>{% endfor %}
+</div>
+{% endif %}
+
+<div class="card">
+  <p class="card-title">Recent decisions</p>
+  {% for r in recent %}{% include "partials/stock_request_card.html" %}
+  {% empty %}<p style="color:#9ca3af;font-size:.88rem;margin:.3rem 0;">No decisions yet.</p>{% endfor %}
+</div>
+{% endblock %}

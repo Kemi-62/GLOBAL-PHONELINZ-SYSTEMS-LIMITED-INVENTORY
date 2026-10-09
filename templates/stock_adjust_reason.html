@@ -1,0 +1,31 @@
+{# STOCK_APPROVALS_V1 #}{% extends "base.html" %}
+{% block content %}
+<div style="max-width:520px;margin:0 auto;">
+  <h1 style="font-size:1.25rem;font-weight:700;color:#004F9F;margin:0 0 1rem;">{% if increase %}Add to my stock{% else %}Reduce my stock{% endif %}</h1>
+  <div class="card">
+    <p style="margin:0 0 .3rem;"><strong>{{ stock.product.model_name }}</strong>{% if stock.product.color %} ({{ stock.product.color }}){% endif %}</p>
+    <p style="margin:0 0 1rem;font-size:.9rem;">Your stock: <strong>{{ current }}</strong> &rarr; <strong>{{ new_qty }}</strong> ({% if increase %}+{% else %}&minus;{% endif %}{{ diff }})</p>
+    <form method="POST" action="{% url 'edit_staff_stock_quantity' stock.id %}">{% csrf_token %}
+      <input type="hidden" name="quantity" value="{{ new_qty }}">
+      {% if increase %}
+      <div class="form-group"><label>Where did this extra stock come from? *</label>
+        <select name="received_from" required>
+          <option value="OTHER">My branch manager / a supplier</option>
+          <option value="DIRECTOR">The Director, directly to me</option>
+        </select></div>
+      <div class="form-group"><label>Note (what is this stock?) *</label>
+        <input type="text" name="reason" required minlength="3" placeholder="e.g. 3 more units received today"></div>
+      <p style="font-size:.78rem;color:#6b7280;">Your stock stays at {{ current }} until your manager approves this. You can change or cancel it from Pending Approvals until someone acts on it.</p>
+      {% else %}
+      <div class="form-group"><label>Why is your stock being reduced? *</label>
+        <textarea name="reason" required minlength="3" rows="3" placeholder="e.g. returned 2 units to the manager, 1 damaged"></textarea></div>
+      <p style="font-size:.78rem;color:#b45309;">This takes effect immediately, your manager is told, and the reason is kept on record. Units that were sold must be recorded as sales, not removed here.</p>
+      {% endif %}
+      <div style="display:flex;gap:.6rem;margin-top:1rem;">
+        <button type="submit" class="btn-sm btn-primary">{% if increase %}Send for approval{% else %}Reduce stock{% endif %}</button>
+        <a href="{% url 'retail_dashboard' %}" class="btn-sm btn-outline">Cancel</a>
+      </div>
+    </form>
+  </div>
+</div>
+{% endblock %}

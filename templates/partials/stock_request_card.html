@@ -1,0 +1,68 @@
+{# STOCK_APPROVALS_V1 #}
+<div style="border:1px solid #e5e7eb;border-radius:10px;padding:.9rem 1rem;margin-bottom:.7rem;background:#fff;{% if r.kind != 'MOVE' %}border-left:4px solid #f59e0b;{% endif %}">
+  <div style="display:flex;justify-content:space-between;gap:.6rem;flex-wrap:wrap;align-items:flex-start;">
+    <div>
+      <strong style="font-size:1rem;">{{ r.quantity }}&times; {{ r.product.model_name }}{% if r.product.color %} <span style="color:#6b7280;font-weight:400;">({{ r.product.color }})</span>{% endif %}</strong>
+      <div style="font-size:.8rem;color:#374151;margin-top:.15rem;">{{ r.source_label }} &rarr; {{ r.dest_label }}</div>
+    </div>
+    <div style="display:flex;gap:.3rem;flex-wrap:wrap;">
+      <span style="background:#eff6ff;color:#1d4ed8;border-radius:999px;padding:.12rem .6rem;font-size:.7rem;font-weight:700;">{{ r.get_kind_display }}</span>
+      {% if r.status == 'PENDING' %}<span style="background:#fef3c7;color:#92400e;border-radius:999px;padding:.12rem .6rem;font-size:.7rem;font-weight:700;">Waiting for {{ r.get_approval_stage_display }}</span>{% endif %}
+      {% if r.in_transit %}<span style="background:#ede9fe;color:#5b21b6;border-radius:999px;padding:.12rem .6rem;font-size:.7rem;font-weight:700;">In transit</span>{% endif %}
+      {% if r.stock_applied and r.status == 'PENDING' %}<span style="background:#dcfce7;color:#166534;border-radius:999px;padding:.12rem .6rem;font-size:.7rem;font-weight:700;">Already counted in stock</span>{% endif %}
+    </div>
+  </div>
+  <div style="font-size:.76rem;color:#6b7280;margin-top:.35rem;">
+    Requested by <strong>{{ r.requested_by.username }}</strong> &middot; {{ r.created_at|date:"d M Y H:i" }}
+    {% if r.get_source_type_display and r.source_type != 'NORMAL' %}&middot; <span style="color:#b45309;">{{ r.get_source_type_display }}</span>{% endif %}
+  </div>
+  {% if r.notes %}<div style="font-size:.8rem;margin-top:.35rem;background:#f9fafb;border-radius:6px;padding:.4rem .6rem;">&ldquo;{{ r.notes }}&rdquo;</div>{% endif %}
+
+  {% if r.user_can_act %}
+  <div style="display:flex;gap:.5rem;flex-wrap:wrap;margin-top:.7rem;align-items:center;">
+    <form method="POST" action="{% url 'stock_approval_approve' r.id %}">{% csrf_token %}
+      <button type="submit" class="btn-sm btn-success" onclick="return confirm('Approve {{ r.quantity }} x {{ r.product.model_name|escapejs }}?')">&#10003; {% if r.kind == 'MOVE' %}Accept{% else %}Approve{% endif %}</button>
+    </form>
+    <form method="POST" action="{% url 'stock_approval_reject' r.id %}" style="display:flex;gap:.4rem;flex:1;min-width:220px;">{% csrf_token %}
+      <input type="text" name="reason" placeholder="Reason for rejecting (required)" required minlength="3" style="flex:1;padding:.4rem .6rem;border:1px solid #d1d5db;border-radius:6px;font-size:.82rem;">
+      <button type="submit" class="btn-sm" style="background:#fee2e2;color:#b91c1c;border:1px solid #fecaca;">Reject</button>
+    </form>
+  </div>
+  {% endif %}
+
+  {% if r.user_can_edit %}
+  <details style="margin-top:.6rem;">
+    <summary style="cursor:pointer;font-size:.78rem;color:#004F9F;">Edit or cancel my request</summary>
+    <div style="display:flex;gap:.5rem;flex-wrap:wrap;margin-top:.5rem;align-items:center;">
+      <form method="POST" action="{% url 'stock_approval_edit' r.id %}" style="display:flex;gap:.4rem;flex-wrap:wrap;">{% csrf_token %}
+        <input type="number" name="quantity" min="1" value="{{ r.quantity }}" style="width:90px;padding:.4rem .5rem;border:1px solid #d1d5db;border-radius:6px;">
+        <input type="text" name="notes" value="{{ r.notes }}" placeholder="Note" style="min-width:180px;padding:.4rem .6rem;border:1px solid #d1d5db;border-radius:6px;">
+        <button type="submit" class="btn-sm btn-primary">Save</button>
+      </form>
+      <form method="POST" action="{% url 'stock_approval_cancel' r.id %}">{% csrf_token %}
+        <button type="submit" class="btn-sm btn-outline" onclick="return confirm('Cancel this request?')">Cancel request</button>
+      </form>
+    </div>
+    <p style="font-size:.7rem;color:#9ca3af;margin:.3rem 0 0;">You can change or cancel it only until someone acts on it. Every change is recorded.</p>
+  </details>
+  {% elif r.status == 'PENDING' and r.requested_by_id == request.user.id and r.acted_on %}
+  <p style="font-size:.72rem;color:#9ca3af;margin:.5rem 0 0;">&#128274; Locked: someone has already acted on this request.</p>
+  {% endif %}
+
+  {% if r.status == 'REJECTED' %}
+  <div style="margin-top:.5rem;font-size:.8rem;color:#b91c1c;background:#fef2f2;border-radius:6px;padding:.4rem .6rem;">
+    Rejected by {{ r.rejected_by.username|default:"-" }}: {{ r.rejection_reason }}
+    {% if r.reversed_quantity %}<br>{{ r.reversed_quantity }} unit(s) taken back out of stock.{% endif %}
+    {% if r.shortfall_quantity %}<br><strong>Shortfall: {{ r.shortfall_quantity }} unit(s) were already sold or moved and could not be taken back.</strong>{% endif %}
+  </div>
+  {% endif %}
+
+  {% if r.events.all %}
+  <details style="margin-top:.5rem;">
+    <summary style="cursor:pointer;font-size:.74rem;color:#6b7280;">History ({{ r.events.all|length }})</summary>
+    <ul style="margin:.4rem 0 0;padding-left:1.1rem;font-size:.74rem;color:#4b5563;">
+      {% for e in r.events.all %}<li><strong>{{ e.action }}</strong> &middot; {{ e.actor.username|default:"system" }} &middot; {{ e.created_at|date:"d M H:i" }}{% if e.detail %}<br><span style="color:#6b7280;">{{ e.detail }}</span>{% endif %}</li>{% endfor %}
+    </ul>
+  </details>
+  {% endif %}
+</div>

@@ -1,0 +1,117 @@
+{# STOCK_APPROVALS_V1 #}{% extends "base.html" %}
+{% block content %}
+<style>
+  .sa-card{background:#fff;border:1px solid #e5e7eb;border-radius:10px;padding:.9rem 1.1rem}
+  .sa-kpi{background:#fff;border:1px solid #e5e7eb;border-radius:10px;padding:.8rem 1rem;border-left:4px solid #3b82f6}
+  .sa-kpi p{margin:0}.sa-kpi .l{font-size:.68rem;text-transform:uppercase;color:#6b7280}.sa-kpi .v{font-size:1.35rem;font-weight:700}
+  .sa-t{width:100%;border-collapse:collapse;font-size:.82rem}
+  .sa-t th{background:#f9fafb;text-align:left;padding:.55rem .7rem;border-bottom:1px solid #e5e7eb;font-weight:600;color:#374151;white-space:nowrap}
+  .sa-t td{padding:.5rem .7rem;border-bottom:1px solid #f3f4f6;vertical-align:top}
+  .sa-f label{display:block;font-size:.68rem;text-transform:uppercase;color:#6b7280;margin-bottom:.2rem}
+  .sa-f select,.sa-f input{padding:.4rem .5rem;border:1px solid #d1d5db;border-radius:6px;font-size:.82rem;width:100%;box-sizing:border-box}
+  .pill{border-radius:999px;padding:.1rem .55rem;font-size:.68rem;font-weight:700;white-space:nowrap}
+</style>
+
+<div style="display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:.8rem;margin-bottom:1rem;">
+  <h1 style="font-size:1.3rem;font-weight:700;color:#004F9F;margin:0;">&#128269; Stock Audit</h1>
+  <a href="{% url 'stock_approvals' %}" class="btn-sm btn-outline">&larr; Pending Approvals</a>
+</div>
+
+<div style="display:flex;gap:.5rem;flex-wrap:wrap;margin-bottom:1rem;">
+  <a href="?exceptions=1{% if f.branch and is_director %}&branch={{ f.branch }}{% endif %}" class="btn-sm" style="{% if f.exceptions %}background:#b45309;color:#fff;{% else %}background:#fef3c7;color:#92400e;border:1px solid #fcd34d;{% endif %}">&#9888;&#65039; Exceptions ({{ summary.exception_count }}) &mdash; every manual / bypass entry, any status</a>
+  <a href="?status=PENDING" class="btn-sm btn-outline">Pending only</a>
+  <a href="?status=REJECTED" class="btn-sm btn-outline">Rejected only</a>
+  <a href="{% url 'stock_audit' %}" class="btn-sm btn-outline">Clear all filters</a>
+</div>
+
+<form method="GET" class="sa-card sa-f" style="margin-bottom:1rem;">
+  <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:.7rem;">
+    <div><label>Branch</label>
+      <select name="branch" {% if not is_director %}disabled{% endif %}>
+        {% if is_director %}<option value="">All branches</option>{% endif %}
+        {% for b in branches %}<option value="{{ b.id }}" {% if f.branch == b.id %}selected{% endif %}>{{ b.name }}</option>{% endfor %}
+      </select></div>
+    <div><label>Tier</label>
+      <select name="tier"><option value="">All tiers</option>
+        {% if is_director %}<option value="DIRECTOR" {% if f.tier == 'DIRECTOR' %}selected{% endif %}>Director Safe</option>{% endif %}
+        <option value="BRANCH" {% if f.tier == 'BRANCH' %}selected{% endif %}>Branch Safe</option>
+        <option value="STAFF" {% if f.tier == 'STAFF' %}selected{% endif %}>Staff Stock</option></select></div>
+    <div><label>Staff member</label>
+      <select name="staff"><option value="">All staff</option>
+        {% for s in staff_list %}<option value="{{ s.id }}" {% if f.staff == s.id %}selected{% endif %}>{{ s.username }}{% if s.branch %} ({{ s.branch.name }}){% endif %}</option>{% endfor %}</select></div>
+    <div><label>Status</label>
+      <select name="status"><option value="">Any status</option>
+        <option value="PENDING" {% if f.status == 'PENDING' %}selected{% endif %}>Pending approval</option>
+        <option value="APPROVED" {% if f.status == 'APPROVED' %}selected{% endif %}>Approved</option>
+        <option value="REJECTED" {% if f.status == 'REJECTED' %}selected{% endif %}>Rejected</option>
+        <option value="CANCELLED" {% if f.status == 'CANCELLED' %}selected{% endif %}>Cancelled</option></select></div>
+    <div><label>Source type</label>
+      <select name="source"><option value="">All sources</option>
+        <option value="NORMAL" {% if f.source == 'NORMAL' %}selected{% endif %}>Normal chain release</option>
+        <option value="MANUAL_DIRECTOR" {% if f.source == 'MANUAL_DIRECTOR' %}selected{% endif %}>Manual - from Director</option>
+        <option value="MANUAL_OTHER" {% if f.source == 'MANUAL_OTHER' %}selected{% endif %}>Manual - not from Director</option></select></div>
+    <div><label>Item / product</label><input type="text" name="product" value="{{ f.product }}" placeholder="Model name"></div>
+    <div><label>From date</label><input type="date" name="date_from" value="{{ f.date_from }}"></div>
+    <div><label>To date</label><input type="date" name="date_to" value="{{ f.date_to }}"></div>
+  </div>
+  {% if not is_director %}<input type="hidden" name="branch" value="{{ f.branch }}">{% endif %}
+  <div style="margin-top:.8rem;display:flex;gap:.5rem;"><button type="submit" class="btn-sm btn-primary">Apply filters</button>
+    {% if f.exceptions %}<span style="font-size:.78rem;color:#b45309;align-self:center;">Exceptions mode: status and source filters are ignored so nothing is hidden.</span>{% endif %}</div>
+</form>
+
+<div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:.8rem;margin-bottom:1rem;">
+  <div class="sa-kpi" style="border-left-color:#f59e0b;"><p class="l">Pending approval</p><p class="v">{{ summary.pending_count }}</p><p style="font-size:.72rem;color:#6b7280;">{{ summary.pending_units }} unit(s)</p></div>
+  <div class="sa-kpi" style="border-left-color:{% if summary.stale_count %}#dc2626{% else %}#10b981{% endif %};"><p class="l">Pending over 3 days</p><p class="v" style="{% if summary.stale_count %}color:#dc2626;{% endif %}">{{ summary.stale_count }}</p><p style="font-size:.72rem;color:#6b7280;">backlog = red flag</p></div>
+  <div class="sa-kpi" style="border-left-color:#8b5cf6;"><p class="l">In transit</p><p class="v">{{ summary.in_transit_units }}</p><p style="font-size:.72rem;color:#6b7280;">unit(s) not yet accepted</p></div>
+  <div class="sa-kpi" style="border-left-color:#ef4444;"><p class="l">Rejected</p><p class="v">{{ summary.rejected_count }}</p></div>
+  <div class="sa-kpi" style="border-left-color:#b45309;"><p class="l">Exceptions</p><p class="v">{{ summary.exception_count }}</p></div>
+  <div class="sa-kpi" style="border-left-color:{% if summary.shortfall_units %}#dc2626{% else %}#10b981{% endif %};"><p class="l">Shortfall units</p><p class="v" style="{% if summary.shortfall_units %}color:#dc2626;{% endif %}">{{ summary.shortfall_units }}</p></div>
+</div>
+
+<div class="sa-card" style="margin-bottom:1rem;">
+  <p style="font-weight:700;margin:0 0 .2rem;">Current stock held (approved stock only)</p>
+  <p style="font-size:.76rem;color:#6b7280;margin:0 0 .7rem;">Respects the branch, tier, staff and product filters. Company-wide total = no branch filter, tier = all.</p>
+  <div style="display:flex;gap:1.2rem;flex-wrap:wrap;font-size:.84rem;margin-bottom:.7rem;">
+    <span>Director Safe: <strong>{{ totals.DIRECTOR }}</strong> (&#8358;{{ value_totals.DIRECTOR|floatformat:0 }})</span>
+    <span>Branch Safes: <strong>{{ totals.BRANCH }}</strong> (&#8358;{{ value_totals.BRANCH|floatformat:0 }})</span>
+    <span>Staff Stock: <strong>{{ totals.STAFF }}</strong> (&#8358;{{ value_totals.STAFF|floatformat:0 }})</span>
+    <span style="font-weight:700;">Total: {{ grand_total_units }} unit(s) &middot; &#8358;{{ grand_total_value|floatformat:0 }} at cost</span>
+  </div>
+  <div style="overflow-x:auto;max-height:340px;overflow-y:auto;">
+    <table class="sa-t"><thead><tr><th>Tier</th><th>Where</th><th>Product</th><th style="text-align:right;">Qty</th><th style="text-align:right;">Value at cost</th></tr></thead><tbody>
+      {% for h in holdings %}<tr><td>{{ h.tier }}</td><td>{{ h.where }}</td><td>{{ h.product }}{% if h.color %} <span style="color:#9ca3af;">({{ h.color }})</span>{% endif %}</td><td style="text-align:right;">{{ h.qty }}</td><td style="text-align:right;">&#8358;{{ h.value|floatformat:0 }}</td></tr>
+      {% empty %}<tr><td colspan="5" style="text-align:center;color:#9ca3af;padding:1.2rem;">No stock matches these filters.</td></tr>{% endfor %}
+    </tbody></table>
+  </div>
+</div>
+
+<div class="sa-card">
+  <p style="font-weight:700;margin:0 0 .2rem;">Entries and movements ({{ summary.total }})</p>
+  <p style="font-size:.76rem;color:#6b7280;margin:0 0 .7rem;">Every approval request, including rejected and cancelled ones, newest first. Dated by when it was requested.</p>
+  <div style="overflow-x:auto;">
+    <table class="sa-t"><thead><tr><th>Date</th><th>Product</th><th style="text-align:right;">Qty</th><th>From &rarr; To</th><th>Source</th><th>Requested by</th><th>Status</th><th>Decided by</th></tr></thead><tbody>
+      {% for r in page %}
+      <tr {% if r.shortfall_quantity %}style="background:#fef2f2;"{% endif %}>
+        <td style="white-space:nowrap;color:#6b7280;">{{ r.created_at|date:"d M Y H:i" }}</td>
+        <td><strong>{{ r.product.model_name }}</strong>{% if r.product.color %} <span style="color:#9ca3af;">({{ r.product.color }})</span>{% endif %}</td>
+        <td style="text-align:right;">{{ r.quantity }}</td>
+        <td>{{ r.source_label }} &rarr; {{ r.dest_label }}{% if r.notes %}<br><span style="font-size:.72rem;color:#9ca3af;">&ldquo;{{ r.notes }}&rdquo;</span>{% endif %}</td>
+        <td>{% if r.source_type == 'NORMAL' %}<span class="pill" style="background:#f3f4f6;color:#374151;">Normal</span>{% else %}<span class="pill" style="background:#fef3c7;color:#92400e;">{% if r.kind == 'ADJUST_DOWN' %}Reduction{% elif r.source_type == 'MANUAL_DIRECTOR' %}Manual - Director{% else %}Manual - other{% endif %}</span>{% endif %}</td>
+        <td>{{ r.requested_by.username }}</td>
+        <td><span class="pill" style="{% if r.status == 'APPROVED' %}background:#dcfce7;color:#166534;{% elif r.status == 'REJECTED' %}background:#fee2e2;color:#991b1b;{% elif r.status == 'PENDING' %}background:#fef3c7;color:#92400e;{% else %}background:#f3f4f6;color:#6b7280;{% endif %}">{{ r.get_status_display }}</span>
+          {% if r.status == 'PENDING' %}<br><span style="font-size:.7rem;color:#9ca3af;">at {{ r.get_approval_stage_display }}</span>{% endif %}
+          {% if r.shortfall_quantity %}<br><span style="font-size:.7rem;color:#b91c1c;font-weight:700;">shortfall {{ r.shortfall_quantity }}</span>{% endif %}</td>
+        <td style="font-size:.78rem;">{% if r.status == 'REJECTED' %}{{ r.rejected_by.username|default:"-" }}<br><span style="color:#b91c1c;">{{ r.rejection_reason }}</span>{% elif r.approved_by %}{{ r.approved_by.username }}{% else %}&mdash;{% endif %}</td>
+      </tr>
+      {% empty %}<tr><td colspan="8" style="text-align:center;color:#9ca3af;padding:1.5rem;">No entries match these filters.</td></tr>{% endfor %}
+    </tbody></table>
+  </div>
+  {% if page.paginator.num_pages > 1 %}
+  <div style="display:flex;gap:.6rem;justify-content:center;margin-top:.8rem;font-size:.82rem;">
+    {% if page.has_previous %}<a href="?{{ querystring }}&page={{ page.previous_page_number }}">&larr; Newer</a>{% endif %}
+    <span>Page {{ page.number }} of {{ page.paginator.num_pages }}</span>
+    {% if page.has_next %}<a href="?{{ querystring }}&page={{ page.next_page_number }}">Older &rarr;</a>{% endif %}
+  </div>
+  {% endif %}
+</div>
+{% endblock %}

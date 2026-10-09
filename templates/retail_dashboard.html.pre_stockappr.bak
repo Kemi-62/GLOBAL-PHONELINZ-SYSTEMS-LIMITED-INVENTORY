@@ -214,16 +214,6 @@ pre{background:#f5f5f5;padding:.8rem;border-radius:6px;font-size:.75rem;overflow
       <p class="card-title">➕ Add Single Product</p>
       <form method="POST" action="{% url 'staff_create_product' %}">
         {% csrf_token %}
-        {# STOCK_APPROVALS_V1 #}
-        <div class="form-group">
-          <label>Stock received from *</label>
-          <select name="received_from" required>
-            <option value="OTHER">My branch manager / a supplier</option>
-            <option value="DIRECTOR">The Director, directly to me</option>
-          </select>
-          <p style="font-size:.72rem;color:#6b7280;margin:.25rem 0 0;">Your manager must approve this before it counts as your stock.</p>
-        </div>
-
         <div class="form-group">
           <label>Category *</label>
           <select name="category" required>
@@ -274,16 +264,6 @@ pre{background:#f5f5f5;padding:.8rem;border-radius:6px;font-size:.75rem;overflow
       <p style="font-size:.83rem;color:#6b7280;margin-bottom:.8rem;">Upload multiple products at once. Each row adds to your catalog and stock quantity.</p>
       <form method="POST" action="{% url 'upload_retail_csv' %}" enctype="multipart/form-data">
         {% csrf_token %}
-        {# STOCK_APPROVALS_V1 #}
-        <div class="form-group">
-          <label>Stock received from *</label>
-          <select name="received_from" required>
-            <option value="OTHER">My branch manager / a supplier</option>
-            <option value="DIRECTOR">The Director, directly to me</option>
-          </select>
-          <p style="font-size:.72rem;color:#6b7280;margin:.25rem 0 0;">Your manager must approve this before it counts as your stock.</p>
-        </div>
-
         <div class="form-group">
           <label>Select CSV File *</label>
           <input type="file" name="csv_file" accept=".csv" required>
