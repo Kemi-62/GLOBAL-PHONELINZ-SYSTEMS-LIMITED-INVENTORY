@@ -18,5 +18,5 @@ jobs:
         run: |
           echo "Running backup..."
           curl -s --max-time 180 \
-            "https://app.globalphonelinz.com/system/backup/?key=gpsl2026backup"
+            "https://app.globalphonelinz.com/system/backup/?key=35OU7Nv8wX8YHxA0PK6RjreRvsvHhTf3FMOv64KPe4I"
           echo "Done"
