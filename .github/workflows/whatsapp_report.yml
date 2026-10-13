@@ -16,4 +16,4 @@ jobs:
       - name: Send WhatsApp report
         run: |
           curl -s --max-time 120 \
-            "https://app.globalphonelinz.com/cron/whatsapp-report/?key=gpsl2026backup"
+            "https://app.globalphonelinz.com/cron/whatsapp-report/?key=35OU7Nv8wX8YHxA0PK6RjreRvsvHhTf3FMOv64KPe4I"
