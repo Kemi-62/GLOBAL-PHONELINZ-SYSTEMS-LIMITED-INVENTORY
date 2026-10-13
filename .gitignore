@@ -161,4 +161,10 @@ cython_debug/
 
 # Nix
 /result
-/result-**.pre_*.bak
+/result-*
+*.pre_*.bak
+logs/
+*.sqlite3
+backups/
+data.json
+data.raw.json

@@ -6119,7 +6119,7 @@ def email_diagnostic(request):
     """
     Email diagnostic endpoint - tests the actual Brevo API backend used by the app.
     Only accessible with BACKUP_SECRET_KEY.
-    URL: /system/email-test/?key=gpsl2026backup&to=kemimonday00@gmail.com
+    URL: /system/email-test/?key=YOUR_CRON_SECRET&to=kemimonday00@gmail.com
     """
     from django.http import JsonResponse
     from django.core.mail import send_mail

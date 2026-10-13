@@ -1,3 +1,4 @@
+# CRON_KEY_SECRET_V1
 name: GPSL Stock Alert
 
 on:
@@ -11,12 +12,16 @@ jobs:
     steps:
       - name: Wake Render app
         run: |
-          echo "Waking app..."
           curl -s --max-time 60 "https://app.globalphonelinz.com/system/keepalive/" || true
           sleep 15
       - name: Send stock and subscription alerts
+        env:
+          CRON_KEY: ${{ secrets.CRON_KEY }}
         run: |
-          echo "Sending alerts..."
-          curl -s --max-time 120 \
-            "https://app.globalphonelinz.com/cron/stock-alert/?email=kemimonday00@gmail.com&key=35OU7Nv8wX8YHxA0PK6RjreRvsvHhTf3FMOv64KPe4I"
-          echo "Done"
+          if [ -z "$CRON_KEY" ]; then
+            echo "CRON_KEY secret is not set (GitHub repo > Settings > Secrets and variables > Actions)"
+            exit 1
+          fi
+          curl -fsS --retry 2 --retry-delay 20 --retry-all-errors --max-time 120 \
+            -H "X-Cron-Secret: $CRON_KEY" \
+            "https://app.globalphonelinz.com/cron/stock-alert/?email=kemimonday00@gmail.com"
