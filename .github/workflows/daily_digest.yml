@@ -3,7 +3,7 @@ name: GPSL Daily Digest
 
 on:
   schedule:
-    - cron: '0 18 * * 1-6'
+    - cron: '0 19 * * 1-6'
   workflow_dispatch:
 
 jobs:
