@@ -16,8 +16,8 @@ jobs:
       - name: Archive previous month
         run: |
           curl -s --max-time 120 \
-            "https://app.globalphonelinz.com/cron/archive-monthly-performance/?key=gpsl2026backup"
+            "https://app.globalphonelinz.com/cron/archive-monthly-performance/?key=35OU7Nv8wX8YHxA0PK6RjreRvsvHhTf3FMOv64KPe4I"
       - name: Archive + email staff performance
         run: |
           curl -s --max-time 120 \
-            "https://app.globalphonelinz.com/cron/archive-staff-monthly-performance/?key=gpsl2026backup"
+            "https://app.globalphonelinz.com/cron/archive-staff-monthly-performance/?key=35OU7Nv8wX8YHxA0PK6RjreRvsvHhTf3FMOv64KPe4I"
