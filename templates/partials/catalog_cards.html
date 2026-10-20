@@ -1,0 +1,52 @@
+{# CATALOG_ROLES_V1  usage: {% include "partials/catalog_cards.html" with catalog=X action_label="Release" action_fn="myFn" %} #}
+{% if catalog and not catalog.empty %}
+<div class="cg-root" data-status="all">
+  <div class="cg-head">
+    <input type="search" class="cg-search" placeholder="Search name, colour, IMEI or holder…" oninput="CG.filter(this)" autocomplete="off">
+  </div>
+  <div class="cg-chips">
+    <button type="button" class="cg-chip active" onclick="CG.status(this,'all')">All <span class="cg-count">{{ catalog.counts.all }}</span></button>
+    <button type="button" class="cg-chip" onclick="CG.status(this,'instock')">In stock <span class="cg-count">{{ catalog.counts.instock }}</span></button>
+    <button type="button" class="cg-chip" onclick="CG.status(this,'low')">Low (1-2) <span class="cg-count">{{ catalog.counts.low }}</span></button>
+    <button type="button" class="cg-chip" onclick="CG.status(this,'out')">Out <span class="cg-count">{{ catalog.counts.out }}</span></button>
+  </div>
+  <div class="cg-jump">
+    {% for g in catalog.groups %}<a href="#" class="cg-jumplink" onclick="CG.jump('{{ g.anchor }}');return false;">{{ g.name }}<span>{{ g.count }}</span></a>{% endfor %}
+  </div>
+  {% for g in catalog.groups %}
+  <section class="cg-cat" id="{{ g.anchor }}">
+    <h3 class="cg-cat-title">{{ g.name }}<span class="cg-cat-count">{{ g.count }}</span></h3>
+    {% for sub in g.subs %}
+    <div class="cg-sub">
+      <h4 class="cg-sub-title">{{ sub.name }}<span class="cg-sub-count">{{ sub.count }}</span></h4>
+      <div class="cg-grid">
+        {% for it in sub.items %}
+        <div class="cg-card" data-status="{{ it.status }}" data-search="{{ it.search }}">
+          <div class="cg-top">
+            <span class="cg-name">{{ it.name }}</span>
+            {% if it.color %}<span class="cg-color">{{ it.color }}</span>{% endif %}
+          </div>
+          <div class="cg-price">₦{{ it.price|floatformat:"0g" }}</div>
+          <div>
+            <span class="badge {% if it.status == 'out' %}badge-red{% elif it.status == 'low' %}badge-amber{% else %}badge-green{% endif %}">{% if it.status == 'out' %}Out of stock{% elif it.status == 'low' %}Low · {{ it.qty }} left{% else %}{{ it.qty }} in stock{% endif %}</span>
+          </div>
+          {% if it.value is not None %}<div class="cg-value">{{ catalog.value_label }} ₦{{ it.value|floatformat:"0g" }}</div>{% endif %}
+          {% if it.imei %}<div class="cg-imei">IMEI {{ it.imei }}</div>{% endif %}
+          {% if it.lines %}<div class="cg-lines">{% for ln in it.lines %}<div class="cg-line"><span>{{ ln.label }}</span><strong>{{ ln.value }}</strong></div>{% endfor %}</div>{% endif %}
+          {% if action_fn %}
+          <div class="cg-actions">
+            <button type="button" class="btn-sm btn-primary"{% if it.status == 'out' %} disabled{% endif %} onclick="{{ action_fn }}({{ it.pid }})">{{ action_label|default:"Select" }}</button>
+          </div>
+          {% endif %}
+        </div>
+        {% endfor %}
+      </div>
+    </div>
+    {% endfor %}
+  </section>
+  {% endfor %}
+  <p class="cg-empty cg-nomatch" style="display:none;">No products match your search or filter.</p>
+</div>
+{% else %}
+<p class="cg-empty">No stock yet.</p>
+{% endif %}

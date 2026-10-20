@@ -1664,71 +1664,76 @@ def momo_oversight(request):
 
 @role_required("DIRECTOR")
 def director_all_branch_stock(request):
+    # CATALOG_ROLES_V1: one card per product, with a per-branch breakdown
+    from core.catalog_ui import build_catalog
     branch_filter = request.GET.get("branch", "")
-    search = request.GET.get("search", "")
+    if not str(branch_filter).isdigit():
+        branch_filter = ""
 
-    # Branch safe stock
-    branch_safe = BranchSafeStock.objects.select_related(
-        "branch", "product", "product__subcategory"
-    ).order_by("branch__name", "product__model_name")
-
-    # Staff stock
-    staff_stock = StaffStock.objects.select_related(
-        "staff", "staff__branch", "product", "product__subcategory"
-    ).order_by("staff__branch__name", "product__model_name")
-
+    safe_qs = BranchSafeStock.objects.filter(quantity__gt=0).select_related(
+        "branch", "product", "product__subcategory", "product__subcategory__category")
+    staff_qs = StaffStock.objects.filter(quantity__gt=0).select_related(
+        "staff", "staff__branch", "product", "product__subcategory", "product__subcategory__category")
     if branch_filter:
-        branch_safe = branch_safe.filter(branch_id=branch_filter)
-        staff_stock = staff_stock.filter(staff__branch_id=branch_filter)
+        safe_qs = safe_qs.filter(branch_id=branch_filter)
+        staff_qs = staff_qs.filter(staff__branch_id=branch_filter)
 
-    if search:
-        branch_safe = branch_safe.filter(product__model_name__icontains=search)
-        staff_stock = staff_stock.filter(product__model_name__icontains=search)
+    by_product = {}
 
-    # Combine into one list with type label
-    stock_items = []
-    for s in branch_safe:
-        if s.quantity > 0:
-            stock_items.append({
-                "branch": s.branch.name,
-                "product": s.product.model_name,
-                "color": s.product.color,
-                "category": s.product.subcategory.name if s.product.subcategory else "—",
-                "quantity": s.quantity,
-                "held_by": "Branch Safe (Manager)",
-                "holder_name": "Branch Safe",
-                "type": "safe",
-                "cost_price": s.product.cost_price,
-                "selling_price": s.product.selling_price,
-            })
-    for s in staff_stock:
-        if s.quantity > 0:
-            stock_items.append({
-                "branch": s.staff.branch.name if s.staff.branch else "—",
-                "product": s.product.model_name,
-                "color": s.product.color,
-                "category": s.product.subcategory.name if s.product.subcategory else "—",
-                "quantity": s.quantity,
-                "held_by": "Staff",
-                "holder_name": s.staff.username,
-                "type": "staff",
-                "cost_price": s.product.cost_price,
-                "selling_price": s.product.selling_price,
-            })
+    def _entry(p):
+        e = by_product.get(p.id)
+        if e is None:
+            sub = p.subcategory
+            cat = sub.category if sub else None
+            e = by_product[p.id] = {
+                "pid": p.id, "name": p.model_name, "color": p.color or "", "price": p.selling_price,
+                "qty": 0, "imei": p.imei_serial or "",
+                "cat_id": cat.id if cat else 0, "cat_name": cat.name if cat else "Uncategorised",
+                "sub_id": sub.id if sub else 0, "sub_name": sub.name if sub else "Other",
+                "branches": {}, "words": set(),
+            }
+        return e
 
-    # Sort by branch name
-    stock_items.sort(key=lambda x: (x["branch"], x["product"]))
+    for s in safe_qs:
+        e = _entry(s.product)
+        e["qty"] += s.quantity
+        b = e["branches"].setdefault(s.branch.name, {"safe": 0, "staff": []})
+        b["safe"] += s.quantity
+        e["words"].add(s.branch.name)
+    for s in staff_qs:
+        e = _entry(s.product)
+        e["qty"] += s.quantity
+        bname = s.staff.branch.name if s.staff.branch else "No branch"
+        b = e["branches"].setdefault(bname, {"safe": 0, "staff": []})
+        b["staff"].append((s.staff.username, s.quantity))
+        e["words"].add(bname)
+        e["words"].add(s.staff.username)
 
-    total_units = sum(i["quantity"] for i in stock_items)
-    total_value = sum(i["quantity"] * (i["selling_price"] or 0) for i in stock_items)
+    items = []
+    for e in by_product.values():
+        lines = []
+        for bname in sorted(e["branches"]):
+            b = e["branches"][bname]
+            parts = []
+            if b["safe"]:
+                parts.append("Safe %d" % b["safe"])
+            for uname, q in sorted(b["staff"]):
+                parts.append("%s %d" % (uname, q))
+            lines.append({"label": bname, "value": " · ".join(parts)})
+        items.append({
+            "pid": e["pid"], "name": e["name"], "color": e["color"], "price": e["price"], "qty": e["qty"],
+            "imei": e["imei"], "cat_id": e["cat_id"], "cat_name": e["cat_name"],
+            "sub_id": e["sub_id"], "sub_name": e["sub_name"], "lines": lines,
+            "extra": " ".join(sorted(e["words"])), "value": e["qty"] * (e["price"] or 0),
+        })
+    catalog = build_catalog(items, prefix="dir", value_label="Retail value")
 
     return render(request, "director/all_branch_stock.html", {
-        "stock_items": stock_items,
+        "catalog": catalog,
         "branches": Branch.objects.all(),
         "selected_branch": branch_filter,
-        "search": search,
-        "total_units": total_units,
-        "total_value": total_value,
+        "total_units": catalog["total_units"],
+        "total_value": catalog["total_value"],
     })
 
 
@@ -2945,8 +2950,28 @@ def director_safe_stock(request):
     paginator_logs = Paginator(safe_logs, 30)
     logs_page = paginator_logs.get_page(request.GET.get("log_page"))
 
+    # CATALOG_ROLES_V1: grouped overview of what the Director Safe holds right now (all dates)
+    from core.catalog_ui import build_catalog as _bc
+    _agg = {}
+    for _s in DirectorSafeStock.objects.filter(product__isnull=False).select_related(
+            "product", "product__subcategory", "product__subcategory__category"):
+        _p = _s.product
+        _sub = _p.subcategory
+        _cat = _sub.category if _sub else None
+        _e = _agg.setdefault(_p.id, {
+            "pid": _p.id, "name": _p.model_name, "color": _p.color or "", "price": _p.selling_price,
+            "qty": 0, "imei": _p.imei_serial or "",
+            "cat_id": _cat.id if _cat else 0, "cat_name": _cat.name if _cat else "Uncategorised",
+            "sub_id": _sub.id if _sub else 0, "sub_name": _sub.name if _sub else "Other",
+            "lines": [], "extra": "", "value": 0,
+        })
+        _e["qty"] += _s.quantity
+        _e["value"] += _s.quantity * _p.cost_price
+    safe_catalog = _bc([e for e in _agg.values() if e["qty"] > 0], prefix="safe", value_label="Cost value")
+
     return render(request, "director/director_safe.html", {
         "stocks": all_stocks,
+        "safe_catalog": safe_catalog,
         "products": Product.objects.all().order_by("model_name"),
         "categories": RetailCategory.objects.all(),
         "total_quantity": total_quantity,
@@ -4097,9 +4122,13 @@ def commission_tracking(request):
 @role_required("RETAIL")
 def retail_dashboard(request):
     staff = request.user
+    # CATALOG_REDESIGN_V1: ordered so the catalog can group by category / sub-category
     staff_stock = StaffStock.objects.filter(
         staff=staff
-    ).select_related("product", "product__subcategory")
+    ).select_related("product", "product__subcategory", "product__subcategory__category").order_by(
+        "product__subcategory__category__name", "product__subcategory__category__id",
+        "product__subcategory__name", "product__subcategory__id", "product__model_name", "id",
+    )
 
     # Stock alerts for retail staff — items with 0 or low stock
     low_stock_items = [s for s in staff_stock if s.quantity <= 2]
@@ -4120,6 +4149,7 @@ def retail_dashboard(request):
 
     return render(request, "retail_dashboard.html", {
         "staff_stock": staff_stock,
+        "total_units": sum(s.quantity for s in staff_stock),
         "categories": RetailCategory.objects.all(),
         "check_logs": check_logs,
         "checkinout_logs": check_logs,
@@ -4221,8 +4251,32 @@ def manager_dashboard(request):
         movement_type="OUT"
     ).aggregate(total=Sum("quantity"))["total"] or 0
 
+    # CATALOG_ROLES_V1: grouped Safe Stock Levels with what each retail staff member holds
+    from core.catalog_ui import build_catalog as _bc
+    _held = {}
+    for _st in StaffStock.objects.filter(
+            staff__branch=branch, staff__role="RETAIL", quantity__gt=0).select_related("staff"):
+        _held.setdefault(_st.product_id, []).append((_st.staff.username, _st.quantity))
+    _items = []
+    for _s in BranchSafeStock.objects.filter(branch=branch).select_related(
+            "product", "product__subcategory", "product__subcategory__category"):
+        _p = _s.product
+        _sub = _p.subcategory
+        _cat = _sub.category if _sub else None
+        _h = sorted(_held.get(_p.id, []))
+        _items.append({
+            "pid": _p.id, "name": _p.model_name, "color": _p.color or "", "price": _p.selling_price,
+            "qty": _s.quantity, "imei": _p.imei_serial or "",
+            "cat_id": _cat.id if _cat else 0, "cat_name": _cat.name if _cat else "Uncategorised",
+            "sub_id": _sub.id if _sub else 0, "sub_name": _sub.name if _sub else "Other",
+            "lines": [{"label": "With " + u, "value": q} for u, q in _h],
+            "extra": " ".join(u for u, q in _h), "value": None,
+        })
+    manager_catalog = _bc(_items, prefix="mgr")
+
     return render(request, "manager_dashboard.html", {
         "target_data": target_data,
+        "manager_catalog": manager_catalog,
         "activities": activities,
         "pending_approvals": pending_approvals,
         "safe_stocks": safe_stocks,

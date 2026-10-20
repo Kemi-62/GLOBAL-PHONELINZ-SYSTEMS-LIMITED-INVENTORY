@@ -47,6 +47,35 @@
 .btn-checkin{background:#10b981;color:#fff}
 .btn-checkout{background:#ef4444;color:#fff}
 pre{background:#f5f5f5;padding:.8rem;border-radius:6px;font-size:.75rem;overflow-x:auto;line-height:1.5}
+
+/* CATALOG_REDESIGN_V1 */
+.cg-head{display:flex;justify-content:space-between;align-items:center;gap:.6rem;flex-wrap:wrap;margin-bottom:.8rem}
+.cg-search{padding:.5rem .8rem;border:1px solid #d1d5db;border-radius:8px;font-size:.88rem;width:100%;max-width:320px;box-sizing:border-box}
+.cg-search:focus{outline:none;border-color:#004F9F;box-shadow:0 0 0 2px rgba(0,79,159,.12)}
+.cg-chips{display:flex;gap:.45rem;flex-wrap:wrap;margin-bottom:.7rem}
+.cg-chip{border:1px solid #d1d5db;background:#fff;color:#374151;border-radius:999px;padding:.35rem .8rem;font-size:.8rem;font-weight:600;cursor:pointer}
+.cg-chip.active{background:#004F9F;border-color:#004F9F;color:#fff}
+.cg-chip .cg-count{display:inline-block;margin-left:.25rem;font-weight:700;opacity:.85}
+.cg-jump{display:flex;gap:.4rem;flex-wrap:wrap;margin-bottom:1rem;padding-bottom:.8rem;border-bottom:1px solid #f3f4f6}
+.cg-jumplink{font-size:.78rem;color:#004F9F;background:#eff6ff;border-radius:6px;padding:.25rem .6rem;text-decoration:none;font-weight:600}
+.cg-jumplink span{color:#6b7280;font-weight:700;margin-left:.2rem}
+.cg-cat{margin-bottom:1.4rem;scroll-margin-top:70px}
+.cg-cat-title{font-size:1rem;font-weight:800;color:#111827;margin:0 0 .5rem;padding-bottom:.3rem;border-bottom:2px solid #004F9F}
+.cg-sub-title{font-size:.82rem;font-weight:700;color:#4b5563;margin:.8rem 0 .5rem;text-transform:uppercase;letter-spacing:.04em}
+.cg-cat-count,.cg-sub-count{display:inline-block;margin-left:.35rem;background:#f3f4f6;color:#374151;border-radius:999px;padding:.05rem .5rem;font-size:.72rem;font-weight:700;letter-spacing:0}
+.cg-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(200px,1fr));gap:.7rem}
+.cg-card{background:#fff;border:1px solid #e5e7eb;border-radius:10px;padding:.8rem .9rem;display:flex;flex-direction:column;gap:.35rem}
+.cg-card[data-qty="0"]{background:#fafafa}
+.cg-top{display:flex;align-items:flex-start;justify-content:space-between;gap:.4rem}
+.cg-name{font-weight:700;font-size:.9rem;color:#111827;line-height:1.25;word-break:break-word}
+.cg-color{flex-shrink:0;font-size:.68rem;font-weight:700;background:#f3f4f6;color:#4b5563;border-radius:6px;padding:.12rem .4rem}
+.cg-price{font-size:1.05rem;font-weight:800;color:#004F9F}
+.cg-imei{font-size:.72rem;color:#9ca3af;font-family:monospace;word-break:break-all}
+.cg-actions{display:flex;gap:.4rem;margin-top:.3rem}
+.cg-actions .btn-sm{flex:1;padding:.45rem .5rem;font-size:.8rem;text-align:center}
+.cg-actions .btn-sm[disabled]{opacity:.4;cursor:not-allowed}
+.cg-empty{text-align:center;color:#9ca3af;padding:2rem 0}
+@media(max-width:480px){.cg-grid{grid-template-columns:1fr 1fr;gap:.5rem}.cg-card{padding:.65rem}.cg-search{max-width:none}}
 </style>
 
 <!-- HEADER -->
@@ -69,7 +98,7 @@ pre{background:#f5f5f5;padding:.8rem;border-radius:6px;font-size:.75rem;overflow
   </div>
   <div class="kpi blue">
     <p class="kpi-label">Total Units</p>
-    <p class="kpi-value">{% for s in staff_stock %}{% if forloop.first %}0{% endif %}{% endfor %}{{ staff_stock|length }}</p>
+    <p class="kpi-value">{{ total_units }}</p>
     <p class="kpi-sub">Across all products</p>
   </div>
   <div class="kpi amber">
@@ -157,51 +186,60 @@ pre{background:#f5f5f5;padding:.8rem;border-radius:6px;font-size:.75rem;overflow
   </div>
 </div>
 
+<!-- CATALOG_REDESIGN_V1 -->
 <!-- ══════════ TAB: MY CATALOG ══════════ -->
 <div id="tab-catalog" class="tab-panel">
   <div class="card">
-    <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:1rem;flex-wrap:wrap;gap:.5rem;">
+    <div class="cg-head">
       <p class="card-title" style="margin:0;">📦 Your Product Catalog</p>
-      <input type="text" id="catalog-search" placeholder="Search products…" onkeyup="filterCatalog()" style="padding:.4rem .7rem;border:1px solid #d1d5db;border-radius:6px;font-size:.82rem;width:200px;">
+      <input type="search" id="catalog-search" class="cg-search" placeholder="Search name, colour or IMEI…" oninput="filterCatalog()" autocomplete="off">
     </div>
     {% if staff_stock %}
-    <div style="overflow-x:auto;margin-top:1.5rem;">
-      <p style="font-size:.82rem;font-weight:600;color:#374151;margin-bottom:.5rem;">Table View</p>
-      <table class="data-table">
-        <thead>
-          <tr>
-            <th>Product</th>
-            <th>Color</th>
-            <th>Category</th>
-            <th>Added At</th>
-            <th>Added By</th>
-            <th style="text-align:center;">Qty in Stock</th>
-            <th>IMEI/Serial</th>
-            <th>Action</th>
-          </tr>
-        </thead>
-        <tbody>
-          {% for stock in staff_stock %}
-          <tr>
-            <td><strong>{{ stock.product.model_name }}</strong></td>
-            <td>{{ stock.product.color|default:"—" }}</td>
-            <td style="color:#9ca3af;">{{ stock.product.subcategory.name }}</td>
-            <td style="color:#9ca3af;white-space:nowrap;">{{ stock.added_at|date:"d M Y H:i" }}</td>
-            <td style="color:#9ca3af;">{{ stock.added_by.username|default:"—" }}</td>
-            <td style="text-align:center;">
-              <span class="badge {% if stock.quantity == 0 %}badge-red{% elif stock.quantity <= 2 %}badge-amber{% else %}badge-green{% endif %}">{{ stock.quantity }}</span>
-            </td>
-            <td style="font-size:.75rem;color:#9ca3af;">{{ stock.product.imei_serial|default:"—" }}</td>
-            <td>
-              <button onclick="editQuantity({{ stock.id }}, {{ stock.quantity }})" class="btn-sm btn-outline" style="font-size:.75rem;padding:.3rem .6rem;">Edit Qty</button>
-            </td>
-          </tr>
-          {% endfor %}
-        </tbody>
-      </table>
+    <div class="cg-chips" id="cg-status-chips">
+      <button type="button" class="cg-chip active" onclick="setCatalogStatus('all',this)">All <span class="cg-count" id="cg-n-all">0</span></button>
+      <button type="button" class="cg-chip" onclick="setCatalogStatus('instock',this)">In stock <span class="cg-count" id="cg-n-instock">0</span></button>
+      <button type="button" class="cg-chip" onclick="setCatalogStatus('low',this)">Low (1-2) <span class="cg-count" id="cg-n-low">0</span></button>
+      <button type="button" class="cg-chip" onclick="setCatalogStatus('out',this)">Out <span class="cg-count" id="cg-n-out">0</span></button>
+    </div>
+    {% regroup staff_stock by product.subcategory.category as cat_groups %}
+    <div class="cg-jump">
+      {% for cg in cat_groups %}<a href="#" class="cg-jumplink" onclick="jumpCatalog('cg-cat-{{ cg.grouper.id }}');return false;">{{ cg.grouper.name }}<span>{{ cg.list|length }}</span></a>{% endfor %}
+    </div>
+    <div id="cg-list">
+      {% for cg in cat_groups %}
+      <section class="cg-cat" id="cg-cat-{{ cg.grouper.id }}">
+        <h3 class="cg-cat-title">{{ cg.grouper.name }}<span class="cg-cat-count">{{ cg.list|length }}</span></h3>
+        {% regroup cg.list by product.subcategory as sub_groups %}
+        {% for sg in sub_groups %}
+        <div class="cg-sub">
+          <h4 class="cg-sub-title">{{ sg.grouper.name }}<span class="cg-sub-count">{{ sg.list|length }}</span></h4>
+          <div class="cg-grid">
+            {% for stock in sg.list %}
+            <div class="cg-card" data-qty="{{ stock.quantity }}" data-name="{{ stock.product.model_name|lower }} {{ stock.product.color|default:''|lower }} {{ stock.product.imei_serial|default:''|lower }}">
+              <div class="cg-top">
+                <span class="cg-name">{{ stock.product.model_name }}</span>
+                {% if stock.product.color %}<span class="cg-color">{{ stock.product.color }}</span>{% endif %}
+              </div>
+              <div class="cg-price">₦{{ stock.product.selling_price|floatformat:"0g" }}</div>
+              <div>
+                <span class="badge {% if stock.quantity == 0 %}badge-red{% elif stock.quantity <= 2 %}badge-amber{% else %}badge-green{% endif %}">{% if stock.quantity == 0 %}Out of stock{% elif stock.quantity <= 2 %}Low · {{ stock.quantity }} left{% else %}{{ stock.quantity }} in stock{% endif %}</span>
+              </div>
+              {% if stock.product.imei_serial %}<div class="cg-imei">IMEI {{ stock.product.imei_serial }}</div>{% endif %}
+              <div class="cg-actions">
+                <button type="button" class="btn-sm btn-primary"{% if stock.quantity == 0 %} disabled{% endif %} onclick="sellFromCatalog({{ stock.product.id }})">Sell</button>
+                <button type="button" class="btn-sm btn-outline" onclick="editQuantity({{ stock.id }}, {{ stock.quantity }})">Edit Qty</button>
+              </div>
+            </div>
+            {% endfor %}
+          </div>
+        </div>
+        {% endfor %}
+      </section>
+      {% endfor %}
+      <p id="cg-empty" class="cg-empty" style="display:none;">No products match your search or filter.</p>
     </div>
     {% else %}
-    <p style="text-align:center;color:#9ca3af;padding:2rem 0;">No products in your catalog yet. Add some in the Add Products tab.</p>
+    <p class="cg-empty">No products in your catalog yet. Add some in the Add Products tab.</p>
     {% endif %}
   </div>
 </div>
@@ -636,12 +674,95 @@ function editQuantity(stockId, currentQty) {
   }
 }
 
-function filterCatalog() {
-  const q = document.getElementById('catalog-search').value.toLowerCase();
-  document.querySelectorAll('.catalog-item').forEach(el => {
-    el.style.display = el.dataset.name.includes(q) ? '' : 'none';
-  });
+// CATALOG_REDESIGN_V1: grouped catalog (search, status chips, jump, sell)
+var catalogStatus = 'all';
+function catalogStatusOf(q) {
+  q = parseInt(q, 10) || 0;
+  return q === 0 ? 'out' : (q <= 2 ? 'low' : 'instock');
 }
+function setCatalogStatus(status, btn) {
+  catalogStatus = status;
+  document.querySelectorAll('#cg-status-chips .cg-chip').forEach(function (b) { b.classList.remove('active'); });
+  if (btn) btn.classList.add('active');
+  filterCatalog();
+}
+function updateCatalogChipCounts() {
+  var all = 0, instock = 0, low = 0, out = 0;
+  document.querySelectorAll('.cg-card').forEach(function (c) {
+    var s = catalogStatusOf(c.dataset.qty);
+    all++;
+    if (s === 'out') out++; else instock++;
+    if (s === 'low') low++;
+  });
+  var set = function (id, n) { var el = document.getElementById(id); if (el) el.textContent = n; };
+  set('cg-n-all', all); set('cg-n-instock', instock); set('cg-n-low', low); set('cg-n-out', out);
+}
+function filterCatalog() {
+  var input = document.getElementById('catalog-search');
+  if (!input) return;
+  var q = input.value.trim().toLowerCase();
+  var shown = 0;
+  document.querySelectorAll('.cg-card').forEach(function (card) {
+    var s = catalogStatusOf(card.dataset.qty);
+    var okStatus = catalogStatus === 'all' ||
+      (catalogStatus === 'instock' ? s !== 'out' : s === catalogStatus);
+    var okText = !q || card.dataset.name.indexOf(q) !== -1;
+    var vis = okStatus && okText;
+    card.style.display = vis ? '' : 'none';
+    card.dataset.vis = vis ? '1' : '0';
+    if (vis) shown++;
+  });
+  document.querySelectorAll('.cg-sub').forEach(function (sub) {
+    var n = sub.querySelectorAll('.cg-card[data-vis="1"]').length;
+    sub.style.display = n ? '' : 'none';
+    var badge = sub.querySelector('.cg-sub-count');
+    if (badge) badge.textContent = n;
+  });
+  document.querySelectorAll('.cg-cat').forEach(function (cat) {
+    var n = cat.querySelectorAll('.cg-card[data-vis="1"]').length;
+    cat.style.display = n ? '' : 'none';
+    var badge = cat.querySelector('.cg-cat-count');
+    if (badge) badge.textContent = n;
+  });
+  var empty = document.getElementById('cg-empty');
+  if (empty) empty.style.display = shown ? 'none' : 'block';
+}
+function jumpCatalog(id) {
+  var el = document.getElementById(id);
+  if (el && el.style.display !== 'none') el.scrollIntoView({ behavior: 'smooth', block: 'start' });
+}
+function sellFromCatalog(pid) {
+  pid = String(pid);
+  var salesBtn = document.querySelector('[onclick*="switchTab(\'sales\'"]');
+  if (salesBtn) switchTab('sales', salesBtn);
+  var rows = document.querySelectorAll('#sale-items-body tr');
+  var existing = null, empty = null;
+  rows.forEach(function (r) {
+    var sel = r.querySelector('.sale-product');
+    if (!sel) return;
+    if (sel.value === pid && !existing) existing = r;
+    if (!sel.value && !empty) empty = r;
+  });
+  if (existing) {
+    var id0 = parseInt(existing.id.replace('sale-row-', ''), 10);
+    var qtyInput = existing.querySelector('.sale-qty');
+    var max = (typeof productData !== 'undefined' && productData[pid]) ? productData[pid].qty : 1;
+    var cur = parseInt(qtyInput.value, 10) || 0;
+    if (cur < max) qtyInput.value = cur + 1;
+    else alert('Only ' + max + ' in stock for this product.');
+    rowTotal(id0);
+  } else {
+    var target = empty;
+    if (!target) { addSaleRow(); target = document.getElementById('sale-row-' + rowCount); }
+    var id = parseInt(target.id.replace('sale-row-', ''), 10);
+    var select = target.querySelector('.sale-product');
+    var ts = select.tomselect || select.tomSelectInstance;
+    if (ts) { ts.setValue(pid); } else { select.value = pid; }
+    rowPrice(id);
+  }
+  window.scrollTo({ top: 0, behavior: 'smooth' });
+}
+document.addEventListener('DOMContentLoaded', updateCatalogChipCounts);
 
 // Show/hide Moniepoint field
 if (document.getElementById('pay-method-rd')) {

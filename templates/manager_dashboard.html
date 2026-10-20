@@ -260,28 +260,19 @@
   <div class="two-col">
     <div>
       <div class="card">
+        {# CATALOG_ROLES_V1 #}
+        {% include "partials/catalog_assets.html" %}
         <p class="card-title">📦 Safe Stock Levels</p>
-        <div style="overflow-x:auto;">
-          <table class="data-table">
-            <thead><tr><th>Product</th><th>Color</th><th>Category</th><th style="text-align:center;">Qty</th></tr></thead>
-            <tbody>
-              {% for s in safe_stocks %}
-              <tr>
-                <td>{{ s.product.model_name }}</td>
-                <td>{{ s.product.color|default:"—" }}</td>
-                <td>{{ s.product.subcategory.name }}</td>
-                <td style="text-align:center;">
-                  <span class="badge {% if s.quantity == 0 %}badge-red{% elif s.quantity < 3 %}badge-amber{% else %}badge-green{% endif %}">
-                    {{ s.quantity }}
-                  </span>
-                </td>
-              </tr>
-              {% empty %}
-              <tr><td colspan="4" style="text-align:center;color:#9ca3af;">No stock yet.</td></tr>
-              {% endfor %}
-            </tbody>
-          </table>
-        </div>
+        {% include "partials/catalog_cards.html" with catalog=manager_catalog action_label="Release" action_fn="releaseFromManagerSafe" %}
+        <script>
+        function releaseFromManagerSafe(pid) {
+          var form = document.querySelector('form[action$="/release-stock/"]');
+          if (!form) return;
+          CG.setSelect(form.querySelector('select[name="product"]'), pid);
+          form.scrollIntoView({behavior: 'smooth', block: 'center'});
+          var qty = form.querySelector('input[name="quantity"]'); if (qty) qty.focus();
+        }
+        </script>
       </div>
 
       <div class="card">

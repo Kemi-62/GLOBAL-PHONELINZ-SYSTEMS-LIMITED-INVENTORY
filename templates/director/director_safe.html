@@ -1,5 +1,7 @@
 {% extends "base.html" %}
 {% block content %}
+{# CATALOG_ROLES_V1 #}
+{% include "partials/catalog_assets.html" %}
 <style>
 .page-title{font-size:1.3rem;font-weight:700;color:#004F9F;margin:0 0 1.5rem}
 .kpi-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:1rem;margin-bottom:1.5rem}
@@ -66,6 +68,9 @@ pre{background:#f5f5f5;padding:.8rem;border-radius:6px;font-size:.75rem;overflow
       <p class="card-title" style="margin:0;">📦 Director Safe Inventory</p>
       <a href="?date_from={{ date_from }}&date_to={{ date_to }}&export=pdf" class="btn-sm btn-success">📥 Download PDF</a>
     </div>
+    {% include "partials/catalog_cards.html" with catalog=safe_catalog action_label="Release" action_fn="releaseFromSafe" %}
+    <details class="cg-details">
+      <summary>Show every addition (edit / delete)</summary>
     <form method="GET" class="filter-bar">
       <div><span class="filter-label">From Date</span><input type="date" name="date_from" value="{{ date_from }}"></div>
       <div><span class="filter-label">To Date</span><input type="date" name="date_to" value="{{ date_to }}"></div>
@@ -103,6 +108,7 @@ pre{background:#f5f5f5;padding:.8rem;border-radius:6px;font-size:.75rem;overflow
     {% else %}
     <p style="text-align:center;color:#9ca3af;padding:2rem 0;">No stock in director safe yet.</p>
     {% endif %}
+    </details>
   </div>
 </div>
 
@@ -270,8 +276,15 @@ function switchTab(name, btn) {
 }
 document.addEventListener('DOMContentLoaded', function() {
   const hash = location.hash.replace('#','');
-  if (hash) { const btn = document.querySelector('[onclick*="switchTab(\'' + hash + '\'"]}'); if (btn) switchTab(hash, btn); }
+  if (hash) { const btn = document.querySelector('[onclick*="switchTab(\'' + hash + '\'"]'); if (btn) switchTab(hash, btn); }
 });
+function releaseFromSafe(pid) {
+  var btn = document.querySelector('[onclick*="switchTab(\'release\'"]');
+  if (btn) switchTab('release', btn);
+  var sel = document.querySelector('select[name="product_id"]');
+  if (sel) { sel.value = String(pid); updateAvailable(sel); }
+  window.scrollTo({top: 0, behavior: 'smooth'});
+}
 function toggleReleaseTarget() {
   const type = document.getElementById('release_type').value;
   document.getElementById('branch-target').classList.toggle('show', type === 'branch_safe' || type === 'sale');
