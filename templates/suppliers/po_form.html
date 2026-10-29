@@ -32,6 +32,17 @@
           {% endfor %}
         </select>
       </div>
+      {% if user.role != "MANAGER" %}{# ROLES_V2 #}
+      <div class="form-group">
+        <label>Branch *</label>
+        <select name="branch_id" required>
+          <option value="">— Select Branch —</option>
+          {% for b in branches %}
+          <option value="{{ b.id }}">{{ b.name }}</option>
+          {% endfor %}
+        </select>
+      </div>
+      {% endif %}
     </div>
     <div class="form-group">
       <label>Notes</label>

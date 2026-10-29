@@ -31,6 +31,7 @@ from .models import (
 )
 from .models import log_action
 from .utils.decorators import role_required
+from .roles import has_role, roles_for, STAFF_ROLES as ALL_STAFF_ROLES  # ROLES_V1
 
 # ─────────────────────────────────────────
 # HELPERS
@@ -55,6 +56,9 @@ def _get_dashboard_url(user):
         "RETAIL":      "retail_dashboard",
         "MULTICHOICE": "multichoice_dashboard",
         "TELECOM":     "staff_dashboard",
+        "RETAIL_TELECOM": "retail_dashboard",  # ROLES_V1
+        "RETAIL_LEAD":    "retail_dashboard",  # ROLES_V1
+        "SUB_DIRECTOR":   "stock_approvals",  # ROLES_V1
     }
     if getattr(user, "is_superuser", False):
         return reverse("director_dashboard")
@@ -110,6 +114,9 @@ ROLE_REDIRECTS = {
     "RETAIL":     "retail_dashboard",
     "MULTICHOICE":"multichoice_dashboard",
     "TELECOM":    "staff_dashboard",
+    "RETAIL_TELECOM": "retail_dashboard",  # ROLES_V1
+    "RETAIL_LEAD":    "retail_dashboard",  # ROLES_V1
+    "SUB_DIRECTOR":   "stock_approvals",  # ROLES_V1
 }
 
 def _redirect_by_role(user):
@@ -202,7 +209,7 @@ def approve_activity(request, activity_id):
 # ─────────────────────────────────────────
 @login_required
 def request_stock(request):
-    if request.method == "POST" and request.user.role == "RETAIL":
+    if request.method == "POST" and has_role(request.user, "RETAIL"):
         StockRequest.objects.create(
             staff=request.user, branch=request.user.branch,
             product_name=request.POST.get("product_name"),
@@ -221,7 +228,7 @@ def staff_create_product(request):
 
 @login_required
 def edit_staff_stock_price(request, stock_id):
-    if request.user.role != "RETAIL":
+    if not has_role(request.user, "RETAIL"):
         return HttpResponseForbidden()
     stock = get_object_or_404(StaffStock, id=stock_id, staff=request.user)
     new_price = request.GET.get("price")
@@ -252,7 +259,7 @@ def edit_product_price(request, product_id):
 
 @login_required
 def product_catalog(request):
-    if request.user.role != "RETAIL":
+    if not has_role(request.user, "RETAIL"):
         return HttpResponseForbidden()
     return render(request, "retail_catalog.html", {
         "products": Product.objects.select_related("subcategory", "created_by").all().order_by("-date_added"),
@@ -407,7 +414,7 @@ def edit_director_stock(request, stock_id):
     return redirect("director_safe_stock")
 
 
-@role_required("DIRECTOR")
+@role_required("DIRECTOR", "SUB_DIRECTOR")
 def create_director_product(request):
     if request.method == "POST":
         try:
@@ -433,8 +440,14 @@ def create_director_product(request):
                 selling_price=request.POST.get("selling_price"),
             )
             qty = int(request.POST.get("quantity", 0))
-            DirectorSafeStock.objects.create(product=product, quantity=qty, notes="Created by Director")
-            messages.success(request, f"Product created. {qty} units added to safe.")
+            if request.user.role == "SUB_DIRECTOR":  # ROLES_V2: the product is created, its stock waits for the Director
+                from core import stock_approvals as _sa
+                if qty > 0:
+                    _sa.submit_receipt(request.user, product, qty, "DIRECTOR", note="New product created by Sub Director")
+                messages.success(request, f"Product created. {qty} units sent to the Director for confirmation.")
+            else:
+                DirectorSafeStock.objects.create(product=product, quantity=qty, notes="Created by Director")
+                messages.success(request, f"Product created. {qty} units added to safe.")
         except Exception as e:
             messages.error(request, f"Error: {e}")
     return redirect("director_safe_stock")
@@ -545,7 +558,7 @@ def set_sim_opening_balance(request):
 # EXPENSES / MISC
 # ─────────────────────────────────────────
 
-@role_required("MANAGER")
+@role_required("MANAGER", "BRANCH_DUTIES")
 def record_expense(request):
     if request.method == "POST":
         Expense.objects.create(
@@ -555,7 +568,7 @@ def record_expense(request):
             description=request.POST.get("description", ""),
         )
         messages.success(request, "Expense recorded.")
-    return redirect("manager_dashboard")
+    return redirect("manager_dashboard" if request.user.role == "MANAGER" or request.user.is_superuser else "branch_duties")
 
 
 @login_required
@@ -1103,8 +1116,9 @@ def upload_manager_csv(request):
 # DIRECTOR BULK CSV UPLOAD (to director safe)
 # ─────────────────────────────────────────
 
-@role_required("DIRECTOR")
+@role_required("DIRECTOR", "SUB_DIRECTOR")
 def upload_director_csv(request):
+    is_sub = request.user.role == "SUB_DIRECTOR"  # ROLES_V2
     if request.method == "POST":
         csv_file = request.FILES.get("csv_file")
         if not csv_file:
@@ -1151,13 +1165,19 @@ def upload_director_csv(request):
                             "selling_price": selling_price,
                         }
                     )
-                    if not created and (cost_price or selling_price):
+                    if not created and not is_sub and (cost_price or selling_price):
                         if cost_price:
                             product.cost_price = cost_price
                         if selling_price:
                             product.selling_price = selling_price
                         product.save(update_fields=["cost_price", "selling_price"])
 
+                    if is_sub:  # ROLES_V2: goes to the Director for confirmation
+                        from core import stock_approvals as _sa
+                        if quantity > 0:
+                            _sa.submit_receipt(request.user, product, quantity, "DIRECTOR", note="Bulk upload", batch_ref=_sa.batch_ref_for(request))
+                        count += 1
+                        continue
                     # Update or create director safe stock - just add to quantity
                     with transaction.atomic():
                         existing = DirectorSafeStock.objects.filter(product=product).first()
@@ -1173,7 +1193,8 @@ def upload_director_csv(request):
                 except Exception as e:
                     errors.append(f"Row {i}: {e}")
 
-            msg = f"Imported {count} product(s) to director safe."
+            msg = (f"Sent {count} line(s) to the Director for confirmation." if is_sub
+                   else f"Imported {count} product(s) to director safe.")
             if errors:
                 msg += f" {len(errors)} row(s) skipped: {'; '.join(errors[:3])}"
             messages.success(request, msg)
@@ -1189,7 +1210,7 @@ def upload_director_csv(request):
 # SEND DAILY REPORT TO DIRECTOR VIA WHATSAPP
 # ─────────────────────────────────────────
 
-@role_required("MANAGER")
+@role_required("MANAGER", "BRANCH_DUTIES")
 def send_daily_report_whatsapp(request):
     if request.method == "POST":
         branch = request.user.branch
@@ -1325,7 +1346,7 @@ def _build_all_branches_report_message(report_date):
     return "\n".join(lines)
 
 
-@role_required("MANAGER")
+@role_required("MANAGER", "BRANCH_DUTIES")
 def whatsapp_report_page(request):
     """Dedicated page: preview today's (or a chosen date's) branch report,
     then send it to the Director via CallMeBot or open it directly in WhatsApp."""
@@ -1603,6 +1624,17 @@ def cron_close_multichoice_week(request):
         return JsonResponse({'ok': False, 'error': str(e)}, status=500)
 
 
+def cron_mc_renewal_nudge(request):  # MC_RENEWALS_V2
+    if not _check_cron_secret(request):
+        return JsonResponse({'error': 'Unauthorized'}, status=403)
+    try:
+        from django.core.management import call_command
+        call_command('mc_renewal_nudge')
+        return JsonResponse({'ok': True, 'message': 'MultiChoice renewal notices sent'})
+    except Exception as e:
+        return JsonResponse({'ok': False, 'error': str(e)}, status=500)
+
+
 def cron_ensure_multichoice_open_week(request):
     if not _check_cron_secret(request):
         return JsonResponse({'error': 'Unauthorized'}, status=403)
@@ -1662,7 +1694,7 @@ def momo_oversight(request):
 # DIRECTOR — ALL BRANCH STOCK VIEW
 # ─────────────────────────────────────────
 
-@role_required("DIRECTOR")
+@role_required("DIRECTOR", "SUB_DIRECTOR")
 def director_all_branch_stock(request):
     # CATALOG_ROLES_V1: one card per product, with a per-branch breakdown
     from core.catalog_ui import build_catalog
@@ -1933,7 +1965,7 @@ def notification_count(request):
 
 @login_required
 def supplier_list(request):
-    if request.user.role not in ['DIRECTOR', 'MANAGER']:
+    if request.user.role not in ['DIRECTOR', 'MANAGER', 'SUB_DIRECTOR']:
         return HttpResponseForbidden()
     from core.models import Supplier
     suppliers = Supplier.objects.all().order_by('name')
@@ -1942,7 +1974,7 @@ def supplier_list(request):
 
 @login_required
 def supplier_create(request):
-    if request.user.role not in ['DIRECTOR', 'MANAGER']:
+    if request.user.role not in ['DIRECTOR', 'MANAGER', 'SUB_DIRECTOR']:
         return HttpResponseForbidden()
     from core.models import Supplier
     if request.method == "POST":
@@ -1960,7 +1992,7 @@ def supplier_create(request):
 
 @login_required
 def purchase_order_list(request):
-    if request.user.role not in ['DIRECTOR', 'MANAGER']:
+    if request.user.role not in ['DIRECTOR', 'MANAGER', 'SUB_DIRECTOR']:
         return HttpResponseForbidden()
     from core.models import PurchaseOrder
     orders = PurchaseOrder.objects.select_related('supplier', 'branch', 'ordered_by').order_by('-date_ordered')
@@ -1971,13 +2003,18 @@ def purchase_order_list(request):
 
 @login_required
 def purchase_order_create(request):
-    if request.user.role not in ['DIRECTOR', 'MANAGER']:
+    if request.user.role not in ['DIRECTOR', 'MANAGER', 'SUB_DIRECTOR']:
         return HttpResponseForbidden()
     from core.models import Supplier, PurchaseOrder, PurchaseOrderItem
     if request.method == "POST":
         supplier_id = request.POST.get("supplier")
         notes = request.POST.get("notes", "")
         branch = request.user.branch
+        if request.user.role != "MANAGER" and request.POST.get("branch_id"):  # ROLES_V2: Director level picks the branch
+            branch = Branch.objects.filter(id=request.POST.get("branch_id")).first() or branch
+        if branch is None:
+            messages.error(request, "Please choose the branch this order is for.")
+            return redirect("purchase_order_create")
 
         product_ids = request.POST.getlist("product_id")
         quantities  = request.POST.getlist("quantity")
@@ -2019,12 +2056,30 @@ def purchase_order_create(request):
 
 @login_required
 def purchase_order_receive(request, po_id):
-    if request.user.role not in ['DIRECTOR', 'MANAGER']:
+    if request.user.role not in ['DIRECTOR', 'MANAGER', 'SUB_DIRECTOR']:
         return HttpResponseForbidden()
     from core.models import PurchaseOrder, AuditLog
     po = get_object_or_404(PurchaseOrder, id=po_id)
     if po.status == 'RECEIVED':
         messages.warning(request, "This order has already been received.")
+        return redirect("purchase_order_list")
+
+    if request.user.role in ('MANAGER', 'SUB_DIRECTOR') and not request.user.is_superuser:  # ROLES_V2
+        # Received goods now wait for the Director's approval before they count as branch stock
+        from core import stock_approvals as _sa
+        try:
+            with transaction.atomic():
+                ref = _sa.batch_ref_for(request)
+                for item in po.items.select_related('product'):
+                    _sa.submit_receipt(request.user, item.product, item.quantity, "BRANCH", to_branch=po.branch,
+                                       note=f"Purchase order #{po.id} from {po.supplier.name}", batch_ref=ref)
+                po.status = 'RECEIVED'
+                po.date_received = date.today()
+                po.save()
+        except _sa.StockError as exc:
+            messages.error(request, str(exc))
+            return redirect("purchase_order_list")
+        messages.success(request, f"PO#{po.id} received. The stock reaches the {po.branch.name} safe when the Director approves it.")
         return redirect("purchase_order_list")
 
     with transaction.atomic():
@@ -2333,7 +2388,7 @@ def director_attendance_dashboard(request):
     if staff_filter:
         records = records.filter(user_id=staff_filter)
 
-    all_staff = User.objects.exclude(role__in=["DIRECTOR","SUPERADMIN"]).select_related("branch").order_by("branch__name", "username")
+    all_staff = User.objects.exclude(role__in=["DIRECTOR","SUPERADMIN","SUB_DIRECTOR"]).select_related("branch").order_by("branch__name", "username")
 
     return render(request, "director/attendance.html", {
         "records": records,
@@ -2565,6 +2620,7 @@ def multichoice_dashboard(request):
         "today_sales": today_sales,
         "all_sales": all_sales_page,
         "total_today": today_sales.aggregate(total=Sum("amount"))["total"] or 0,
+        "renewals_due_count": _mc_renewals_due_count(request.user),  # MC_RENEWALS_V2
         "weekly_report": weekly_report,
         "is_monday": today.weekday() == 0,
         "is_saturday": today.weekday() == 5,
@@ -2653,7 +2709,7 @@ def add_multichoice_hardware_stock(request):
 # DEVICE COMMISSION — with history
 # ─────────────────────────────────────────
 
-@role_required("MANAGER")
+@role_required("MANAGER", "BRANCH_DUTIES")
 def add_device_commission(request):
     branch      = request.user.branch
     device_tags = DeviceTag.objects.filter(branch=branch)
@@ -2916,7 +2972,7 @@ class CustomPasswordResetConfirmView(DjPRCV):
 # DIRECTOR SAFE STOCK — with all_branches, all_staff, date filter, log
 # ─────────────────────────────────────────
 
-@role_required("DIRECTOR")
+@role_required("DIRECTOR", "SUB_DIRECTOR")
 def director_safe_stock(request):
     date_from = request.GET.get("date_from", "")
     date_to   = request.GET.get("date_to", "")
@@ -3035,13 +3091,18 @@ def _director_safe_pdf(stocks, date_from, date_to):
                         headers={"Content-Disposition": f'attachment; filename="{fname}"'})
 
 
-@role_required("DIRECTOR")
+@role_required("DIRECTOR", "SUB_DIRECTOR")
 def add_director_stock(request):
     if request.method == "POST":
         try:
             product = get_object_or_404(Product, id=request.POST.get("product_id"))
             qty = int(request.POST.get("quantity", 0))
             notes = request.POST.get("notes", "")
+            if request.user.role == "SUB_DIRECTOR":  # ROLES_V2: the Director confirms before it counts
+                from core import stock_approvals as _sa
+                _sa.submit_receipt(request.user, product, qty, "DIRECTOR", note=notes)
+                messages.success(request, f"Sent {qty}x {product.model_name} to the Director for confirmation. It joins the Director Safe once confirmed.")
+                return redirect("director_safe_stock")
             with transaction.atomic():
                 DirectorSafeStock.objects.create(product=product, quantity=qty, notes=notes)
                 try:
@@ -3362,7 +3423,7 @@ def daily_sales_report(request):
         "total_mc_count": total_mc_count,
         "total_telecom_acts": total_telecom_acts,
         "all_branches": Branch.objects.all(),
-        "all_staff": User.objects.exclude(role__in=["DIRECTOR","SUPERADMIN"]).order_by("username"),
+        "all_staff": User.objects.exclude(role__in=["DIRECTOR","SUPERADMIN","SUB_DIRECTOR"]).order_by("username"),
         "date_from": date_from,
         "date_to": date_to,
         "selected_branch": branch_flt,
@@ -3479,7 +3540,7 @@ def manager_sales_today(request):
         "date_from": date_from,
         "date_to": date_to,
         "staff_flt": staff_flt,
-        "retail_staff": User.objects.filter(branch=request.user.branch, role="RETAIL"),
+        "retail_staff": User.objects.filter(branch=request.user.branch, role__in=roles_for("RETAIL")),
     })
 
 # ─────────────────────────────────────────
@@ -3494,7 +3555,7 @@ def manager_sales_today(request):
 # Adds to existing stock, logs every release
 # ─────────────────────────────────────────
 
-@role_required("DIRECTOR")
+@role_required("DIRECTOR", "SUB_DIRECTOR")
 def director_release_stock(request):
     # STOCK_APPROVALS_V1: now goes through the approval workflow (core/stock_approval_views.py)
     from core import stock_approval_views as _sav
@@ -3762,6 +3823,15 @@ def record_retail_sale(request):
 # FIXED record_multichoice_sale — updates Customer CRM
 # ─────────────────────────────────────────
 
+def _mc_renewals_due_count(user):  # MC_RENEWALS_V2
+    try:
+        from core import mc_renewals as _mr
+        due, overdue, _up, _lapsed = _mr.bucket(_mr.due_rows(user))
+        return len(due) + len(overdue)
+    except Exception:
+        return 0
+
+
 @role_required("MULTICHOICE")
 def record_multichoice_sale(request):
     if request.method == "POST":
@@ -3807,6 +3877,10 @@ def record_multichoice_sale(request):
         service_type   = request.POST.get("service_type", "DSTV")
         package_type   = request.POST.get("package_type", "")
         transaction_type = request.POST.get("transaction_type", "NEW")
+        try:  # MC_RENEWALS_V2
+            months_paid = max(1, min(12, int(request.POST.get("months_paid") or 1)))
+        except (TypeError, ValueError):
+            months_paid = 1
 
         prev = MultiChoiceBalance.objects.filter(
             weekly_report=weekly_report
@@ -3829,6 +3903,7 @@ def record_multichoice_sale(request):
                 service_type=service_type,
                 package_type=package_type,
                 transaction_type=transaction_type,
+                months_paid=months_paid,
                 cost_price=cost_price,
                 amount=amount,
             )
@@ -4059,7 +4134,7 @@ def customer_crm(request):
         "sort_by": sort_by,
         "branches": Branch.objects.all(),
         "staff_list": User.objects.filter(
-            role__in=["RETAIL", "TELECOM", "MULTICHOICE"]
+            role__in=list(ALL_STAFF_ROLES)
         ).order_by("username"),
     })
 
@@ -4232,8 +4307,8 @@ def manager_dashboard(request):
         branch=branch, date=today
     ).aggregate(total=Sum("amount"))["total"] or 0
 
-    retail_staff = User.objects.filter(branch=branch, role="RETAIL")
-    telecom_staff = User.objects.filter(branch=branch, role="TELECOM")
+    retail_staff = User.objects.filter(branch=branch, role__in=roles_for("RETAIL"))
+    telecom_staff = User.objects.filter(branch=branch, role__in=roles_for("TELECOM"))
     categories    = RetailCategory.objects.all()
     pending_stock_requests = StockRequest.objects.filter(
         branch=branch, status="PENDING"
@@ -4255,7 +4330,7 @@ def manager_dashboard(request):
     from core.catalog_ui import build_catalog as _bc
     _held = {}
     for _st in StaffStock.objects.filter(
-            staff__branch=branch, staff__role="RETAIL", quantity__gt=0).select_related("staff"):
+            staff__branch=branch, staff__role__in=roles_for("RETAIL"), quantity__gt=0).select_related("staff"):
         _held.setdefault(_st.product_id, []).append((_st.staff.username, _st.quantity))
     _items = []
     for _s in BranchSafeStock.objects.filter(branch=branch).select_related(
@@ -5212,6 +5287,19 @@ def cron_daily_digest(request):
     except Exception as e:
         return JsonResponse({'ok': False, 'error': str(e)}, status=500)
 
+def cron_sub_director_weekly(request):  # ROLES_V3
+    if not _check_cron_secret(request):
+        return JsonResponse({'error': 'Unauthorized'}, status=403)
+    from django.core.management import call_command
+    email = request.GET.get('email', django_settings.DEFAULT_FROM_EMAIL or '')
+    if not email:
+        return JsonResponse({'error': 'No email provided'}, status=400)
+    try:
+        call_command('sub_director_weekly', email=email)
+        return JsonResponse({'ok': True, 'message': 'Sub Director weekly email sent'})
+    except Exception as e:
+        return JsonResponse({'ok': False, 'error': str(e)}, status=500)
+
 def cron_backup(request):
     if not _check_cron_secret(request):
         return JsonResponse({'error': 'Unauthorized'}, status=403)
@@ -5490,7 +5578,7 @@ def change_log(request):
     })
 
 
-@role_required("DIRECTOR")
+@role_required("DIRECTOR", "SUB_DIRECTOR")
 def all_branch_stock(request):
     """Director view - all branch safe stock with date and branch filters."""
     date_from  = request.GET.get("date_from", "")
@@ -5597,7 +5685,7 @@ def all_branch_stock(request):
         "branch_flt": branch_flt,
         "search": search,
     })
-@role_required("DIRECTOR")
+@role_required("DIRECTOR", "SUB_DIRECTOR")
 def catalog_management(request):
     """Director page to manage landing page slideshow and products."""
     from core.models import SlideShowItem, CatalogCategory, CatalogProduct
@@ -5613,7 +5701,7 @@ def catalog_management(request):
     })
 
 
-@role_required("DIRECTOR")
+@role_required("DIRECTOR", "SUB_DIRECTOR")
 def catalog_add_slide(request):
     from core.models import SlideShowItem
     if request.method == "POST":
@@ -5639,7 +5727,7 @@ def catalog_add_slide(request):
     return redirect("catalog_management")
 
 
-@role_required("DIRECTOR")
+@role_required("DIRECTOR", "SUB_DIRECTOR")
 def catalog_edit_slide(request, slide_id):
     from core.models import SlideShowItem
     slide = get_object_or_404(SlideShowItem, id=slide_id)
@@ -5664,7 +5752,7 @@ def catalog_edit_slide(request, slide_id):
     return redirect("catalog_management")
 
 
-@role_required("DIRECTOR")
+@role_required("DIRECTOR", "SUB_DIRECTOR")
 def catalog_delete_slide(request, slide_id):
     from core.models import SlideShowItem
     if request.method == "POST":
@@ -5673,7 +5761,7 @@ def catalog_delete_slide(request, slide_id):
     return redirect("catalog_management")
 
 
-@role_required("DIRECTOR")
+@role_required("DIRECTOR", "SUB_DIRECTOR")
 def catalog_add_product(request):
     from core.models import CatalogProduct, CatalogCategory
     if request.method == "POST":
@@ -5703,7 +5791,7 @@ def catalog_add_product(request):
     return redirect("catalog_management")
 
 
-@role_required("DIRECTOR")
+@role_required("DIRECTOR", "SUB_DIRECTOR")
 def catalog_edit_product(request, product_id):
     from core.models import CatalogProduct, CatalogCategory
     prod = get_object_or_404(CatalogProduct, id=product_id)
@@ -5731,7 +5819,7 @@ def catalog_edit_product(request, product_id):
     return redirect("catalog_management")
 
 
-@role_required("DIRECTOR")
+@role_required("DIRECTOR", "SUB_DIRECTOR")
 def catalog_delete_product(request, product_id):
     from core.models import CatalogProduct
     if request.method == "POST":
@@ -5740,7 +5828,7 @@ def catalog_delete_product(request, product_id):
     return redirect("catalog_management")
 
 
-@role_required("DIRECTOR")
+@role_required("DIRECTOR", "SUB_DIRECTOR")
 def catalog_add_category(request):
     from core.models import CatalogCategory
     if request.method == "POST":
@@ -5948,7 +6036,7 @@ def router_subscriptions_overview(request):
 
     from core.models import Branch, User as UserModel
     branches = Branch.objects.all()
-    staff_list = UserModel.objects.filter(role="TELECOM").order_by("username")
+    staff_list = UserModel.objects.filter(role__in=roles_for("TELECOM")).order_by("username")
     if request.user.role == "MANAGER" and request.user.branch:
         staff_list = staff_list.filter(branch=request.user.branch)
 
@@ -6046,14 +6134,14 @@ def mc_subscription_retention(request):
 # STOCK TRANSFER — Branch to Branch, Director, Staff
 # ─────────────────────────────────────────
 
-@role_required("DIRECTOR", "MANAGER")
+@role_required("DIRECTOR", "MANAGER", "SUB_DIRECTOR")
 def stock_transfer(request):
     # STOCK_APPROVALS_V1: now goes through the approval workflow (core/stock_approval_views.py)
     from core import stock_approval_views as _sav
     return _sav.stock_transfer_page(request)
 
 
-@role_required("DIRECTOR")
+@role_required("DIRECTOR", "SUB_DIRECTOR")
 def stock_transfer_history(request):
     """Director - full stock transfer history with filters."""
     from core.models import StockTransfer
@@ -6414,7 +6502,7 @@ def online_sales_overview(request):
 
     branches   = Branch.objects.all()
     staff_list = User.objects.filter(
-        role__in=['RETAIL', 'TELECOM', 'MULTICHOICE', 'MANAGER']
+        role__in=list(ALL_STAFF_ROLES) + ['MANAGER']
     ).order_by('username')
     if request.user.role == 'MANAGER' and request.user.branch:
         staff_list = staff_list.filter(branch=request.user.branch)

@@ -188,7 +188,7 @@ class Command(BaseCommand):
         send_email = options["send_email"]
 
         staff_members = User.objects.filter(
-            role__in=["RETAIL", "TELECOM", "MULTICHOICE", "MANAGER"]
+            role__in=["RETAIL", "TELECOM", "MULTICHOICE", "MANAGER", "RETAIL_TELECOM", "RETAIL_LEAD"]  # ROLES_V1
         )
 
         if backfill:

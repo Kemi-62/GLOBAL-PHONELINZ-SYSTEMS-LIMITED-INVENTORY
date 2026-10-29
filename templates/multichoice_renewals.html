@@ -1,0 +1,47 @@
+{% extends "base.html" %}
+{# MC_RENEWALS_V1 #}
+{% block content %}
+<style>
+.rn-t{font-size:1.3rem;font-weight:700;color:#004F9F;margin:0 0 .3rem}
+.rn-s{font-size:.85rem;color:#6b7280;margin:0 0 1.1rem}
+.rn-stats{display:grid;grid-template-columns:repeat(auto-fit,minmax(120px,1fr));gap:.7rem;margin-bottom:1.2rem}
+.rn-st{background:#fff;border:1px solid #e5e7eb;border-radius:10px;padding:.8rem;text-align:center}
+.rn-st b{display:block;font-size:1.5rem}
+.rn-st span{font-size:.72rem;color:#6b7280}
+.rn-card{background:#fff;border:1px solid #e5e7eb;border-radius:10px;padding:1rem 1.1rem;margin-bottom:1rem}
+.rn-card h3{font-size:.95rem;margin:0 0 .7rem}
+.rn-row{display:flex;justify-content:space-between;align-items:center;gap:.8rem;padding:.6rem 0;border-bottom:1px solid #f1f5f9;flex-wrap:wrap}
+.rn-row:last-child{border-bottom:none}
+.rn-n{font-weight:600;font-size:.9rem}
+.rn-m{font-size:.76rem;color:#6b7280}
+.rn-b{display:flex;gap:.4rem}
+.rn-btn{padding:.4rem .8rem;border-radius:7px;font-size:.78rem;font-weight:600;text-decoration:none;background:#16a34a;color:#fff}
+.rn-btn.call{background:#e5e7eb;color:#374151}
+.rn-empty{font-size:.82rem;color:#9ca3af}
+.rn-f{margin-bottom:1rem}
+</style>
+<h1 class="rn-t">📺 Renewals Due</h1>
+<p class="rn-s">DStv and GOtv customers whose last payment is about 30 days old. Tap WhatsApp to open a ready message, check it and send.</p>
+
+{% if branches %}
+<form method="GET" class="rn-f">
+  <select name="branch" onchange="this.form.submit()">
+    <option value="">All branches</option>
+    {% for b in branches %}<option value="{{ b.id }}" {% if branch_flt == b.id|stringformat:"s" %}selected{% endif %}>{{ b.name }}</option>{% endfor %}
+  </select>
+</form>
+{% endif %}
+
+<div class="rn-stats">
+  <div class="rn-st"><b style="color:#d97706">{{ due|length }}</b><span>Due in {{ due_soon_days }} days</span></div>
+  <div class="rn-st"><b style="color:#dc2626">{{ overdue|length }}</b><span>Overdue</span></div>
+  <div class="rn-st"><b style="color:#2563eb">{{ upcoming|length }}</b><span>Coming up</span></div>
+  <div class="rn-st"><b style="color:#6b7280">{{ lapsed|length }}</b><span>Lapsed (30+ days)</span></div>
+</div>
+
+{% include "partials/renewal_list.html" with title="Due now" rows=due %}
+{% include "partials/renewal_list.html" with title="Overdue: call these first" rows=overdue %}
+{% include "partials/renewal_list.html" with title="Coming up" rows=upcoming %}
+{% include "partials/renewal_list.html" with title="Lapsed: win them back" rows=lapsed %}
+<p class="rn-m">Expiry is the last payment date plus 30 days. A customer who has paid again no longer shows here. Voided sales are ignored.</p>
+{% endblock %}

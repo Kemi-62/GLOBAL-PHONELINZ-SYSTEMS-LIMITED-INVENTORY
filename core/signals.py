@@ -70,7 +70,7 @@ def notify_on_stock_request(sender, instance, created, **kwargs):
         from django.contrib.auth import get_user_model
         User = get_user_model()
         # Notify director
-        for director in User.objects.filter(role='DIRECTOR'):
+        for director in User.objects.filter(role__in=['DIRECTOR', 'SUB_DIRECTOR']):  # ROLES_V1
             Notification.objects.create(
                 recipient=director,
                 notif_type='STOCK_REQUEST',

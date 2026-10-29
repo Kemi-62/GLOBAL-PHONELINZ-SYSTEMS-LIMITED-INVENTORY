@@ -33,7 +33,7 @@ class CustomUserAdmin(BaseUserAdmin):
 
     fieldsets = BaseUserAdmin.fieldsets + (
         ('GPSL Info', {
-            'fields': ('role', 'branch', 'failed_login_count', 'is_locked'),
+            'fields': ('role', 'branch', 'branch_duties', 'failed_login_count', 'is_locked'),
         }),
     )
 

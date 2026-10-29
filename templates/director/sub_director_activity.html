@@ -1,0 +1,64 @@
+{% extends "base.html" %}
+{# ROLES_V1 #}
+{% block content %}
+<style>
+.sd-t{font-size:1.3rem;font-weight:700;color:#004F9F;margin:0 0 .3rem}
+.sd-s{font-size:.85rem;color:#6b7280;margin:0 0 1rem}
+.sd-card{background:#fff;border:1px solid #e5e7eb;border-radius:10px;padding:1.1rem 1.2rem;margin-bottom:1.2rem}
+.sd-pill{display:inline-block;border-radius:999px;padding:.1rem .6rem;font-size:.7rem;font-weight:700}
+.sd-ok{background:#d1fae5;color:#065f46}.sd-no{background:#fee2e2;color:#991b1b}.sd-ot{background:#e5e7eb;color:#374151}
+</style>
+<div style="display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:.6rem;">
+  <h1 class="sd-t">🧑‍💼 Sub Director Activity</h1>
+  <form method="GET">
+    <select name="days" onchange="this.form.submit()" style="width:auto;">
+      <option value="1" {% if days == 1 %}selected{% endif %}>Last 24 hours</option>
+      <option value="7" {% if days == 7 %}selected{% endif %}>Last 7 days</option>
+      <option value="14" {% if days == 14 %}selected{% endif %}>Last 14 days</option>
+      <option value="30" {% if days == 30 %}selected{% endif %}>Last 30 days</option>
+      <option value="90" {% if days == 90 %}selected{% endif %}>Last 90 days</option>
+    </select>
+  </form>
+</div>
+<p class="sd-s">Everything your Sub Director requested, approved or rejected: releases, stock added, purchase orders. Items they add to the Director Safe or receive on a purchase order wait for your confirmation in Pending Approvals. Open Stock Audit for the full trail of any request.</p>
+
+{% if not has_sub_director %}
+<div class="sd-card" style="color:#6b7280;">No Sub Director account exists yet. Create one in the admin page and set its role to Sub Director.</div>
+{% else %}
+<div class="sd-card">
+  <p style="font-weight:700;margin:0 0 .6rem;">Summary</p>
+  <table>
+    <thead><tr><th>Sub Director</th><th>Approved</th><th>Rejected</th><th>Requested</th><th>Other</th></tr></thead>
+    <tbody>
+      {% for who, s in summary.items %}
+      <tr><td>{{ who }}</td><td>{{ s.approved }}</td><td>{{ s.rejected }}</td><td>{{ s.requested }}</td><td>{{ s.other }}</td></tr>
+      {% empty %}
+      <tr><td colspan="5" style="text-align:center;color:#9ca3af;">No activity in this period.</td></tr>
+      {% endfor %}
+    </tbody>
+  </table>
+</div>
+<div class="sd-card">
+  <p style="font-weight:700;margin:0 0 .6rem;">Activity list</p>
+  <table>
+    <thead><tr><th>When</th><th>Who</th><th>Action</th><th>Item</th><th>Qty</th><th>Branch</th><th>Requested by</th><th>Note</th></tr></thead>
+    <tbody>
+      {% for e in rows %}
+      <tr>
+        <td>{{ e.created_at|date:"d M H:i" }}</td>
+        <td>{{ e.actor.username|default:"—" }}</td>
+        <td>{% if e.action == "REJECTED" %}<span class="sd-pill sd-no">Rejected</span>{% elif "APPROVED" in e.action or e.action == "AUTO_COMPLETED" %}<span class="sd-pill sd-ok">Approved</span>{% else %}<span class="sd-pill sd-ot">{% if e.action == "SUBMITTED" %}Requested{% else %}{{ e.action|title }}{% endif %}</span>{% endif %}</td>
+        <td>{{ e.request.product.model_name }}</td>
+        <td>{{ e.request.quantity }}</td>
+        <td>{% if e.request.to_branch %}{{ e.request.to_branch.name }}{% elif e.request.from_branch %}{{ e.request.from_branch.name }}{% else %}—{% endif %}</td>
+        <td>{{ e.request.requested_by.username|default:"—" }}</td>
+        <td>{{ e.detail|truncatechars:70 }}</td>
+      </tr>
+      {% empty %}
+      <tr><td colspan="8" style="text-align:center;color:#9ca3af;">Nothing in this period.</td></tr>
+      {% endfor %}
+    </tbody>
+  </table>
+</div>
+{% endif %}
+{% endblock %}

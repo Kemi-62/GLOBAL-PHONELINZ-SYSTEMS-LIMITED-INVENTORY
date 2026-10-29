@@ -40,12 +40,16 @@ class User(AbstractUser):
     ('TELECOM', 'Telecom Staff'),
     ('RETAIL', 'Phones & Accessories Staff'),
     ('MULTICHOICE', 'MultiChoice Staff'),
+    ('RETAIL_TELECOM', 'Retail + Telecom Staff'),  # ROLES_V1
+    ('RETAIL_LEAD', 'Retail + Manager-level Report'),  # ROLES_V1
+    ('SUB_DIRECTOR', 'Sub Director'),  # ROLES_V1
     )
 
     role = models.CharField(max_length=20, choices=ROLE_CHOICES)
     branch = models.ForeignKey(Branch, on_delete=models.SET_NULL, null=True, blank=True)
     failed_login_count = models.IntegerField(default=0)
     is_locked = models.BooleanField(default=False)
+    branch_duties = models.BooleanField(default=False, help_text='Lets this person record expenses, send the daily WhatsApp report and enter device commission (normally manager chores).')  # ROLES_V1
 
     def __str__(self):
         return str(self.username)
@@ -279,6 +283,7 @@ class MultiChoiceSale(models.Model):
     iuc_number = models.CharField(max_length=100, null=True, blank=True)
     service_type = models.CharField(max_length=20, choices=(("DSTV", "DSTV"), ("GOTV", "GOTV")), default="DSTV")
     package_type = models.CharField(max_length=100)
+    months_paid = models.PositiveSmallIntegerField(default=1, help_text="How many months this payment covers (used for renewal reminders).")  # MC_RENEWALS_V2
     transaction_type = models.CharField(
         max_length=20,
         choices=(

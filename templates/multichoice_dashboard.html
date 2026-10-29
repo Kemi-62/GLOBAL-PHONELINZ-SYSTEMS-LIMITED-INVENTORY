@@ -52,6 +52,11 @@
 </style>
 
 <!-- HEADER -->
+{% if renewals_due_count %}{# MC_RENEWALS_V2 #}
+<a href="{% url 'mc_renewals' %}" style="display:block;background:#fef3c7;color:#92400e;border-radius:10px;padding:.8rem 1rem;margin-bottom:1rem;text-decoration:none;font-size:.9rem;font-weight:600;">
+  🔔 {{ renewals_due_count }} customer{{ renewals_due_count|pluralize }} to remind about renewal. Tap to open Renewals Due.
+</a>
+{% endif %}
 <div class="dash-header">
   <div>
     <h1 class="dash-title">MultiChoice Dashboard</h1>
@@ -183,6 +188,13 @@
             <option value="NEW">New Subscription</option>
             <option value="RENEWAL">Renewal</option>
             <option value="UPGRADE">Upgrade</option>
+          </select>
+        </div>
+        <div class="form-group"><label>Months paid *</label>{# MC_RENEWALS_V2 #}
+          <select name="months_paid" required>
+            <option value="1" selected>1 month</option>
+            <option value="2">2 months</option><option value="3">3 months</option><option value="4">4 months</option>
+            <option value="5">5 months</option><option value="6">6 months</option><option value="12">12 months</option>
           </select>
         </div>
       </div>

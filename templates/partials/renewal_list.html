@@ -1,0 +1,18 @@
+{# MC_RENEWALS_V1 #}
+<div class="rn-card">
+  <h3>{{ title }} ({{ rows|length }})</h3>
+  {% for r in rows %}
+  <div class="rn-row">
+    <div>
+      <div class="rn-n">{{ r.sale.customer_name }}</div>
+      <div class="rn-m">{{ r.sale.service_type }} {{ r.sale.package_type }}{% if r.sale.iuc_number %} &middot; IUC {{ r.sale.iuc_number }}{% endif %}
+        &middot; {% if r.days_left < 0 %}expired {{ r.days_over }} day{{ r.days_over|pluralize }} ago{% elif r.days_left == 0 %}expires today{% else %}expires in {{ r.days_left }} day{{ r.days_left|pluralize }}{% endif %}
+        {% if show_staff %}&middot; {{ r.sale.branch.name }}, {{ r.sale.staff.username }}{% endif %}</div>
+    </div>
+    <div class="rn-b">
+      {% if r.wa %}<a class="rn-btn" href="{{ r.wa }}" target="_blank" rel="noopener">WhatsApp</a>{% endif %}
+      {% if r.phone %}<a class="rn-btn call" href="tel:{{ r.phone }}">Call</a>{% else %}<span class="rn-empty">No phone</span>{% endif %}
+    </div>
+  </div>
+  {% empty %}<div class="rn-empty">Nobody here.</div>{% endfor %}
+</div>

@@ -1,0 +1,62 @@
+{% extends "base.html" %}
+{# ROLES_V1 #}
+{% block content %}
+<style>
+.bd-t{font-size:1.3rem;font-weight:700;color:#004F9F;margin:0 0 .3rem}
+.bd-s{font-size:.85rem;color:#6b7280;margin:0 0 1.2rem}
+.bd-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(260px,1fr));gap:1rem;margin-bottom:1.2rem}
+.bd-card{background:#fff;border:1px solid #e5e7eb;border-radius:10px;padding:1.1rem 1.2rem}
+.bd-card h3{font-size:.95rem;margin:0 0 .4rem;color:#111827}
+.bd-card p{font-size:.82rem;color:#6b7280;margin:0 0 .8rem}
+.bd-btn{display:inline-block;padding:.5rem 1rem;border-radius:7px;background:#004F9F;color:#fff;text-decoration:none;font-weight:600;font-size:.85rem;border:none;cursor:pointer}
+.bd-btn.red{background:#ef4444}
+.bd-f label{display:block;font-size:.72rem;text-transform:uppercase;color:#6b7280;margin:.6rem 0 .2rem}
+</style>
+
+<h1 class="bd-t">🧾 Branch Duties</h1>
+<p class="bd-s">{% if branch %}{{ branch.name }}{% else %}No branch set on your account{% endif %} &middot; small branch chores handled for the Director.</p>
+
+<div class="bd-grid">
+  <div class="bd-card">
+    <h3>📱 Daily WhatsApp Report</h3>
+    <p>Preview today's branch report and send it to the Director.</p>
+    <a href="{% url 'whatsapp_report_page' %}" class="bd-btn">Open report</a>
+  </div>
+  <div class="bd-card">
+    <h3>💰 Device Commission</h3>
+    <p>Record the monthly SIM commission for device tags.</p>
+    <a href="{% url 'add_device_commission' %}" class="bd-btn">Open commission form</a>
+  </div>
+</div>
+
+<div class="bd-grid">
+  <div class="bd-card">
+    <h3>➕ Record Expense</h3>
+    <form method="POST" action="{% url 'record_expense' %}" class="bd-f">
+      {% csrf_token %}
+      <label>Category</label>
+      <select name="category" required>
+        {% for value, label in categories %}<option value="{{ value }}">{{ label }}</option>{% endfor %}
+      </select>
+      <label>Amount (₦)</label>
+      <input type="number" name="amount" step="0.01" min="0" required>
+      <label>Description</label>
+      <input type="text" name="description" placeholder="Brief description">
+      <button type="submit" class="bd-btn red" style="margin-top:.9rem;">Record Expense</button>
+    </form>
+  </div>
+  <div class="bd-card">
+    <h3>📋 Recent Expenses</h3>
+    <table>
+      <thead><tr><th>Category</th><th>Amount</th><th>Date</th></tr></thead>
+      <tbody>
+        {% for e in expenses %}
+        <tr><td>{{ e.get_category_display }}</td><td>₦{{ e.amount|floatformat:2 }}</td><td>{{ e.date|date:"d M Y" }}</td></tr>
+        {% empty %}
+        <tr><td colspan="3" style="text-align:center;color:#9ca3af;">No expenses recorded.</td></tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+</div>
+{% endblock %}

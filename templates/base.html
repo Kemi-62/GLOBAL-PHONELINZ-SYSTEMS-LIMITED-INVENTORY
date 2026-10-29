@@ -1,5 +1,6 @@
 {% load static %}
 {% load stock_approval_tags %}{# STOCK_APPROVALS_V1 #}
+{% load role_tags %}{# ROLES_V1 #}
 <!DOCTYPE html>
 <html lang="en">
 <head>
@@ -257,9 +258,17 @@
             <span class="icon">&#9989;</span> Pending Approvals
             {% stock_approvals_count as sa_count %}{% if sa_count %}<span style="margin-left:auto;background:#ef4444;color:#fff;border-radius:999px;padding:0 .5rem;font-size:.7rem;font-weight:700;">{{ sa_count }}</span>{% endif %}
         </a>
-        {% if user.role == "DIRECTOR" or user.role == "MANAGER" or user.is_superuser %}
+        {% if user.role == "DIRECTOR" or user.role == "MANAGER" or user.role == "SUB_DIRECTOR" or user.is_superuser %}
         <a href="{% url 'stock_audit' %}" class="sidebar-link">
             <span class="icon">&#128269;</span> Stock Audit
+        </a>
+        {% endif %}
+        {% if user.role == "DIRECTOR" or user.is_superuser %}{# ROLES_V1 #}
+        <a href="{% url 'sub_director_activity' %}" class="sidebar-link">
+            <span class="icon">&#129489;&#8205;&#128188;</span> Sub Director Activity
+        </a>
+        <a href="{% url 'set_branch_targets' %}" class="sidebar-link">
+            <span class="icon">&#127919;</span> Branch Targets
         </a>
         {% endif %}
     </div>
@@ -320,6 +329,9 @@
             </a>
             <a href="{% url 'mc_subscription_retention' %}" class="sidebar-link">
                 <span class="icon">📺</span> MC Retention
+            </a>
+            <a href="{% url 'mc_renewals' %}" class="sidebar-link">{# MC_RENEWALS_V1 #}
+                <span class="icon">🔔</span> Renewals Due
             </a>
             <a href="{% url 'router_subscriptions_overview' %}" class="sidebar-link">
                 <span class="icon">📡</span> Router Subs
@@ -407,6 +419,9 @@
             <a href="{% url 'router_subscriptions_overview' %}" class="sidebar-link">
                 <span class="icon">📡</span> Router Subscriptions
             </a>
+            <a href="{% url 'mc_renewals' %}" class="sidebar-link">{# MC_RENEWALS_V1 #}
+                <span class="icon">🔔</span> MultiChoice Renewals
+            </a>
 <a href="{% url 'supplier_list' %}" class="sidebar-link">
     <span class="icon">🏭</span> Suppliers
 </a>
@@ -464,8 +479,8 @@
             <a href="{% url 'my_online_sales' %}" class="sidebar-link">
                 <span class="icon">📱</span> Online Sales
             </a>
-            <a href="{% url 'mc_subscription_retention' %}" class="sidebar-link">
-                <span class="icon">📺</span> Subscription Renewals
+            <a href="{% url 'mc_renewals' %}" class="sidebar-link">{# MC_RENEWALS_V1 #}
+                <span class="icon">🔔</span> Renewals Due
             </a>
         <a href="{% url 'record_multichoice_sale' %}" class="sidebar-link">
             <span class="icon">➕</span> Record Subscription
@@ -531,6 +546,139 @@
             <span class="icon">📅</span> My Attendance
         </a>
     </div>
+    {% elif user.role == "RETAIL_TELECOM" %}{# ROLES_V1 #}
+    <div class="sidebar-section">
+        <div class="sidebar-section-label">Retail</div>
+        <a href="{% url 'retail_dashboard' %}" class="sidebar-link">
+            <span class="icon">🛍️</span> Retail Dashboard
+        </a>
+        <a href="{% url 'my_online_sales' %}" class="sidebar-link">
+            <span class="icon">📱</span> Online Sales
+        </a>
+        <a href="{% url 'staff_create_product' %}" class="sidebar-link">
+            <span class="icon">➕</span> Add Single Product
+        </a>
+        <a href="{% url 'upload_retail_csv' %}" class="sidebar-link">
+            <span class="icon">📤</span> Bulk Upload Products
+        </a>
+        <a href="{% url 'request_stock' %}" class="sidebar-link">
+            <span class="icon">📬</span> Request Stock
+        </a>
+    </div>
+    <div class="sidebar-divider"></div>
+    <div class="sidebar-section">
+        <div class="sidebar-section-label">Telecom</div>
+        <a href="{% url 'staff_dashboard' %}" class="sidebar-link">
+            <span class="icon">📡</span> Telecom Dashboard
+        </a>
+        <a href="{% url 'router_subscriptions' %}" class="sidebar-link">
+            <span class="icon">📡</span> Router Subscriptions
+        </a>
+        <a href="{% url 'record_physical_product' %}" class="sidebar-link">
+            <span class="icon">📝</span> Record Activity
+        </a>
+        <a href="{% url 'staff_dashboard' %}#devices" class="sidebar-link">
+            <span class="icon">📦</span> Device Stock & Sales
+        </a>
+    </div>
+    <div class="sidebar-divider"></div>
+    <div class="sidebar-section">
+        <div class="sidebar-section-label">Attendance</div>
+        <a href="{% url 'check_in' %}" class="sidebar-link">
+            <span class="icon">🌅</span> Check In
+        </a>
+        <a href="{% url 'check_out' %}" class="sidebar-link">
+            <span class="icon">🌆</span> Check Out
+        </a>
+        <a href="{% url 'attendance_history' %}" class="sidebar-link">
+            <span class="icon">📅</span> My Attendance
+        </a>
+    </div>
+
+    {% elif user.role == "RETAIL_LEAD" %}{# ROLES_V1 #}
+    <div class="sidebar-section">
+        <div class="sidebar-section-label">Retail</div>
+        <a href="{% url 'retail_dashboard' %}" class="sidebar-link">
+            <span class="icon">🛍️</span> Retail Dashboard
+        </a>
+        <a href="{% url 'my_online_sales' %}" class="sidebar-link">
+            <span class="icon">📱</span> Online Sales
+        </a>
+        <a href="{% url 'staff_create_product' %}" class="sidebar-link">
+            <span class="icon">➕</span> Add Single Product
+        </a>
+        <a href="{% url 'upload_retail_csv' %}" class="sidebar-link">
+            <span class="icon">📤</span> Bulk Upload Products
+        </a>
+        <a href="{% url 'request_stock' %}" class="sidebar-link">
+            <span class="icon">📬</span> Request Stock
+        </a>
+    </div>
+    <div class="sidebar-divider"></div>
+    <div class="sidebar-section">
+        <div class="sidebar-section-label">Attendance</div>
+        <a href="{% url 'check_in' %}" class="sidebar-link">
+            <span class="icon">🌅</span> Check In
+        </a>
+        <a href="{% url 'check_out' %}" class="sidebar-link">
+            <span class="icon">🌆</span> Check Out
+        </a>
+        <a href="{% url 'attendance_history' %}" class="sidebar-link">
+            <span class="icon">📅</span> My Attendance
+        </a>
+    </div>
+
+    {% elif user.role == "SUB_DIRECTOR" %}{# ROLES_V1 #}
+    <div class="sidebar-section">
+        <div class="sidebar-section-label">Director's Work</div>
+        <a href="{% url 'director_safe_stock' %}" class="sidebar-link">
+            <span class="icon">🏦</span> Director Safe
+        </a>
+        <a href="{% url 'stock_transfer' %}" class="sidebar-link">
+            <span class="icon">🔄</span> Stock Transfer
+        </a>
+        <a href="{% url 'supplier_list' %}" class="sidebar-link">
+            <span class="icon">🏭</span> Suppliers
+        </a>
+        <a href="{% url 'purchase_order_list' %}" class="sidebar-link">
+            <span class="icon">📦</span> Purchase Orders
+        </a>
+        <a href="{% url 'mc_renewals' %}" class="sidebar-link">{# MC_RENEWALS_V1 #}
+            <span class="icon">🔔</span> MultiChoice Renewals
+        </a>
+        <a href="{% url 'catalog_management' %}" class="sidebar-link">
+            <span class="icon">🛍️</span> Catalog Management
+        </a>
+    </div>
+    <div class="sidebar-divider"></div>
+    <div class="sidebar-section">
+        <div class="sidebar-section-label">Oversight</div>
+        <a href="{% url 'director_all_branch_stock' %}" class="sidebar-link">
+            <span class="icon">📦</span> All Branch Stock
+        </a>
+        <a href="{% url 'stock_transfer_history' %}" class="sidebar-link">
+            <span class="icon">🔄</span> Stock Transfer History
+        </a>
+        <a href="{% url 'set_branch_targets' %}" class="sidebar-link">
+            <span class="icon">🎯</span> Branch Targets
+        </a>
+    </div>
+    {% endif %}
+
+    {% if user|has_role:"BRANCH_DUTIES" and user.role != "MANAGER" %}{# ROLES_V1 #}
+    <div class="sidebar-divider"></div>
+    <div class="sidebar-section">
+        <div class="sidebar-section-label">Branch Duties</div>
+        <a href="{% url 'branch_duties' %}" class="sidebar-link">
+            <span class="icon">🧾</span> Branch Duties
+        </a>
+        <a href="{% url 'whatsapp_report_page' %}" class="sidebar-link">
+            <span class="icon">📱</span> WhatsApp Report
+        </a>
+        <a href="{% url 'add_device_commission' %}" class="sidebar-link">
+            <span class="icon">💰</span> Device Commission
+        </a>
+    </div>
     {% endif %}
 
 
@@ -561,7 +709,7 @@
     </div>
     <div class="topbar-right">
         {% if user.is_authenticated %}
-        <span class="topbar-role">{{ user.role }}</span>
+        <span class="topbar-role" style="white-space:nowrap;">{{ user|role_badge }}</span>
         <span class="topbar-user">{{ user.username }}</span>
         <a href="{% url 'notifications_view' %}" style="position:relative;color:rgba(255,255,255,.8);text-decoration:none;padding:.3rem .5rem;font-size:1.1rem;" title="Notifications">
   🔔

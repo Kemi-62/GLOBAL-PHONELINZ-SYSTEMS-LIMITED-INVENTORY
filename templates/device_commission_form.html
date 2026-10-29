@@ -23,7 +23,7 @@
 
 <div style="display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:.8rem;margin-bottom:1.5rem;">
   <h1 class="page-title" style="margin:0;">💰 Device Tag Commission</h1>
-  <a href="{% url 'manager_dashboard' %}" class="btn-sm btn-outline">← Dashboard</a>
+  <a href="{% if user.role == 'MANAGER' %}{% url 'manager_dashboard' %}{% else %}{% url 'branch_duties' %}{% endif %}" class="btn-sm btn-outline">← {% if user.role == 'MANAGER' %}Dashboard{% else %}Branch Duties{% endif %}</a>
 </div>
 
 <!-- Record Commission -->

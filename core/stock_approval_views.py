@@ -19,7 +19,8 @@ from django.views.decorators.http import require_POST
 
 from core import models as m
 from core import stock_approvals as sa
-from core.stock_approvals import StockError, is_director
+from core.stock_approvals import StockError, is_director, is_approver  # ROLES_V1
+from core.roles import has_role  # ROLES_V1
 
 
 def _back(request, default="stock_approvals"):
@@ -70,7 +71,7 @@ def stock_approvals(request):
         "product", "requested_by", "from_branch", "to_branch", "from_staff", "to_staff").prefetch_related(*history).order_by("created_at")[:100]))
 
     recent_q = base.exclude(status="PENDING")
-    if is_director(user):
+    if is_approver(user):
         pass
     elif user.role == "MANAGER" and user.branch_id:
         recent_q = recent_q.filter(Q(from_branch_id=user.branch_id) | Q(to_branch_id=user.branch_id) | Q(requested_by=user))
@@ -84,8 +85,8 @@ def stock_approvals(request):
         "mine": mine,
         "oversight": oversight,
         "recent": recent,
-        "is_director": is_director(user),
-        "can_audit": is_director(user) or user.role == "MANAGER",
+        "is_director": is_approver(user),
+        "can_audit": is_approver(user) or user.role == "MANAGER",
     })
 
 
@@ -170,7 +171,7 @@ def _int_or_none(value):
 @login_required
 def stock_audit(request):
     user = request.user
-    director = is_director(user)
+    director = is_approver(user)
     if not director and not (user.role == "MANAGER" and user.branch_id):
         return HttpResponseForbidden("Only the Director and branch managers can open the stock audit.")
 
@@ -352,7 +353,7 @@ def manager_release_stock(request):
 
 def staff_create_product(request):
     """Retail staff add a product with a quantity. The quantity counts only after approval."""
-    if request.method == "POST" and request.user.role == "RETAIL":
+    if request.method == "POST" and has_role(request.user, "RETAIL"):
         try:
             from core.models import RetailCategory, RetailSubCategory, RetailSubSubCategory, Product
             with transaction.atomic():
@@ -374,7 +375,8 @@ def staff_create_product(request):
                 )
                 req = sa.submit_entry(request.user, product, request.POST.get("quantity", 1), dest_tier="STAFF",
                                       source_type=_received_from(request), note=request.POST.get("notes", ""))
-            who = "your manager and then the Director" if req.source_type == "MANUAL_DIRECTOR" else "your manager"
+            _who = "your manager" if sa._branch_has_manager(request.user.branch) else "the Director's office"
+            who = (_who + " and then the Director") if req.source_type == "MANUAL_DIRECTOR" else _who
             messages.success(request, "%s added. The %s unit(s) count as your stock once %s approve." % (product.model_name, req.quantity, who))
         except StockError as exc:
             messages.error(request, str(exc))
@@ -386,7 +388,7 @@ def staff_create_product(request):
 def staff_quantity_adjust(request, stock_id):
     """Retail staff change their own stock figure. GET shows a form (it never
     changes anything); POST records it. Increases need approval, decreases need a reason."""
-    if request.user.role != "RETAIL":
+    if not has_role(request.user, "RETAIL"):
         return HttpResponseForbidden()
     stock = get_object_or_404(m.StaffStock.objects.select_related("product"), id=stock_id, staff=request.user)
     raw = request.POST.get("quantity") if request.method == "POST" else request.GET.get("quantity")
@@ -427,6 +429,9 @@ def director_release(request):
         release_type = request.POST.get("release_type")
         branch_id = request.POST.get("branch_id")
         staff_id = request.POST.get("staff_id")
+        if release_type == "sale" and request.user.role == "SUB_DIRECTOR":  # ROLES_V2
+            messages.error(request, "Direct sales from the Director Safe can only be recorded by the Director.")
+            return redirect("director_safe_stock")
         if not product_id:
             messages.error(request, "Please select a product.")
             return redirect("director_safe_stock")

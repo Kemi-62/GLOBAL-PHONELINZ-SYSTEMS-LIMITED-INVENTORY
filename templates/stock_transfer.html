@@ -20,7 +20,7 @@
 
 <div style="display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:.75rem;margin-bottom:1.25rem">
   <h1 class="page-title">🔄 Stock Transfer</h1>
-  {% if user.role == 'DIRECTOR' %}
+  {% if user.role == 'DIRECTOR' or user.role == 'SUB_DIRECTOR' %}
   <a href="{% url 'stock_transfer_history' %}" class="btn-sm btn-outline">📋 Full History</a>
   {% endif %}
 </div>
@@ -37,7 +37,7 @@
       <label>Transfer Type *</label>
       <select name="transfer_type" id="transfer_type" onchange="updateFields()" required>
         <option value="">— Select Type —</option>
-        {% if user.role == 'DIRECTOR' %}
+        {% if user.role == 'DIRECTOR' or user.role == 'SUB_DIRECTOR' %}
         <option value="DIRECTOR_TO_BRANCH">Director Safe → Branch Safe</option>
         <option value="BRANCH_TO_DIRECTOR">Branch Safe → Director Safe (Return)</option>
         {% endif %}

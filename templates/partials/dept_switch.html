@@ -1,0 +1,12 @@
+{% load role_tags %}{# ROLES_V1 #}
+{% if user.role == "RETAIL_TELECOM" or user|has_role:"BRANCH_DUTIES" %}
+<div style="display:flex;gap:.4rem;flex-wrap:wrap;margin:0 0 1rem;">
+  {% if user.role == "RETAIL_TELECOM" %}
+  <a href="{% url 'retail_dashboard' %}" style="padding:.45rem 1rem;border-radius:999px;font-size:.82rem;font-weight:700;text-decoration:none;{% if request.path == '/retail/' %}background:#004F9F;color:#fff;{% else %}background:#e5e7eb;color:#374151;{% endif %}">🛍️ Retail</a>
+  <a href="{% url 'staff_dashboard' %}" style="padding:.45rem 1rem;border-radius:999px;font-size:.82rem;font-weight:700;text-decoration:none;{% if request.path == '/staff/' or request.path == '/telecom/' %}background:#004F9F;color:#fff;{% else %}background:#e5e7eb;color:#374151;{% endif %}">📡 Telecom</a>
+  {% endif %}
+  {% if user|has_role:"BRANCH_DUTIES" and user.role != "MANAGER" %}
+  <a href="{% url 'branch_duties' %}" style="padding:.45rem 1rem;border-radius:999px;font-size:.82rem;font-weight:700;text-decoration:none;background:#fef3c7;color:#92400e;">🧾 Branch Duties</a>
+  {% endif %}
+</div>
+{% endif %}

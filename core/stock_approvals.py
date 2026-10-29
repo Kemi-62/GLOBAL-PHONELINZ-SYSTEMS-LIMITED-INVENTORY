@@ -27,7 +27,7 @@ from django.utils import timezone
 
 from core import models as m
 
-STAFF_ROLES = ("RETAIL", "TELECOM", "MULTICHOICE")
+STAFF_ROLES = ("RETAIL", "TELECOM", "MULTICHOICE", "RETAIL_TELECOM", "RETAIL_LEAD")  # ROLES_V1
 INBOX_LINK = "/stock/approvals/"
 
 
@@ -50,6 +50,42 @@ def batch_ref_for(request):
 
 def is_director(user):
     return bool(getattr(user, "is_superuser", False) or getattr(user, "role", "") in ("DIRECTOR", "SUPERADMIN"))
+
+
+# ROLES_V1 -------------------------------------------------------------
+# The Sub Director approves and rejects like the Director. Set this to False to
+# keep the Director's own confirmation stage (manager entries, Director-safe
+# confirmations) for the Director alone.
+SUB_DIRECTOR_ACTS_AT_DIRECTOR_STAGE = True
+
+
+def is_approver(user):
+    """Director level for APPROVING: the Director, or the Sub Director. Never used to start Director-safe moves."""
+    if is_director(user):
+        return True
+    return getattr(user, "role", "") == "SUB_DIRECTOR"
+
+
+def _managed_branch_ids():
+    """Branches that have at least one active manager."""
+    return set(m.User.objects.filter(role="MANAGER", is_active=True, branch__isnull=False)
+               .values_list("branch_id", flat=True))
+
+
+def _branch_has_manager(branch):
+    if branch is None:
+        return False
+    bid = getattr(branch, "id", branch)
+    return m.User.objects.filter(role="MANAGER", is_active=True, branch_id=bid).exists()
+
+
+def _notify_role_or_approvers(role, title, message, branch=None, notif_type="APPROVAL"):
+    """Tell the branch manager. If the branch has no manager, tell the Director and Sub Director instead."""
+    if role == "MANAGER" and branch is not None and not _branch_has_manager(branch):
+        for r in ("DIRECTOR", "SUB_DIRECTOR"):
+            _notify_role(r, title, "%s (%s has no manager)" % (message, branch.name), notif_type=notif_type)
+    else:
+        _notify_role(role, title, message, branch=branch, notif_type=notif_type)
 
 
 def _positive(qty):
@@ -95,9 +131,11 @@ def _summary(req):
 def _notify_stage(req, headline="Stock approval needed"):
     text = "%s requested %s" % (req.requested_by.username, _summary(req))
     if req.approval_stage == "MANAGER":
-        _notify_role("MANAGER", headline, text, branch=req.to_branch)
+        _notify_role_or_approvers("MANAGER", headline, text, branch=req.to_branch)
     elif req.approval_stage == "DIRECTOR":
         _notify_role("DIRECTOR", headline, text)
+        if SUB_DIRECTOR_ACTS_AT_DIRECTOR_STAGE and getattr(req.requested_by, "role", "") != "SUB_DIRECTOR":
+            _notify_role("SUB_DIRECTOR", headline, text)
     elif req.approval_stage == "STAFF":
         _notify(req.to_staff, "Stock waiting for you to accept", text)
 
@@ -235,7 +273,12 @@ def can_act(user, req):
         return False
     if user.id == req.requested_by_id:
         return False
-    director = is_director(user)
+    director = is_approver(user)
+    if req.approval_stage == "DIRECTOR" and not is_director(user) and not SUB_DIRECTOR_ACTS_AT_DIRECTOR_STAGE:
+        director = False
+    # ROLES_V2: a Sub Director's own requests can only be approved by the Director (or the branch manager)
+    if getattr(req.requested_by, "role", "") == "SUB_DIRECTOR" and getattr(user, "role", "") == "SUB_DIRECTOR":
+        director = False
     stage = req.approval_stage
     if stage == "DIRECTOR":
         return director
@@ -262,8 +305,15 @@ def can_edit(user, req):
 def actionable_for(user):
     """Requests waiting specifically for this user (drives the inbox and the badge)."""
     qs = m.StockApprovalRequest.objects.filter(status="PENDING").exclude(requested_by=user)
-    if is_director(user):
-        return qs.filter(approval_stage="DIRECTOR")
+    if is_approver(user):
+        from django.db.models import Q
+        director_stage = Q(approval_stage="DIRECTOR") if (is_director(user) or SUB_DIRECTOR_ACTS_AT_DIRECTOR_STAGE) else Q(pk__in=[])
+        # ROLES_V1: requests for a branch with no manager come straight to the Director level
+        unmanaged = Q(approval_stage="MANAGER") & ~Q(to_branch_id__in=_managed_branch_ids())
+        result = qs.filter(director_stage | unmanaged)
+        if not is_director(user):  # ROLES_V2
+            result = result.exclude(requested_by__role="SUB_DIRECTOR")
+        return result
     if user.role == "MANAGER" and user.branch_id:
         return qs.filter(approval_stage="MANAGER", to_branch_id=user.branch_id)
     return qs.filter(approval_stage="STAFF", to_staff=user)
@@ -271,9 +321,12 @@ def actionable_for(user):
 
 def oversight_for(user):
     """Director only: pending requests waiting on someone else."""
-    if not is_director(user):
+    if not is_approver(user):
         return m.StockApprovalRequest.objects.none()
-    return m.StockApprovalRequest.objects.filter(status="PENDING").exclude(approval_stage="DIRECTOR")
+    from django.db.models import Q
+    qs = m.StockApprovalRequest.objects.filter(status="PENDING").exclude(approval_stage="DIRECTOR")
+    # ROLES_V1: manager-less branches are in the actionable list already
+    return qs.exclude(Q(approval_stage="MANAGER") & ~Q(to_branch_id__in=_managed_branch_ids()))
 
 
 def pending_count(user):
@@ -290,7 +343,7 @@ def pending_count(user):
 # ---------------------------------------------------------------------------
 
 def _check_move_authority(requester, source_tier, from_branch, from_staff):
-    if is_director(requester):
+    if is_approver(requester):  # ROLES_V2: the Sub Director may move stock for the Director
         return
     if requester.role == "MANAGER":
         if requester.branch_id is None:
@@ -312,7 +365,10 @@ def _requester_owns_destination(requester, dest_tier, to_branch):
     if dest_tier == "DIRECTOR":
         return is_director(requester)
     if dest_tier == "BRANCH":
-        return requester.role == "MANAGER" and to_branch is not None and requester.branch_id == to_branch.id
+        if requester.role == "MANAGER" and to_branch is not None and requester.branch_id == to_branch.id:
+            return True
+        # ROLES_V1: a branch with no manager has nobody to accept, so the Director's own release completes at once
+        return bool(is_approver(requester) and to_branch is not None and not _branch_has_manager(to_branch))
     return False
 
 
@@ -399,6 +455,28 @@ def submit_entry(requester, product, qty, dest_tier, to_branch=None, to_staff=No
 
 
 @transaction.atomic
+def submit_receipt(requester, product, qty, dest_tier, to_branch=None, note="", batch_ref=""):
+    """ROLES_V2. Stock coming in from outside (a Director Safe addition, a purchase
+    order). Nothing changes until the Director level approves it."""
+    qty = _positive(qty)
+    if dest_tier not in ("DIRECTOR", "BRANCH"):
+        raise StockError("Stock can only be received into the Director Safe or a branch safe.")
+    if dest_tier == "BRANCH" and to_branch is None:
+        raise StockError("Please choose the branch.")
+    req = m.StockApprovalRequest.objects.create(
+        kind="ENTRY", source_type="MANUAL_OTHER", product=product, quantity=qty,
+        source_tier="EXTERNAL", dest_tier=dest_tier,
+        to_branch=to_branch if dest_tier == "BRANCH" else None,
+        requested_by=requester, notes=(note or "").strip(), batch_ref=batch_ref or "",
+        approval_stage="DIRECTOR", status="PENDING",
+    )
+    _event(req, requester, "SUBMITTED", "Stock received: %s into %s (%s)" % (qty, req.dest_label, (note or "no note").strip()))
+    _audit(requester, "CREATE", req, "Stock received %s" % _summary(req))
+    _notify_stage(req)
+    return req
+
+
+@transaction.atomic
 def record_reduction(requester, product, qty, reason):
     """Staff lowering their own stock figure. Applied at once, but a written
     reason is required, the manager is told, and it shows under Exceptions."""
@@ -418,7 +496,7 @@ def record_reduction(requester, product, qty, reason):
     _event(req, requester, "ADJUSTED", "Reduced own stock by %s. Reason: %s" % (qty, reason))
     _audit(requester, "UPDATE", req, "Reduced own stock %sx %s. Reason: %s" % (qty, product.model_name, reason))
     if requester.branch_id:
-        _notify_role("MANAGER", "Staff reduced their stock",
+        _notify_role_or_approvers("MANAGER", "Staff reduced their stock",
                      "%s removed %sx %s from their stock. Reason: %s" % (requester.username, qty, product.model_name, reason),
                      branch=requester.branch, notif_type="GENERAL")
     return req
@@ -487,7 +565,9 @@ def approve(req_or_id, actor):
         if req.status != "PENDING":
             raise StockError("This request has already been %s." % req.get_status_display().lower())
         raise StockError("You are not allowed to approve this request.")
-    director = is_director(actor)
+    director = is_approver(actor)
+    if req.approval_stage == "DIRECTOR" and not is_director(actor) and not SUB_DIRECTOR_ACTS_AT_DIRECTOR_STAGE:
+        director = False
     req.acted_on = True
 
     if req.kind == "MOVE":

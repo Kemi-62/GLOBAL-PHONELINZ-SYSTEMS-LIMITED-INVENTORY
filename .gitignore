@@ -168,3 +168,4 @@ logs/
 backups/
 data.json
 data.raw.json
+*.bak

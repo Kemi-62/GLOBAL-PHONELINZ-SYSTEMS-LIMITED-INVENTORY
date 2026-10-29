@@ -54,7 +54,7 @@ class Command(BaseCommand):
 
         # ── 2. Retail Staff Stock ──
         staff_low = StaffStock.objects.filter(
-            quantity__lte=LOW_STOCK_THRESHOLD, staff__role="RETAIL"
+            quantity__lte=LOW_STOCK_THRESHOLD, staff__role__in=["RETAIL", "RETAIL_TELECOM", "RETAIL_LEAD"]  # ROLES_V1
         ).select_related("product", "staff", "staff__branch")
         if staff_low.exists():
             lines = []

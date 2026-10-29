@@ -3,6 +3,8 @@ from django.contrib.auth import views as auth_views
 from . import views
 from . import stock_approval_views as sav  # STOCK_APPROVALS_V1
 from . import customer_views  # CUSTOMER_HISTORY_V1
+from . import roles_views as rv  # ROLES_V1
+from . import mc_renewals as mcr  # MC_RENEWALS_V1
 
 urlpatterns = [
     path('', views.landing_page, name='landing_page'),
@@ -166,6 +168,7 @@ urlpatterns = [
     # Cron Job Endpoints (for cron-job.org / external schedulers)
     path('cron/daily-digest/', views.cron_daily_digest, name='cron_daily_digest'),
     path('cron/backup/', views.cron_backup, name='cron_backup'),
+    path('cron/sub-director-weekly/', views.cron_sub_director_weekly, name='cron_sub_director_weekly'),  # ROLES_V3
     path('cron/stock-alert/', views.cron_stock_alert, name='cron_stock_alert'),
     path('cron/monthly-reset/', views.cron_monthly_reset, name='cron_monthly_reset'),
     path('system/keepalive/', views.keepalive_ping, name='keepalive_ping'),
@@ -182,6 +185,8 @@ urlpatterns = [
     path('telecom/router-subscriptions/', views.router_subscriptions, name='router_subscriptions'),
     path('director/router-subscriptions/', views.router_subscriptions_overview, name='router_subscriptions_overview'),
     path('director/mc-retention/', views.mc_subscription_retention, name='mc_subscription_retention'),
+    path('renewals-due/', mcr.mc_renewals, name='mc_renewals'),  # MC_RENEWALS_V1
+    path('cron/mc-renewal-nudge/', views.cron_mc_renewal_nudge, name='cron_mc_renewal_nudge'),  # MC_RENEWALS_V2
     path('manager/router-subscriptions/', views.router_subscriptions_overview, name='manager_router_subscriptions'),
     path('stock-transfer/', views.stock_transfer, name='stock_transfer'),
     path('director/stock-transfer-history/', views.stock_transfer_history, name='stock_transfer_history'),
@@ -204,4 +209,7 @@ urlpatterns = [
     path('cron/close-multichoice-week/', views.cron_close_multichoice_week, name='cron_close_multichoice_week'),
     path('cron/ensure-multichoice-open-week/', views.cron_ensure_multichoice_open_week, name='cron_ensure_multichoice_open_week'),
     path('director/momo-oversight/', views.momo_oversight, name='momo_oversight'),
+    path('branch-duties/', rv.branch_duties, name='branch_duties'),  # ROLES_V1
+    path('targets/', rv.set_branch_targets, name='set_branch_targets'),  # ROLES_V1
+    path('director/sub-director-activity/', rv.sub_director_activity, name='sub_director_activity'),  # ROLES_V1
 ]

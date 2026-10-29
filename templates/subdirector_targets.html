@@ -1,0 +1,50 @@
+{% extends "base.html" %}
+{# ROLES_V1 #}
+{% block content %}
+<style>
+.st-t{font-size:1.3rem;font-weight:700;color:#004F9F;margin:0 0 .3rem}
+.st-s{font-size:.85rem;color:#6b7280;margin:0 0 1.2rem}
+.st-card{background:#fff;border:1px solid #e5e7eb;border-radius:10px;padding:1.1rem 1.2rem;margin-bottom:1.2rem}
+.st-f{display:grid;grid-template-columns:repeat(auto-fit,minmax(170px,1fr));gap:.8rem;align-items:end}
+.st-f label{display:block;font-size:.72rem;text-transform:uppercase;color:#6b7280;margin:0 0 .2rem}
+.st-btn{padding:.55rem 1.1rem;border-radius:7px;background:#004F9F;color:#fff;font-weight:600;font-size:.85rem;border:none;cursor:pointer}
+</style>
+<h1 class="st-t">🎯 Branch Targets</h1>
+<p class="st-s">Set the monthly telecom target for any branch, including branches without a manager. Month: {{ month|date:"F Y" }}.</p>
+
+<div class="st-card">
+  <form method="POST" class="st-f">
+    {% csrf_token %}
+    <div><label>Branch</label>
+      <select name="branch" required>
+        <option value="">Choose…</option>
+        {% for b in branches %}<option value="{{ b.id }}">{{ b.name }}</option>{% endfor %}
+      </select></div>
+    <div><label>Service</label>
+      <select name="service_type" required>
+        {% for value, label in services %}<option value="{{ value }}">{{ label }}</option>{% endfor %}
+      </select></div>
+    <div><label>Device tag (optional)</label>
+      <select name="device_tag">
+        <option value="">All / Generic</option>
+        {% for t in tags %}<option value="{{ t.id }}">{{ t.tag_name }} ({{ t.branch.name }})</option>{% endfor %}
+      </select></div>
+    <div><label>Target</label><input type="number" name="target_number" min="0" required></div>
+    <div><button type="submit" class="st-btn">Set target</button></div>
+  </form>
+</div>
+
+<div class="st-card">
+  <p style="font-weight:700;margin:0 0 .6rem;">Targets for {{ month|date:"F Y" }}</p>
+  <table>
+    <thead><tr><th>Branch</th><th>Service</th><th>Tag</th><th>Target</th><th>Done</th><th>%</th></tr></thead>
+    <tbody>
+      {% for t in targets %}
+      <tr><td>{{ t.branch.name }}</td><td>{{ t.get_service_type_display|default:t.service_type }}</td><td>{{ t.device_tag.tag_name|default:"—" }}</td><td>{{ t.target_number }}</td><td>{{ t.achieved }}</td><td>{{ t.percentage }}%</td></tr>
+      {% empty %}
+      <tr><td colspan="6" style="text-align:center;color:#9ca3af;">No targets set this month.</td></tr>
+      {% endfor %}
+    </tbody>
+  </table>
+</div>
+{% endblock %}

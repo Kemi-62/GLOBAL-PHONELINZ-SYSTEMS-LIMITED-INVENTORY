@@ -110,6 +110,10 @@ def scope_for_user(user):
         return [], None
     if role == "MANAGER":
         return list(REAL_DEPARTMENTS), branch
+    if role == "RETAIL_TELECOM":  # ROLES_V1
+        return [DEPT_RETAIL, DEPT_TELECOM], branch
+    if role == "RETAIL_LEAD":  # ROLES_V1
+        return [DEPT_RETAIL], branch
     if role in ROLE_DEPARTMENTS:
         return [ROLE_DEPARTMENTS[role]], branch
     return [], None

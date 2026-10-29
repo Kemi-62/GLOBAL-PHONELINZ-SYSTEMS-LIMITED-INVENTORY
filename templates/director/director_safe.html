@@ -53,6 +53,11 @@ pre{background:#f5f5f5;padding:.8rem;border-radius:6px;font-size:.75rem;overflow
   <div class="kpi amber"><p class="kpi-label">Products</p><p class="kpi-value">{{ stocks|length }}</p></div>
 </div>
 
+{% if user.role == "SUB_DIRECTOR" %}{# ROLES_V2 #}
+<div style="background:#fef3c7;color:#92400e;border-radius:8px;padding:.7rem 1rem;font-size:.84rem;margin-bottom:1rem;">
+  Releases you make start straight away. Stock you <b>add</b>, bulk upload or create is sent to the Director for confirmation and only counts once he confirms.
+</div>
+{% endif %}
 <div class="tab-bar">
   <button class="tab-btn active" onclick="switchTab('stock',this)">📦 Current Stock</button>
   <button class="tab-btn" onclick="switchTab('release',this)">📤 Release Stock</button>
@@ -69,6 +74,7 @@ pre{background:#f5f5f5;padding:.8rem;border-radius:6px;font-size:.75rem;overflow
       <a href="?date_from={{ date_from }}&date_to={{ date_to }}&export=pdf" class="btn-sm btn-success">📥 Download PDF</a>
     </div>
     {% include "partials/catalog_cards.html" with catalog=safe_catalog action_label="Release" action_fn="releaseFromSafe" %}
+    {% if user.role != "SUB_DIRECTOR" %}{# ROLES_V2: only the Director edits or deletes #}
     <details class="cg-details">
       <summary>Show every addition (edit / delete)</summary>
     <form method="GET" class="filter-bar">
@@ -109,6 +115,7 @@ pre{background:#f5f5f5;padding:.8rem;border-radius:6px;font-size:.75rem;overflow
     <p style="text-align:center;color:#9ca3af;padding:2rem 0;">No stock in director safe yet.</p>
     {% endif %}
     </details>
+    {% endif %}
   </div>
 </div>
 
@@ -134,7 +141,7 @@ pre{background:#f5f5f5;padding:.8rem;border-radius:6px;font-size:.75rem;overflow
           <option value="">— Select Release Type —</option>
           <option value="branch_safe">To Branch Safe (Manager distributes to staff)</option>
           <option value="staff">Directly to Staff Member</option>
-          <option value="sale">Direct Sale (remove from safe)</option>
+          {% if user.role != "SUB_DIRECTOR" %}<option value="sale">Direct Sale (remove from safe)</option>{% endif %}
         </select>
       </div>
       <div id="branch-target" class="release-target">
