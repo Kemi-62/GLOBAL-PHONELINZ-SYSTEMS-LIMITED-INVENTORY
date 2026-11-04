@@ -1,0 +1,68 @@
+{% extends "base.html" %}
+{# MC_COMMISSION_V2 #}
+{% block content %}
+<style>
+.mk-t{font-size:1.3rem;font-weight:700;color:#004F9F;margin:0 0 .3rem}
+.mk-s{font-size:.85rem;color:#6b7280;margin:0 0 1.1rem}
+.mk-card{background:#fff;border:1px solid #e5e7eb;border-radius:10px;padding:1rem 1.1rem;margin-bottom:1rem;overflow-x:auto}
+.mk-card h3{font-size:.95rem;margin:0 0 .7rem}
+.mk-tb{width:100%;border-collapse:collapse;font-size:.82rem}
+.mk-tb th{background:#004F9F;color:#fff;padding:.5rem .6rem;text-align:left}
+.mk-tb td{padding:.5rem .6rem;border-bottom:1px solid #f1f5f9;vertical-align:top}
+.mk-b{padding:.35rem .7rem;border:none;border-radius:6px;font-weight:600;font-size:.78rem;cursor:pointer;color:#fff}
+.mk-ok{background:#16a34a}.mk-no{background:#dc2626}.mk-rv{background:#2563eb}
+.mk-in{padding:.3rem .5rem;border:1px solid #d1d5db;border-radius:6px;font-size:.78rem;width:150px}
+.mk-pos{color:#166534;font-weight:700}.mk-neg{color:#b91c1c;font-weight:700}
+</style>
+<h1 class="mk-t">💳 MultiChoice Commission</h1>
+<p class="mk-s">Each week the staff enter the real MultiChoice balance with a screenshot. A higher balance than expected is commission, shown here until you confirm it. Differences under ₦{{ tolerance|floatformat:0 }} are ignored.</p>
+
+<div class="mk-card">
+  <h3>Commission waiting for you ({{ pending|length }})</h3>
+  {% if pending %}<table class="mk-tb"><thead><tr><th>Date</th><th>Staff</th><th>Branch</th><th>Expected</th><th>Real balance</th><th>Commission</th><th>Proof</th><th>Decision</th></tr></thead><tbody>
+  {% for c in pending %}
+  <tr><td>{{ c.checked_at|date:"d M Y" }}</td><td>{{ c.staff.username }}</td><td>{{ c.branch.name }}</td>
+    <td>₦{{ c.expected_balance|floatformat:2 }}</td><td>₦{{ c.actual_balance|floatformat:2 }}</td>
+    <td class="mk-pos">+₦{{ c.difference|floatformat:2 }}</td>
+    <td>{% if c.screenshot %}<a href="{{ c.screenshot.url }}" target="_blank" rel="noopener">View</a>{% else %}none{% endif %}{% if c.note %}<br><small>{{ c.note }}</small>{% endif %}</td>
+    <td><form method="POST" action="{% url 'mc_commission_decide' c.pk %}" style="display:flex;gap:.3rem;flex-wrap:wrap;">{% csrf_token %}
+      <input class="mk-in" name="note" placeholder="Note (needed to reject)">
+      <button class="mk-b mk-ok" name="action" value="confirm">Confirm</button>
+      <button class="mk-b mk-no" name="action" value="reject">Reject</button></form></td></tr>
+  {% endfor %}</tbody></table>{% else %}<p class="mk-s">Nothing waiting.</p>{% endif %}
+</div>
+
+<div class="mk-card">
+  <h3>Shortages: wallet lower than expected ({{ shortages|length }})</h3>
+  {% if shortages %}<table class="mk-tb"><thead><tr><th>Date</th><th>Staff</th><th>Branch</th><th>Expected</th><th>Real balance</th><th>Short by</th><th>Proof</th><th></th></tr></thead><tbody>
+  {% for c in shortages %}
+  <tr><td>{{ c.checked_at|date:"d M Y" }}</td><td>{{ c.staff.username }}</td><td>{{ c.branch.name }}</td>
+    <td>₦{{ c.expected_balance|floatformat:2 }}</td><td>₦{{ c.actual_balance|floatformat:2 }}</td>
+    <td class="mk-neg">₦{{ c.difference|floatformat:2 }}</td>
+    <td>{% if c.screenshot %}<a href="{{ c.screenshot.url }}" target="_blank" rel="noopener">View</a>{% endif %}</td>
+    <td><form method="POST" action="{% url 'mc_commission_decide' c.pk %}" style="display:flex;gap:.3rem;">{% csrf_token %}
+      <input class="mk-in" name="note" placeholder="What you found">
+      <button class="mk-b mk-rv" name="action" value="review">Mark reviewed</button></form></td></tr>
+  {% endfor %}</tbody></table>{% else %}<p class="mk-s">No shortages.</p>{% endif %}
+</div>
+
+<div class="mk-card">
+  <h3>Confirmed commission by month</h3>
+  {% if months %}<table class="mk-tb"><thead><tr><th>Month</th><th>Total</th><th>By staff</th></tr></thead><tbody>
+  {% for r in months %}<tr><td>{{ r.month }}</td><td class="mk-pos">₦{{ r.total|floatformat:2 }}</td>
+    <td>{% for name, amt in r.by_staff %}{{ name }}: ₦{{ amt|floatformat:2 }}{% if not forloop.last %}<br>{% endif %}{% endfor %}</td></tr>{% endfor %}
+  </tbody></table>{% else %}<p class="mk-s">No confirmed commission yet.</p>{% endif %}
+</div>
+
+{% if skipped %}<div class="mk-card"><h3>Skipped checks</h3><table class="mk-tb"><thead><tr><th>Date</th><th>Staff</th><th>Branch</th><th>Reason</th></tr></thead><tbody>
+{% for c in skipped %}<tr><td>{{ c.checked_at|date:"d M Y" }}</td><td>{{ c.staff.username }}</td><td>{{ c.branch.name }}</td><td>{{ c.note }}</td></tr>{% endfor %}</tbody></table></div>{% endif %}
+
+<div class="mk-card">
+  <h3>Recent checks</h3>
+  <table class="mk-tb"><thead><tr><th>Date</th><th>Staff</th><th>Result</th><th>Real balance</th><th>Difference</th><th>Decided by</th></tr></thead><tbody>
+  {% for c in recent %}<tr><td>{{ c.checked_at|date:"d M Y" }}</td><td>{{ c.staff.username }}</td><td>{{ c.get_status_display }}</td>
+    <td>{% if c.actual_balance is not None %}₦{{ c.actual_balance|floatformat:2 }}{% endif %}</td><td>{{ c.difference|floatformat:2 }}</td>
+    <td>{{ c.decided_by.username|default:"" }}{% if c.decision_note %}<br><small>{{ c.decision_note }}</small>{% endif %}</td></tr>
+  {% empty %}<tr><td colspan="6">No checks yet.</td></tr>{% endfor %}</tbody></table>
+</div>
+{% endblock %}

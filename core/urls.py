@@ -5,6 +5,7 @@ from . import stock_approval_views as sav  # STOCK_APPROVALS_V1
 from . import customer_views  # CUSTOMER_HISTORY_V1
 from . import roles_views as rv  # ROLES_V1
 from . import mc_renewals as mcr  # MC_RENEWALS_V1
+from . import mc_commission_views as mcv  # MC_COMMISSION_V2
 
 urlpatterns = [
     path('', views.landing_page, name='landing_page'),
@@ -186,6 +187,9 @@ urlpatterns = [
     path('director/router-subscriptions/', views.router_subscriptions_overview, name='router_subscriptions_overview'),
     path('director/mc-retention/', views.mc_subscription_retention, name='mc_subscription_retention'),
     path('renewals-due/', mcr.mc_renewals, name='mc_renewals'),  # MC_RENEWALS_V1
+    path('multichoice/balance-check/', mcv.mc_balance_check, name='mc_balance_check'),  # MC_COMMISSION_V2
+    path('director/mc-commission/', mcv.mc_commission_review, name='mc_commission_review'),  # MC_COMMISSION_V2
+    path('director/mc-commission/<int:pk>/decide/', mcv.mc_commission_decide, name='mc_commission_decide'),  # MC_COMMISSION_V2
     path('cron/mc-renewal-nudge/', views.cron_mc_renewal_nudge, name='cron_mc_renewal_nudge'),  # MC_RENEWALS_V2
     path('manager/router-subscriptions/', views.router_subscriptions_overview, name='manager_router_subscriptions'),
     path('stock-transfer/', views.stock_transfer, name='stock_transfer'),

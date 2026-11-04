@@ -56,6 +56,13 @@ def align_opening(report, expected, repair, log):
     rewritten, and only when repair=True. Returns 'ok', 'repaired' or 'mismatch'."""
     if report.opening_balance == expected:
         return "ok"
+    try:  # MC_COMMISSION_V2: a week opened with the staff member's REAL balance is correct by design
+        from core.models import MultiChoiceBalanceCheck
+        _chk = MultiChoiceBalanceCheck.objects.filter(weekly_report=report).exclude(status="SKIPPED").order_by("-id").first()
+        if _chk is not None and _chk.actual_balance is not None and report.opening_balance == _chk.actual_balance - report.additional_funds:
+            return "ok"
+    except Exception:
+        pass
     if report.is_closed:
         log("  WARNING week %s is already closed and opens with %s, but the previous "
             "week closed at %s. Not touching a closed week." % (

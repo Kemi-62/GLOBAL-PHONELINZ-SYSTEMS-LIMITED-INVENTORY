@@ -284,6 +284,8 @@ class MultiChoiceSale(models.Model):
     service_type = models.CharField(max_length=20, choices=(("DSTV", "DSTV"), ("GOTV", "GOTV")), default="DSTV")
     package_type = models.CharField(max_length=100)
     months_paid = models.PositiveSmallIntegerField(default=1, help_text="How many months this payment covers (used for renewal reminders).")  # MC_RENEWALS_V2
+    sale_category = models.CharField(max_length=12, default="CUSTOMER", choices=(("CUSTOMER", "Customer subscription"), ("ACTIVATION", "Activation"), ("OFFICE", "Office subscription"), ("DIRECTOR", "Given by Director")))  # MC_PRICING_V1
+    markup_amount = models.DecimalField(max_digits=12, decimal_places=2, default=0)  # MC_COMMISSION_V1: the service charge inside amount
     transaction_type = models.CharField(
         max_length=20,
         choices=(
@@ -319,9 +321,20 @@ class MultiChoiceWeeklyReport(models.Model):
     commission = models.DecimalField(max_digits=12, decimal_places=2, default=0)
     is_closed = models.BooleanField(default=False)
 
+    def service_charge(self):  # MC_COMMISSION_V1
+        """Total service charge (the automatic markup) on this week's sales. It is NOT commission."""
+        from datetime import timedelta
+        from django.db.models import Sum
+        total = MultiChoiceSale.objects.filter(
+            staff=self.staff, branch=self.branch,
+            date__gte=self.week_start_date, date__lt=self.week_start_date + timedelta(days=7),
+            is_voided=False,
+        ).aggregate(t=Sum("markup_amount"))["t"]
+        return total or 0
+
     def calculate_commission(self):
         if self.closing_balance is not None:
-            self.commission = (self.closing_balance + self.total_subscriptions) - (self.opening_balance + self.additional_funds)
+            self.commission = (self.closing_balance + self.total_subscriptions) - (self.opening_balance + self.additional_funds) - self.service_charge()  # MC_COMMISSION_V1
             return self.commission
         return 0
 
@@ -341,6 +354,39 @@ class MultiChoiceBalance(models.Model):
 
     def __str__(self):
         return f"{self.weekly_report.staff.username} - ₦{self.balance_amount} on {self.date}"
+
+
+class MultiChoiceBalanceCheck(models.Model):  # MC_COMMISSION_V2
+    """The real MultiChoice wallet balance entered at the start of a week, compared with what the system expected."""
+    STATUS = (
+        ("BASELINE", "First balance (starting point)"),
+        ("MATCHED", "Matched"),
+        ("COMMISSION", "Commission detected (waiting)"),
+        ("COMMISSION_OK", "Commission confirmed"),
+        ("REJECTED", "Commission rejected"),
+        ("SHORTAGE", "Shortage (to review)"),
+        ("SHORTAGE_REVIEWED", "Shortage reviewed"),
+        ("SKIPPED", "Skipped"),
+    )
+    staff = models.ForeignKey('User', on_delete=models.CASCADE, related_name='mc_balance_checks')
+    branch = models.ForeignKey('Branch', on_delete=models.CASCADE)
+    weekly_report = models.ForeignKey('MultiChoiceWeeklyReport', on_delete=models.CASCADE, related_name='balance_checks')
+    checked_at = models.DateTimeField(auto_now_add=True)
+    expected_balance = models.DecimalField(max_digits=12, decimal_places=2, default=0)
+    actual_balance = models.DecimalField(max_digits=12, decimal_places=2, null=True, blank=True)
+    difference = models.DecimalField(max_digits=12, decimal_places=2, default=0)
+    status = models.CharField(max_length=20, choices=STATUS, default="MATCHED")
+    screenshot = models.ImageField(upload_to='mc_balance_proofs/', null=True, blank=True)
+    note = models.TextField(blank=True, default='')
+    decided_by = models.ForeignKey('User', on_delete=models.SET_NULL, null=True, blank=True, related_name='mc_balance_decisions')
+    decided_at = models.DateTimeField(null=True, blank=True)
+    decision_note = models.TextField(blank=True, default='')
+
+    class Meta:
+        ordering = ['-checked_at']
+
+    def __str__(self):
+        return "%s %s %s" % (self.staff.username, self.get_status_display(), self.checked_at)
 
 
 class CommissionPayment(models.Model):

@@ -50,6 +50,10 @@
     <p class="kpi-label">Total Commission Paid</p>
     <p class="kpi-value">₦{{ total_commission|floatformat:0 }}</p>
   </div>
+  <div class="kpi amber">{# MC_COMMISSION_V1 #}
+    <p class="kpi-label">Service Charge (this month)</p>
+    <p class="kpi-value">₦{{ total_service_charge|floatformat:0 }}</p>
+  </div>
 </div>
 
 <!-- Filters -->

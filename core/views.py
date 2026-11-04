@@ -2621,6 +2621,9 @@ def multichoice_dashboard(request):
         "all_sales": all_sales_page,
         "total_today": today_sales.aggregate(total=Sum("amount"))["total"] or 0,
         "renewals_due_count": _mc_renewals_due_count(request.user),  # MC_RENEWALS_V2
+        "needs_balance_check": __import__("core.mc_commission", fromlist=["x"]).needs_check(request.user, weekly_report),  # MC_COMMISSION_V2
+        "month_commission": __import__("core.mc_commission", fromlist=["x"]).month_commission(request.user),  # MC_COMMISSION_V2
+        "mc_markup": __import__("core.mc_pricing", fromlist=["MARKUP"]).MARKUP,  # MC_PRICING_V1
         "weekly_report": weekly_report,
         "is_monday": today.weekday() == 0,
         "is_saturday": today.weekday() == 5,
@@ -3869,8 +3872,14 @@ def record_multichoice_sale(request):
                 additional_funds=Decimal("0"),
             )
 
+        from core import mc_commission as _mcc  # MC_COMMISSION_V2: real balance first, every week
+        if _mcc.needs_check(request.user, weekly_report):
+            messages.error(request, "Please enter your MultiChoice balance for this week before recording sales.")
+            return redirect("multichoice_dashboard")
         cost_price     = Decimal(request.POST.get("cost_price") or "0")
-        amount         = Decimal(request.POST.get("amount") or "0")
+        from core import mc_pricing as _mp  # MC_PRICING_V1: amount is worked out, never typed
+        sale_category  = _mp.clean_category(request.POST.get("sale_category"))
+        amount         = _mp.amount_for(cost_price, sale_category)
         customer_name  = request.POST.get("customer_name", "")
         customer_phone = request.POST.get("customer_phone", "")
         iuc_number     = request.POST.get("iuc_number", "")
@@ -3904,6 +3913,8 @@ def record_multichoice_sale(request):
                 package_type=package_type,
                 transaction_type=transaction_type,
                 months_paid=months_paid,
+                sale_category=sale_category,
+                markup_amount=_mp.markup_for(sale_category),
                 cost_price=cost_price,
                 amount=amount,
             )
@@ -3921,7 +3932,7 @@ def record_multichoice_sale(request):
             weekly_report.save(update_fields=["closing_balance", "total_subscriptions"])
 
             # Update Customer CRM
-            if customer_phone:
+            if customer_phone and sale_category not in _mp.NOT_CUSTOMERS:
                 _upsert_customer(
                     phone=customer_phone,
                     name=customer_name,
@@ -4712,6 +4723,10 @@ def director_multichoice_balance(request):
         "report_data": report_data,
         "total_balance": total_balance,
         "total_commission": total_commission,
+        "total_service_charge": MultiChoiceSale.objects.filter(
+            date__gte=month_start, date__lte=today, is_voided=False,
+            **({"branch_id": branch_flt} if branch_flt else {}),
+        ).aggregate(t=_Sum("markup_amount"))["t"] or 0,  # MC_COMMISSION_V1
         "total_subscriptions": total_subscriptions,
         "branches": Branch.objects.all(),
         "date_from": date_from,

@@ -91,7 +91,7 @@
 </div>
 {% elif weekly_report and weekly_report.is_closed %}
 <div class="week-status week-closed">
-  <strong>✅ This week is closed.</strong> Commission earned: <strong>₦{{ weekly_report.commission|floatformat:2 }}</strong>
+  <strong>✅ This week is closed.</strong> Commission earned: <strong>₦{{ weekly_report.commission|floatformat:2 }}</strong> &middot; Service charge: <strong>₦{{ weekly_report.service_charge|floatformat:2 }}</strong>{# MC_COMMISSION_V1 #}
 </div>
 {% endif %}
 
@@ -113,8 +113,8 @@
     <p class="kpi-sub">This week</p>
   </div>
   <div class="kpi purple">
-    <p class="kpi-label">Commission</p>
-    <p class="kpi-value">₦{% if weekly_report %}{{ weekly_report.commission|floatformat:0 }}{% else %}0{% endif %}</p>
+    <p class="kpi-label">Commission (confirmed, this month)</p>
+    <p class="kpi-value">₦{{ month_commission|floatformat:0 }}</p>{# MC_COMMISSION_V2 #}
   </div>
 </div>
 
@@ -159,7 +159,28 @@
 
 <!-- ══ TAB: RECORD ══ -->
 <div id="tab-record" class="tab-panel active">
-  {% if weekly_report and not weekly_report.is_closed %}
+  {% if needs_balance_check %}{# MC_COMMISSION_V2 #}
+  <div class="card">
+    <p class="card-title">💳 Enter your MultiChoice balance first</p>
+    <p style="font-size:.85rem;color:#6b7280;margin:0 0 1rem;">New week. Open the MultiChoice app, read your wallet balance, type it below and attach a screenshot. If you topped up, record it under Add Funds first. You can record sales straight after.</p>
+    <form method="POST" action="{% url 'mc_balance_check' %}" enctype="multipart/form-data">
+      {% csrf_token %}
+      <div class="form-row">
+        <div class="form-group"><label>Balance in the MultiChoice app (₦) *</label><input type="number" name="actual_balance" step="0.01" min="0" required placeholder="e.g. 52000"></div>
+        <div class="form-group"><label>Screenshot of the balance *</label><input type="file" name="screenshot" accept="image/*" required></div>
+      </div>
+      <div class="form-group"><label>Note (optional)</label><input type="text" name="note" placeholder="Anything the Director should know"></div>
+      <button type="submit" class="btn-sm btn-success" style="width:100%;">✔ Save balance</button>
+    </form>
+    <details style="margin-top:1rem;"><summary style="cursor:pointer;font-size:.8rem;color:#6b7280;">Can't check the app right now?</summary>
+      <form method="POST" action="{% url 'mc_balance_check' %}" style="margin-top:.6rem;">
+        {% csrf_token %}
+        <input type="text" name="skip_reason" required placeholder="Why can't you check? (the Director is told)" style="width:100%;margin-bottom:.5rem;">
+        <button type="submit" class="btn-sm btn-outline">Skip this week</button>
+      </form>
+    </details>
+  </div>
+  {% elif weekly_report and not weekly_report.is_closed %}
   <div class="card">
     <p class="card-title">📺 Record New Subscription</p>
     {% if current_balance is not None %}
@@ -219,15 +240,34 @@
             </optgroup>
           </select>
         </div>
-        <div class="form-group"><label>Amount Collected from Customer (₦) *</label><input type="number" name="amount" step="0.01" min="0" required placeholder="e.g. 4900"></div>
+        <div class="form-group"><label>Sale type *</label>{# MC_PRICING_V1 #}
+          <select name="sale_category" id="mc-cat" required>
+            <option value="CUSTOMER" selected>Customer (cost + ₦{{ mc_markup|floatformat:0 }})</option>
+            <option value="ACTIVATION">Activation (at cost)</option>
+            <option value="OFFICE">Office subscription (at cost)</option>
+            <option value="DIRECTOR">Given by Director (at cost)</option>
+          </select>
+        </div>
       </div>
       <div class="form-group">
         <label>Cost Price — Amount paid to MultiChoice (₦) *</label>
-        <input type="number" name="cost_price" step="0.01" min="0" required placeholder="e.g. 4500">
+        <input type="number" name="cost_price" id="mc-cost" step="0.01" min="0" required placeholder="e.g. 4500">
         <p style="font-size:.75rem;color:#6b7280;margin:.3rem 0 0;">This amount will be deducted from your current balance.</p>
+        <p id="mc-collect" style="font-size:.9rem;font-weight:700;color:#166534;margin:.5rem 0 0;"></p>{# MC_PRICING_V1 #}
       </div>
       <button type="submit" class="btn-sm btn-success" style="width:100%;margin-top:.5rem;">✔ Record Subscription</button>
     </form>
+    <script>{# MC_PRICING_V1 #}
+    (function(){
+      var cat=document.getElementById('mc-cat'), cost=document.getElementById('mc-cost'), out=document.getElementById('mc-collect'), markup={{ mc_markup|floatformat:0 }};
+      function show(){
+        var c=parseFloat(cost.value); if(isNaN(c)){out.textContent='';return;}
+        var amt=(cat.value==='CUSTOMER')?c+markup:c;
+        out.textContent=(cat.value==='CUSTOMER'?'Collect from customer: ':'Recorded at cost: ')+'₦'+amt.toLocaleString('en-NG',{minimumFractionDigits:2,maximumFractionDigits:2});
+      }
+      cat.addEventListener('change',show); cost.addEventListener('input',show); show();
+    })();
+    </script>
   </div>
   {% if is_saturday %}
   <div class="card">
@@ -266,7 +306,7 @@
             <td>{{ sale.customer_phone|default:"—" }}</td>
             <td><span class="badge {% if sale.service_type == 'DSTV' %}badge-blue{% else %}badge-green{% endif %}">{{ sale.service_type }}</span></td>
             <td>{{ sale.package_type }}</td>
-            <td>{{ sale.get_transaction_type_display }}</td>
+            <td>{{ sale.get_transaction_type_display }}{% if sale.sale_category != "CUSTOMER" %}<br><span style="font-size:.68rem;color:#92400e;">{{ sale.get_sale_category_display }}</span>{% endif %}</td>
             <td>₦{{ sale.amount|floatformat:2 }}</td>
                 <td>{{ sale.computed_expiry|date:"d M Y"|default:"—" }}</td>
                 <td>{% if sale.computed_days_left is not None %}{% if sale.computed_days_left < 0 %}<span style="color:#ef4444;font-weight:700">Expired</span>{% elif sale.computed_days_left <= 3 %}<span style="color:#f97316;font-weight:700">{{ sale.computed_days_left }}d left</span>{% elif sale.computed_days_left <= 7 %}<span style="color:#eab308;font-weight:700">{{ sale.computed_days_left }}d left</span>{% else %}<span style="color:#22c55e">{{ sale.computed_days_left }}d left</span>{% endif %}{% else %}—{% endif %}</td>
@@ -322,7 +362,7 @@
             <td>{{ sale.customer_phone|default:"—" }}</td>
             <td><span class="badge {% if sale.service_type == 'DSTV' %}badge-blue{% else %}badge-green{% endif %}">{{ sale.service_type }}</span></td>
             <td>{{ sale.package_type }}</td>
-            <td>{{ sale.get_transaction_type_display }}</td>
+            <td>{{ sale.get_transaction_type_display }}{% if sale.sale_category != "CUSTOMER" %}<br><span style="font-size:.68rem;color:#92400e;">{{ sale.get_sale_category_display }}</span>{% endif %}</td>
             <td>₦{{ sale.amount|floatformat:2 }}</td>
             <td style="color:#ef4444;">₦{{ sale.cost_price|floatformat:2 }}</td>
             <td>
@@ -359,7 +399,8 @@
         <tr style="background:#eff6ff;"><td><strong>Current Balance</strong></td><td><strong style="color:#1e40af;font-size:1.1rem;">₦{{ current_balance|floatformat:2 }}</strong></td></tr>
         {% if weekly_report.is_closed %}
         <tr><td>Closing Balance</td><td><strong>₦{{ weekly_report.closing_balance|floatformat:2 }}</strong></td></tr>
-        <tr style="background:#d1fae5;"><td><strong>Commission Earned</strong></td><td><strong style="color:#065f46;font-size:1.1rem;">₦{{ weekly_report.commission|floatformat:2 }}</strong></td></tr>
+        <tr style="background:#d1fae5;"><td><strong>Commission (confirmed, this month)</strong></td><td><strong style="color:#065f46;font-size:1.1rem;">₦{{ month_commission|floatformat:2 }}</strong></td></tr>
+        <tr><td>Service Charge (not commission)</td><td><strong>₦{{ weekly_report.service_charge|floatformat:2 }}</strong></td></tr>{# MC_COMMISSION_V1 #}
         {% endif %}
       </tbody>
     </table>
