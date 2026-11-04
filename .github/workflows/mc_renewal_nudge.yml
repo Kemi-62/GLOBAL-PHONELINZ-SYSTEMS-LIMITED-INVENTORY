@@ -3,7 +3,7 @@ name: GPSL MultiChoice Renewal Nudge
 
 on:
   schedule:
-    # Daily 06:00 UTC = 7:00 am Lagos (WAT)
+    # Daily 06:23 UTC = 7:23 am Lagos (WAT)
     - cron: '0 6 * * *'
   workflow_dispatch:
 

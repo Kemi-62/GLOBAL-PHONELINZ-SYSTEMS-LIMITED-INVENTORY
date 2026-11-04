@@ -3,7 +3,7 @@ name: GPSL Weekly Backup
 
 on:
   schedule:
-    - cron: '30 17 * * 6'
+    - cron: '48 17 * * 6'
   workflow_dispatch:
 
 jobs:

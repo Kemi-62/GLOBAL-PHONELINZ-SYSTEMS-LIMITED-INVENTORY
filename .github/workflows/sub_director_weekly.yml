@@ -4,7 +4,7 @@ name: GPSL Sub Director Weekly
 on:
   schedule:
     # Monday 06:00 UTC = 7:00 am Lagos (WAT)
-    - cron: '0 6 * * 1'
+    - cron: '26 6 * * 1'
   workflow_dispatch:
 
 jobs:
