@@ -54,11 +54,13 @@
 <label>Branch Name</label>
 <input type="text" id="branch-name" readonly style="background:#f0f0f0;">
 
+<!-- GEO_V2 -->
+<div style="margin-top:15px;padding:10px;background:#eff6ff;border-radius:6px;"><button type="button" id="use-here" onclick="useHere()" class="btn btn-primary">📍 Use my current location</button> <small id="use-here-msg" style="color:#1e40af;">Open this page on your phone while standing inside the branch, then tap.</small></div>
 <label style="margin-top:15px;">Latitude (e.g., 6.5244)</label>
-<input type="number" id="latitude" name="latitude" step="0.0001" required placeholder="6.5244">
+<input type="number" id="latitude" name="latitude" step="0.000001" required placeholder="6.5244">
 
 <label style="margin-top:15px;">Longitude (e.g., 3.3792)</label>
-<input type="number" id="longitude" name="longitude" step="0.0001" required placeholder="3.3792">
+<input type="number" id="longitude" name="longitude" step="0.000001" required placeholder="3.3792">
 
 <label style="margin-top:15px;">Allowed Radius (meters) <span style="color:#666;font-size:0.85rem;">Default: 300m</span></label>
 <input type="number" id="allowed-radius" name="allowed_radius" value="300" min="50" max="2000">
@@ -86,6 +88,28 @@ function showForm(branchId, branchName) {
     document.getElementById('branch-name').value = branchName;
     document.getElementById('form-container').style.display = 'block';
     document.getElementById('form-container').scrollIntoView({ behavior: 'smooth' });
+}
+
+function useHere() {
+    var msg = document.getElementById('use-here-msg');
+    if (!navigator.geolocation) { msg.textContent = 'Geolocation not supported.'; return; }
+    msg.textContent = 'Getting the best GPS fix (up to 20s)...';
+    var best = null, id = null, done = false;
+    function finish() {
+        if (done) return; done = true;
+        navigator.geolocation.clearWatch(id);
+        if (!best) { msg.textContent = 'No GPS fix. Turn on location and try again.'; return; }
+        document.getElementById('latitude').value = best.coords.latitude.toFixed(6);
+        document.getElementById('longitude').value = best.coords.longitude.toFixed(6);
+        var acc = Math.round(best.coords.accuracy);
+        msg.textContent = 'Filled. Accuracy ' + acc + 'm' + (acc > 50 ? ' - weak, go outside and tap again.' : ' - good. Now press Save Location.');
+    }
+    id = navigator.geolocation.watchPosition(function(p) {
+        if (!best || p.coords.accuracy < best.coords.accuracy) best = p;
+        msg.textContent = 'Accuracy so far: ' + Math.round(best.coords.accuracy) + 'm...';
+        if (best.coords.accuracy <= 15) finish();
+    }, function() { finish(); }, {enableHighAccuracy: true, timeout: 25000, maximumAge: 0});
+    setTimeout(finish, 20000);
 }
 
 function hideForm() {

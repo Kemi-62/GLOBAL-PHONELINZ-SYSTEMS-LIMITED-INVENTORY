@@ -117,73 +117,90 @@ function openAttModal(type) {
   _tryGetLocation(false, locStatus, submitBtn);
 }
 
-function _tryGetLocation(highAccuracy, locStatus, submitBtn) {
-  _geoAttempts++;
+// GEO_V2: fresh high-accuracy GPS, keeps the best reading
+var _geoWatch = null, _geoTimer = null, _geoBest = null;
 
+function _geoStop() {
+  if (_geoWatch !== null && navigator.geolocation) { navigator.geolocation.clearWatch(_geoWatch); }
+  _geoWatch = null;
+  if (_geoTimer) { clearTimeout(_geoTimer); _geoTimer = null; }
+}
+
+function _geoShow(locStatus, submitBtn, final) {
+  var b = _geoBest;
+  if (!b) { return; }
+  var acc = Math.round(b.coords.accuracy);
+  document.getElementById('att-lat').value = b.coords.latitude;
+  document.getElementById('att-lon').value = b.coords.longitude;
+  var good = acc <= 60;
+  var ok = acc <= 150;
+  if (good) {
+    locStatus.style.background = '#d1fae5'; locStatus.style.color = '#065f46';
+    locStatus.textContent = '✅ Location locked — accuracy ' + acc + 'm';
+  } else if (final && !ok) {
+    locStatus.style.background = '#fef3c7'; locStatus.style.color = '#92400e';
+    locStatus.innerHTML = '⚠️ Weak GPS (accuracy ' + acc + 'm). Step outside or near a window, turn ON Precise/High-accuracy location, then ' +
+      '<button type="button" onclick="_retryLocation()" style="padding:.22rem .65rem;background:#004F9F;color:#fff;border:none;border-radius:5px;font-size:.73rem;cursor:pointer;">🔄 Refresh location</button>';
+  } else {
+    locStatus.style.background = '#fef3c7'; locStatus.style.color = '#92400e';
+    locStatus.textContent = '📡 Improving GPS… accuracy ' + acc + 'm';
+  }
+  submitBtn.disabled = !ok && !final ? true : false;
+  if (final && !ok) { submitBtn.disabled = false; }
+}
+
+function _tryGetLocation(_ignored, locStatus, submitBtn) {
+  _geoStop();
+  _geoBest = null;
   if (!navigator.geolocation) {
     locStatus.innerHTML = '❌ Geolocation is not supported on this browser.';
-    locStatus.style.background = '#fee2e2';
-    locStatus.style.color = '#991b1b';
+    locStatus.style.background = '#fee2e2'; locStatus.style.color = '#991b1b';
     return;
   }
-
-  if (_geoAttempts > 1) {
-    locStatus.textContent = '📡 Retrying with GPS (attempt ' + _geoAttempts + '/3)…';
-  }
-
-  navigator.geolocation.getCurrentPosition(
+  submitBtn.disabled = true;
+  _geoWatch = navigator.geolocation.watchPosition(
     function(pos) {
-      // SUCCESS
-      document.getElementById('att-lat').value = pos.coords.latitude;
-      document.getElementById('att-lon').value = pos.coords.longitude;
-      var acc = Math.round(pos.coords.accuracy);
-      locStatus.textContent = '✅ Location found — Accuracy: ' + acc + 'm (' + pos.coords.latitude.toFixed(4) + ', ' + pos.coords.longitude.toFixed(4) + ')';
-      locStatus.style.background = '#d1fae5';
-      locStatus.style.color = '#065f46';
-      submitBtn.disabled = false;
+      if (!_geoBest || pos.coords.accuracy < _geoBest.coords.accuracy) { _geoBest = pos; }
+      var good = _geoBest.coords.accuracy <= 30;
+      _geoShow(locStatus, submitBtn, false);
+      if (good) { _geoStop(); }
     },
     function(err) {
-      // FAILURE
-      if (err.code === 3 && _geoAttempts < 3) {
-        // Timeout — retry with high accuracy
-        _tryGetLocation(true, locStatus, submitBtn);
-        return;
-      }
-
+      _geoStop();
+      if (_geoBest) { _geoShow(locStatus, submitBtn, true); return; }
       var msg = '❌ ';
       if (err.code === 1) {
         msg += 'Permission denied. Open browser settings → Site Settings → Location → Allow for this site.';
       } else if (err.code === 2) {
-        msg += 'GPS signal not available. Move to an open area and check Location is enabled in phone settings.';
-      } else if (err.code === 3) {
-        msg += 'Location timed out after ' + _geoAttempts + ' attempts. Ensure GPS is ON and try again.';
+        msg += 'GPS signal not available. Move to an open area and make sure Location is ON in phone settings.';
       } else {
-        msg += 'Unknown error (' + err.code + '). Enable GPS and try again.';
+        msg += 'Location timed out. Make sure GPS is ON and try again.';
       }
-
-      locStatus.style.background = '#fee2e2';
-      locStatus.style.color = '#991b1b';
-      locStatus.innerHTML = msg + ' <button onclick="_retryLocation()" style="margin-top:.4rem;display:inline-block;padding:.22rem .65rem;background:#004F9F;color:#fff;border:none;border-radius:5px;font-size:.73rem;cursor:pointer;">🔄 Try Again</button>';
+      locStatus.style.background = '#fee2e2'; locStatus.style.color = '#991b1b';
+      locStatus.innerHTML = msg + ' <button type="button" onclick="_retryLocation()" style="margin-top:.4rem;display:inline-block;padding:.22rem .65rem;background:#004F9F;color:#fff;border:none;border-radius:5px;font-size:.73rem;cursor:pointer;">🔄 Try Again</button>';
     },
-    {
-      enableHighAccuracy: highAccuracy,
-      timeout: highAccuracy ? 25000 : 8000,
-      maximumAge: 60000
-    }
+    { enableHighAccuracy: true, timeout: 25000, maximumAge: 0 }
   );
+  _geoTimer = setTimeout(function() {
+    _geoStop();
+    if (_geoBest) { _geoShow(locStatus, submitBtn, true); }
+    else {
+      locStatus.style.background = '#fee2e2'; locStatus.style.color = '#991b1b';
+      locStatus.innerHTML = '❌ No GPS fix yet. Turn ON location, step outside, then <button type="button" onclick="_retryLocation()" style="padding:.22rem .65rem;background:#004F9F;color:#fff;border:none;border-radius:5px;font-size:.73rem;cursor:pointer;">🔄 Try Again</button>';
+    }
+  }, 20000);
 }
 
 function _retryLocation() {
   var locStatus = document.getElementById('att-location-status');
   var submitBtn = document.getElementById('att-submit-btn');
-  _geoAttempts = 0;
-  locStatus.style.background = '#eff6ff';
-  locStatus.style.color = '#1e40af';
-  locStatus.textContent = '📡 Retrying…';
+  locStatus.style.background = '#eff6ff'; locStatus.style.color = '#1e40af';
+  locStatus.textContent = '📡 Refreshing location…';
   _tryGetLocation(true, locStatus, submitBtn);
 }
 
 function closeAttModal() {
+  _geoStop();
   document.getElementById('att-modal').style.display = 'none';
   _geoAttempts = 0;
 }
