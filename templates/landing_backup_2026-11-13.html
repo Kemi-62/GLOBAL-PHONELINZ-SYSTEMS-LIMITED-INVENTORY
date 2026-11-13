@@ -1,0 +1,689 @@
+{% load static %}
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta name="description" content="Global Phonelinz Systems Limited — Your trusted technology partner in Uyo, Akwa Ibom. SIM Registration, Phones, Accessories, DStv, MiFi, Routers and more.">
+  <title>Global Phonelinz Systems Limited</title>
+  <link rel="icon" type="image/png" href="{% static 'img/favicon.ico' %}">
+  <style>
+    *,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+    :root{
+      --blue:#004F9F;--blue-dk:#003d7a;--blue-lt:#e8f1fb;
+      --yellow:#FFCB05;--yellow-dk:#d4a800;
+      --text:#111827;--muted:#6b7280;--border:#e5e7eb;
+      --bg:#f8fafc;--white:#fff;
+      --radius:10px;--radius-lg:16px;
+    }
+    html{scroll-behavior:smooth}
+    body{font-family:'Segoe UI',system-ui,Arial,sans-serif;color:var(--text);background:var(--white);font-size:15px;line-height:1.6}
+
+    /* ── NAV ── */
+    nav{position:fixed;top:0;left:0;right:0;height:56px;background:var(--blue);display:flex;align-items:center;justify-content:space-between;padding:0 1.25rem;z-index:999;box-shadow:0 1px 12px rgba(0,0,0,.18)}
+    .nav-brand{display:flex;align-items:center;gap:.6rem;text-decoration:none}
+    .nav-logo-wrap{width:34px;height:34px;background:#fff;border-radius:50%;display:flex;align-items:center;justify-content:center;overflow:hidden;padding:4px;pointer-events:none;user-select:none}
+    .nav-logo-wrap img{width:100%;height:100%;object-fit:contain;pointer-events:none;user-select:none;-webkit-user-drag:none;draggable:false}
+    .nav-name{color:var(--yellow);font-weight:700;font-size:.92rem;letter-spacing:.2px}
+    .nav-links{display:flex;gap:1.2rem;list-style:none;align-items:center}
+    .nav-links a{color:rgba(255,255,255,.82);text-decoration:none;font-size:.83rem;font-weight:500;transition:color .15s}
+    .nav-links a:hover{color:var(--yellow)}
+    .nav-cta{background:var(--yellow)!important;color:var(--blue)!important;padding:.38rem 1rem!important;border-radius:6px!important;font-weight:700!important;font-size:.82rem!important}
+    .hamburger{display:none;background:none;border:none;cursor:pointer;flex-direction:column;gap:4px;padding:.25rem}
+    .hamburger span{width:22px;height:2px;background:#fff;border-radius:2px;display:block}
+    .mob-menu{display:none;position:fixed;top:56px;left:0;right:0;background:var(--blue);padding:1rem 1.25rem 1.5rem;flex-direction:column;gap:.85rem;z-index:998;border-top:1px solid rgba(255,255,255,.12)}
+    .mob-menu.open{display:flex}
+    .mob-menu a{color:rgba(255,255,255,.85);text-decoration:none;font-size:.95rem;font-weight:500;padding:.4rem 0;border-bottom:1px solid rgba(255,255,255,.08)}
+
+    /* ── HERO ── */
+    .hero{
+    min-height:50vh;
+    background:var(--blue);
+    display:flex;
+    flex-direction:column;
+    align-items:center;
+    justify-content:center;
+    text-align:center;
+    padding:4rem 1.25rem 2.5rem;
+    position:relative;
+    overflow:hidden;
+    }
+    .hero::before{content:'';position:absolute;inset:0;background:radial-gradient(ellipse at 15% 90%,rgba(255,203,5,.18) 0%,transparent 55%),radial-gradient(ellipse at 85% 10%,rgba(255,203,5,.12) 0%,transparent 55%);pointer-events:none}
+    .hero-logo{width:90px;height:90px;background:#fff;border-radius:50%;display:flex;align-items:center;justify-content:center;margin:0 auto 1.25rem;overflow:hidden;padding:8px;position:relative;z-index:1;pointer-events:none;user-select:none}
+    .hero-logo img{width:100%;height:100%;object-fit:contain;pointer-events:none;user-select:none;-webkit-user-drag:none}
+    .hero h1{font-size:clamp(1.6rem,4.5vw,2.8rem);font-weight:800;color:var(--yellow);line-height:1.15;margin-bottom:.6rem;position:relative;z-index:1}
+    .hero h1 span{color:#fff}
+    .hero p{font-size:clamp(.88rem,2vw,1.05rem);color:rgba(255,255,255,.8);max-width:520px;margin:0 auto 1.75rem;position:relative;z-index:1}
+    .hero-btns{display:flex;gap:.75rem;flex-wrap:wrap;justify-content:center;position:relative;z-index:1}
+    .btn-yellow{background:var(--yellow);color:var(--blue);padding:.7rem 1.6rem;border-radius:var(--radius);font-weight:700;font-size:.9rem;text-decoration:none;transition:.18s;display:inline-block}
+    .btn-yellow:hover{background:var(--yellow-dk);transform:translateY(-1px)}
+    .btn-ghost{background:transparent;color:#fff;border:1.5px solid rgba(255,255,255,.5);padding:.7rem 1.6rem;border-radius:var(--radius);font-weight:600;font-size:.9rem;text-decoration:none;transition:.18s;display:inline-block}
+    .btn-ghost:hover{border-color:#fff;background:rgba(255,255,255,.08)}
+    .hero-pills{display:flex;gap:.5rem;flex-wrap:wrap;justify-content:center;margin-top:1.5rem;position:relative;z-index:1}
+    .pill{background:rgba(255,255,255,.1);border:1px solid rgba(255,255,255,.2);color:rgba(255,255,255,.88);padding:.28rem .75rem;border-radius:999px;font-size:.73rem;font-weight:600}
+
+    /* ── SECTIONS ── */
+    section{padding:4rem 1.25rem}
+    .container{max-width:1040px;margin:0 auto}
+    .sec-label{font-size:.7rem;font-weight:700;color:var(--blue);text-transform:uppercase;letter-spacing:.1em;margin-bottom:.4rem}
+    .sec-title{font-size:clamp(1.4rem,3.5vw,2.1rem);font-weight:800;color:var(--text);line-height:1.2;margin-bottom:.75rem}
+    .sec-title span{color:var(--blue)}
+    .sec-sub{font-size:.9rem;color:var(--muted);max-width:500px;margin-bottom:2.5rem}
+
+    /* ── ABOUT ── */
+    .about{background:var(--bg)}
+.about-grid{
+    display:grid;
+    grid-template-columns:380px 1fr;
+    gap:60px;
+    align-items:center;
+}    .about-img{
+    background:#fff;
+    border-radius:22px;
+    height:320px;
+    display:flex;
+    align-items:center;
+    justify-content:center;
+    overflow:hidden;
+    box-shadow:0 18px 40px rgba(0,0,0,.08);
+    border:1px solid rgba(0,0,0,.05);
+}
+    .about-img img{
+    width:72%;
+    object-fit:contain;
+            }
+    .about-text p{font-size:.9rem;color:var(--muted);line-height:1.8;margin-bottom:.75rem}
+    .stats{display:grid;grid-template-columns:1fr 1fr;gap:.75rem;margin-top:1.25rem}
+    .stat{background:#fff;border:1px solid var(--border);border-radius:var(--radius);padding:.85rem;text-align:center}
+    .stat-n{font-size:1.6rem;font-weight:800;color:var(--blue)}
+    .stat-l{font-size:.72rem;color:var(--muted);margin-top:.1rem}
+
+    /* ── SERVICES ── */
+    .svc-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(190px,1fr));gap:1rem}
+    .svc-card{background:#fff;border:1.5px solid var(--border);border-radius:var(--radius);padding:1.1rem 1rem;transition:.2s;cursor:default}
+    .svc-card:hover{border-color:var(--blue);transform:translateY(-2px);box-shadow:0 6px 20px rgba(0,79,159,.1)}
+    .svc-card.hot{border-color:#dbeafe;background:var(--blue-lt)}
+    .svc-icon{font-size:1.6rem;margin-bottom:.6rem;display:block}
+    .svc-name{font-size:.88rem;font-weight:700;color:var(--text);margin-bottom:.25rem}
+    .svc-desc{font-size:.75rem;color:var(--muted);line-height:1.5}
+
+    /* ── WHY ── */
+    .why{background:var(--blue)}
+    .why .sec-title{color:var(--yellow)}
+    .why .sec-sub{color:rgba(255,255,255,.7)}
+    .why-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(220px,1fr));gap:1rem}
+    .why-card{background:rgba(255,255,255,.07);border:1px solid rgba(255,255,255,.12);border-radius:var(--radius);padding:1.2rem}
+    .why-icon{font-size:1.4rem;margin-bottom:.6rem;display:block}
+    .why-t{font-size:.88rem;font-weight:700;color:var(--yellow);margin-bottom:.3rem}
+    .why-d{font-size:.78rem;color:rgba(255,255,255,.7);line-height:1.5}
+
+    /* ── BRANCHES ── */
+    .br-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(260px,1fr));gap:1rem}
+    .br-card{background:#fff;border:1.5px solid var(--border);border-radius:var(--radius);padding:1.1rem 1.2rem;transition:.18s}
+    .br-card:hover{border-color:var(--blue)}
+    .br-name{font-size:.9rem;font-weight:700;color:var(--blue);margin-bottom:.5rem}
+    .br-row{font-size:.78rem;color:var(--muted);margin-bottom:.2rem}
+    .br-row span{color:var(--text);font-weight:500}
+
+    /* ── CONTACT ── */
+    .contact{background:var(--bg)}
+    .contact-grid{display:grid;grid-template-columns:1fr 1fr;gap:2.5rem}
+    .cinfo{display:flex;flex-direction:column;gap:1.1rem}
+    .ci{display:flex;gap:.85rem;align-items:flex-start}
+    .ci-icon{width:38px;height:38px;min-width:38px;background:var(--blue-lt);border-radius:8px;display:flex;align-items:center;justify-content:center;font-size:1rem}
+    .ci-label{font-size:.7rem;color:var(--muted);margin-bottom:.15rem}
+    .ci-val{font-size:.88rem;font-weight:600}
+    .ci-val a{color:var(--blue);text-decoration:none}
+    .ci-val a:hover{text-decoration:underline}
+    .cform{display:flex;flex-direction:column;gap:.7rem}
+    .cform input,.cform textarea,.cform select{width:100%;padding:.6rem .85rem;border:1.5px solid var(--border);border-radius:8px;font-size:.88rem;color:var(--text);font-family:inherit;background:#fff;transition:border-color .15s}
+    .cform input:focus,.cform textarea:focus,.cform select:focus{outline:none;border-color:var(--blue);box-shadow:0 0 0 3px rgba(0,79,159,.08)}
+    .cform textarea{min-height:110px;resize:vertical}
+    .btn-blue{background:var(--blue);color:#fff;padding:.72rem 1.5rem;border-radius:8px;font-weight:700;font-size:.88rem;border:none;cursor:pointer;transition:.18s;width:100%}
+    .btn-blue:hover{background:var(--blue-dk)}
+
+    /* ── MAP ── */
+    .map-wrap iframe{width:100%;height:320px;border:none;display:block}
+
+    /* ── FOOTER ── */
+    footer{background:#0b0e17;color:rgba(255,255,255,.6);padding:2.5rem 1.25rem 1.25rem}
+    .footer-inner{max-width:1040px;margin:0 auto}
+    .footer-top{display:grid;grid-template-columns:2fr 1fr 1fr 1fr;gap:2rem;margin-bottom:2rem}
+    .f-brand{display:flex;flex-direction:column;gap:.6rem}
+    .f-logo-wrap{width:44px;height:44px;background:#fff;border-radius:50%;display:flex;align-items:center;justify-content:center;overflow:hidden;padding:4px;pointer-events:none;user-select:none}
+    .f-logo-wrap img{width:100%;height:100%;object-fit:contain;pointer-events:none;user-select:none;-webkit-user-drag:none}
+    .f-name{font-size:.88rem;font-weight:700;color:var(--yellow)}
+    .f-desc{font-size:.75rem;line-height:1.7}
+    .f-col h5{color:#fff;font-size:.78rem;font-weight:700;margin-bottom:.6rem}
+    .f-col ul{list-style:none;display:flex;flex-direction:column;gap:.35rem}
+    .f-col ul li a{color:rgba(255,255,255,.55);font-size:.75rem;text-decoration:none}
+    .f-col ul li a:hover{color:var(--yellow)}
+    .footer-bottom{border-top:1px solid rgba(255,255,255,.08);padding-top:1.25rem;display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:.5rem}
+    .footer-bottom p{font-size:.72rem}
+    .socials{display:flex;gap:.5rem}
+    .soc{width:30px;height:30px;background:rgba(255,255,255,.07);border-radius:7px;display:flex;align-items:center;justify-content:center;text-decoration:none;font-size:.85rem;transition:.18s}
+    .soc:hover{background:var(--yellow)}
+
+    /* ── RESPONSIVE ── */
+
+    /* ── SLIDESHOW ── */
+    .slideshow{
+    position:relative;
+    width:100%;
+    min-height:50vh;
+    display:flex;
+    align-items:center;
+    justify-content:center;
+    }
+    .slide{
+    display:none;
+    flex-direction:column;
+    align-items:center;
+    justify-content:center;
+    width:100%;
+    min-height:50vh;
+    text-align:center;
+    padding:4rem 1.5rem 2.5rem;
+    position:relative;
+    }
+    .slide.active{display:flex;}
+    .slide-bg{position:absolute;inset:0;background-size:cover;background-position:center;opacity:.25;pointer-events:none;}
+    .slide-content{position:relative;z-index:1;max-width:640px;margin:0 auto;}
+    .slide-badge{background:var(--yellow);color:var(--blue);font-size:.72rem;font-weight:800;padding:.3rem .85rem;border-radius:999px;letter-spacing:.05em;display:inline-block;margin-bottom:.85rem;text-transform:uppercase;}
+    .slide-title{font-size:clamp(1.6rem,4.5vw,2.8rem);font-weight:800;color:var(--yellow);line-height:1.15;margin-bottom:.6rem;}
+    .slide-sub{font-size:clamp(.88rem,2vw,1.05rem);color:rgba(255,255,255,.8);margin-bottom:1rem;}
+    .slide-prices{display:flex;align-items:center;justify-content:center;gap:.75rem;margin-bottom:1.25rem;flex-wrap:wrap;}
+    .slide-price{font-size:1.8rem;font-weight:800;color:#fff;}
+    .slide-old{font-size:1rem;color:rgba(255,255,255,.5);text-decoration:line-through;}
+    .slide-discount{background:#ef4444;color:#fff;font-size:.75rem;font-weight:700;padding:.25rem .65rem;border-radius:999px;}
+    .slide-btns{display:flex;gap:.75rem;justify-content:center;flex-wrap:wrap;}
+    .slide-prev,.slide-next{position:absolute;top:50%;transform:translateY(-50%);background:rgba(255,255,255,.15);border:none;color:#fff;font-size:2rem;width:44px;height:44px;border-radius:50%;cursor:pointer;z-index:10;display:flex;align-items:center;justify-content:center;transition:.2s;line-height:1;}
+    .slide-prev{left:1rem;}.slide-next{right:1rem;}
+    .slide-prev:hover,.slide-next:hover{background:rgba(255,255,255,.3);}
+    .slide-dots{position:absolute;bottom:1.5rem;left:50%;transform:translateX(-50%);display:flex;gap:.5rem;z-index:10;}
+    .slide-dots .dot{width:8px;height:8px;border-radius:50%;background:rgba(255,255,255,.4);border:none;cursor:pointer;padding:0;transition:.2s;}
+    .slide-dots .dot.active{background:var(--yellow);width:20px;border-radius:4px;}
+
+    /* ── FEATURED PRODUCTS ── */
+    .feat-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(200px,1fr));gap:1rem;}
+    .prod-card{background:#fff;border:1.5px solid var(--border);border-radius:var(--radius);overflow:hidden;transition:.2s;position:relative;}
+    .prod-card:hover{box-shadow:0 8px 24px rgba(0,79,159,.12);transform:translateY(-2px);}
+    .prod-img{width:100%;aspect-ratio:1;object-fit:cover;display:block;background:#f3f4f6;pointer-events:none;user-select:none;-webkit-user-drag:none;}
+    .prod-img-wrap{position:relative;overflow:hidden;}
+    .prod-img-wrap::after{content:'';position:absolute;inset:0;background:transparent;z-index:1;}
+    .prod-badge-wrap{position:absolute;top:.5rem;left:.5rem;z-index:2;display:flex;flex-direction:column;gap:.25rem;}
+    .prod-badge{font-size:.65rem;font-weight:700;padding:.2rem .55rem;border-radius:999px;display:inline-block;}
+    .badge-hot{background:#ef4444;color:#fff;}
+    .badge-new{background:#004F9F;color:#fff;}
+    .badge-disc{background:#10b981;color:#fff;}
+    .prod-body{padding:.85rem;}
+    .prod-name{font-size:.88rem;font-weight:700;color:var(--text);margin-bottom:.3rem;line-height:1.3;}
+    .prod-cond{font-size:.7rem;color:var(--muted);margin-bottom:.5rem;}
+    .prod-prices{display:flex;align-items:baseline;gap:.5rem;margin-bottom:.6rem;flex-wrap:wrap;}
+    .prod-price{font-size:1rem;font-weight:800;color:var(--blue);}
+    .prod-old{font-size:.78rem;color:var(--muted);text-decoration:line-through;}
+    .btn-wa{display:flex;align-items:center;justify-content:center;gap:.35rem;background:#25D366;color:#fff;padding:.55rem;border-radius:7px;font-size:.8rem;font-weight:700;text-decoration:none;transition:.18s;}
+    .btn-wa:hover{background:#1ebe5d;}
+    .btn-wa-icon{font-size:1rem;}
+
+    /* ── CATALOG SECTION ── */
+    .cat-filters{display:flex;gap:.5rem;flex-wrap:wrap;margin-bottom:1.5rem;}
+    .cat-filter{background:#fff;border:1.5px solid var(--border);color:var(--text);padding:.38rem .9rem;border-radius:999px;font-size:.8rem;font-weight:600;cursor:pointer;transition:.18s;}
+    .cat-filter:hover,.cat-filter.active{background:var(--blue);color:#fff;border-color:var(--blue);}
+    .catalog-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(200px,1fr));gap:1rem;}
+    .no-results{text-align:center;color:var(--muted);padding:3rem 0;grid-column:1/-1;}
+
+    @media(max-width:768px){
+      .nav-links{display:none}
+      .hamburger{display:flex}
+      .about-grid,.contact-grid{grid-template-columns:1fr}
+      .footer-top{grid-template-columns:1fr 1fr}
+      .about-img{height:200px}
+    }
+    @media(max-width:480px){
+      section{padding:3rem 1rem}
+      .footer-top{grid-template-columns:1fr}
+      .hero-btns{flex-direction:column;align-items:center}
+    }
+
+    /* ── LOGO PROTECTION ── */
+    img{
+      -webkit-user-drag:none;
+      user-select:none;
+      pointer-events:none;
+    }
+    .logo-shield{
+      position:relative;
+    }
+    .logo-shield::after{
+      content:'';
+      position:absolute;
+      inset:0;
+      background:transparent;
+      z-index:10;
+    }
+  </style>
+</head>
+<body oncontextmenu="return false">
+
+<!-- ── NAV ── -->
+<nav>
+  <a href="#" class="nav-brand">
+    <div class="nav-logo-wrap logo-shield">
+      <img src="{% static 'img/gpsl_logo.png' %}" alt="GPSL" draggable="false">
+    </div>
+    <span class="nav-name">Global Phonelinz Systems Limited</span>
+  </a>
+  <ul class="nav-links">
+    <li><a href="#about">About</a></li>
+    <li><a href="#services">Services</a></li>
+    <li><a href="#catalog">Catalog</a></li>
+    <li><a href="#branches">Branches</a></li>
+    <li><a href="#contact">Contact</a></li>
+    <li><a href="{% url 'login' %}" class="nav-cta">Staff Login</a></li>
+  </ul>
+  <button class="hamburger" onclick="toggleMob()" aria-label="Menu">
+    <span></span><span></span><span></span>
+  </button>
+</nav>
+
+<div class="mob-menu" id="mob">
+  <a href="#about" onclick="toggleMob()">About</a>
+  <a href="#services" onclick="toggleMob()">Services</a>
+  <a href="#branches" onclick="toggleMob()">Branches</a>
+  <a href="#contact" onclick="toggleMob()">Contact</a>
+  <a href="{% url 'login' %}" style="color:var(--yellow);font-weight:700;">Staff Login →</a>
+</div>
+
+<!-- ── HERO ── -->
+<section class="hero" id="home">
+  <!-- SLIDESHOW -->
+  <div class="slideshow" id="slideshow">
+    {% for slide in slides %}
+    <div class="slide {% if forloop.first %}active{% endif %}" data-index="{{ forloop.counter0 }}">
+      {% if slide.get_image_url %}
+      <div class="slide-bg" style="background-image:url('{{ slide.get_image_url }}')"></div>
+      {% endif %}
+      <div class="slide-content">
+        {% if slide.badge_text %}<span class="slide-badge">{{ slide.badge_text }}</span>{% endif %}
+        <h1 class="slide-title">{{ slide.title }}</h1>
+        {% if slide.subtitle %}<p class="slide-sub">{{ slide.subtitle }}</p>{% endif %}
+        <div class="slide-prices">
+          {% if slide.price %}
+            <span class="slide-price">₦{{ slide.price|floatformat:0 }}</span>
+            {% if slide.old_price %}<span class="slide-old">₦{{ slide.old_price|floatformat:0 }}</span>{% endif %}
+            {% if slide.discount_percent %}<span class="slide-discount">-{{ slide.discount_percent }}% OFF</span>{% endif %}
+          {% endif %}
+        </div>
+        <div class="slide-btns">
+          {% if slide.price %}
+          <a href="https://wa.me/{{ whatsapp_number }}?text={{ slide.whatsapp_text|urlencode }}" target="_blank" class="btn-yellow">{{ slide.cta_text }}</a>
+          {% endif %}
+          <a href="#catalog" class="btn-ghost">Browse All</a>
+        </div>
+      </div>
+    </div>
+    {% empty %}
+    <div class="slide active">
+      <div class="slide-content">
+        <div class="hero-logo logo-shield" style="margin:0 auto 1rem;">
+          <img src="{% static 'img/gpsl_logo.png' %}" alt="GPSL Logo" draggable="false">
+        </div>
+        <h1 class="slide-title">Your Trusted <span style="color:#fff">Technology</span> Partner</h1>
+        <p class="slide-sub">Phones, SIM registration, internet solutions and DStv subscriptions across 5 locations.</p>
+        <div class="slide-btns">
+          <a href="#catalog" class="btn-yellow">Browse Products</a>
+          <a href="#contact" class="btn-ghost">Contact Us</a>
+        </div>
+      </div>
+    </div>
+    {% endfor %}
+  </div>
+  <!-- Slide controls -->
+  <button class="slide-prev" onclick="moveSlide(-1)" aria-label="Previous">&#8249;</button>
+  <button class="slide-next" onclick="moveSlide(1)" aria-label="Next">&#8250;</button>
+  <div class="slide-dots" id="slide-dots">
+    {% for slide in slides %}<button class="dot {% if forloop.first %}active{% endif %}" onclick="goToSlide({{ forloop.counter0 }})"></button>{% endfor %}
+  </div>
+  <div class="hero-pills" style="position:relative;z-index:2;margin-top:1rem;">
+    <span class="pill">📍 5 Locations</span>
+    <span class="pill">📱 MTN Authorized</span>
+    <span class="pill">📺 DStv Dealer</span>
+    <span class="pill">✅ NIN Verified</span>
+  </div>
+</section>
+
+<!-- ── FEATURED PRODUCTS ── -->
+<section id="featured" style="background:var(--bg);">
+  <div class="container">
+    <p class="sec-label">Top Picks</p>
+    <h2 class="sec-title">Featured <span>Products</span></h2>
+    <p class="sec-sub">Our most popular products right now.</p>
+    {% if featured %}
+    <div class="feat-grid">
+      {% for p in featured %}
+      <div class="prod-card">
+        <div class="prod-img-wrap">
+          <img src="{{ p.get_image_url }}" alt="{{ p.name }}" class="prod-img" draggable="false" loading="lazy">
+          <div class="prod-badge-wrap">
+            {% if p.badge %}<span class="prod-badge badge-hot">{{ p.badge }}</span>{% endif %}
+            {% if p.discount_percent %}<span class="prod-badge badge-disc">-{{ p.discount_percent }}%</span>{% endif %}
+          </div>
+        </div>
+        <div class="prod-body">
+          <div class="prod-name">{{ p.name }}</div>
+          <div class="prod-cond">{{ p.get_condition_display }}{% if p.category %} · {{ p.category.icon }} {{ p.category.name }}{% endif %}</div>
+          <div class="prod-prices">
+            <span class="prod-price">₦{{ p.price|floatformat:0 }}</span>
+            {% if p.old_price %}<span class="prod-old">₦{{ p.old_price|floatformat:0 }}</span>{% endif %}
+          </div>
+          <a href="https://wa.me/{{ whatsapp_number }}?text={{ p.whatsapp_text|urlencode }}" target="_blank" class="btn-wa">
+            <span class="btn-wa-icon">💬</span> Order on WhatsApp
+          </a>
+        </div>
+      </div>
+      {% endfor %}
+    </div>
+    {% else %}
+    <p style="color:var(--muted);text-align:center;">Products coming soon. Check back shortly.</p>
+    {% endif %}
+  </div>
+</section>
+
+<!-- ── FULL CATALOG ── -->
+<section id="catalog">
+  <div class="container">
+    <p class="sec-label">All Products</p>
+    <h2 class="sec-title">Our <span>Catalog</span></h2>
+    <p class="sec-sub">Browse everything we carry. Click WhatsApp to order instantly.</p>
+
+    <!-- Category filters -->
+    <div class="cat-filters">
+      <button class="cat-filter active" onclick="filterCat('all',this)">🛒 All</button>
+      {% for cat in cats %}
+      <button class="cat-filter" onclick="filterCat('{{ cat.id }}',this)">{{ cat.icon }} {{ cat.name }}</button>
+      {% endfor %}
+    </div>
+
+    <!-- Search -->
+    <div style="margin-bottom:1.5rem;">
+      <input type="text" id="catalog-search" onkeyup="searchCatalog()" placeholder="Search products…" style="width:100%;max-width:360px;padding:.6rem 1rem;border:1.5px solid var(--border);border-radius:8px;font-size:.9rem;">
+    </div>
+
+    <div class="catalog-grid" id="catalog-grid">
+      {% for p in all_products %}
+      <div class="prod-card" data-cat="{{ p.category_id|default:'none' }}" data-name="{{ p.name|lower }}">
+        <div class="prod-img-wrap">
+          <img src="{{ p.get_image_url }}" alt="{{ p.name }}" class="prod-img" draggable="false" loading="lazy">
+          <div class="prod-badge-wrap">
+            {% if p.badge %}<span class="prod-badge badge-hot">{{ p.badge }}</span>{% endif %}
+            {% if p.discount_percent %}<span class="prod-badge badge-disc">-{{ p.discount_percent }}%</span>{% endif %}
+            {% if not p.is_available %}<span class="prod-badge" style="background:#6b7280;color:#fff;">Sold Out</span>{% endif %}
+          </div>
+        </div>
+        <div class="prod-body">
+          <div class="prod-name">{{ p.name }}</div>
+          <div class="prod-cond">{{ p.get_condition_display }}{% if p.category %} · {{ p.category.icon }} {{ p.category.name }}{% endif %}</div>
+          <div class="prod-prices">
+            <span class="prod-price">₦{{ p.price|floatformat:0 }}</span>
+            {% if p.old_price %}<span class="prod-old">₦{{ p.old_price|floatformat:0 }}</span>{% endif %}
+          </div>
+          {% if p.is_available %}
+          <a href="https://wa.me/{{ whatsapp_number }}?text={{ p.whatsapp_text|urlencode }}" target="_blank" class="btn-wa">
+            <span class="btn-wa-icon">💬</span> Order on WhatsApp
+          </a>
+          {% else %}
+          <div style="background:#f3f4f6;color:#9ca3af;padding:.55rem;border-radius:7px;font-size:.8rem;font-weight:600;text-align:center;">Sold Out</div>
+          {% endif %}
+        </div>
+      </div>
+      {% empty %}
+      <div class="no-results">Products coming soon. Check back shortly.</div>
+      {% endfor %}
+    </div>
+  </div>
+</section>
+  
+<!-- ── ABOUT ── -->
+<section class="about" id="about">
+  <div class="container">
+    <div class="about-grid">
+      <div class="about-img logo-shield">
+        <img src="{% static 'img/gpsl_logo.png' %}" alt="GPSL" draggable="false">
+      </div>
+      <div class="about-text">
+        <p class="sec-label">Who We Are</p>
+        <h2 class="sec-title">More than just a <span>phone shop</span></h2>
+        <p>Global Phonelinz Systems Limited (GPSL) is a multi-branch technology and telecommunications business headquartered in Uyo, Akwa Ibom State. We serve individuals, families and businesses with genuine products and expert service.</p>
+        <p>Our trained team operates across five branches, ensuring you always have access to competitive prices and reliable service right in your community.</p>
+        <div class="stats">
+          <div class="stat"><div class="stat-n">5+</div><div class="stat-l">Branch Locations</div></div>
+          <div class="stat"><div class="stat-n">10k+</div><div class="stat-l">Customers Served</div></div>
+          <div class="stat"><div class="stat-n">15+</div><div class="stat-l">Services Offered</div></div>
+          <div class="stat"><div class="stat-n">5★</div><div class="stat-l">Customer Satisfaction</div></div>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ── SERVICES ── -->
+<section id="services">
+  <div class="container">
+    <p class="sec-label">What We Offer</p>
+    <h2 class="sec-title">Our <span>Services</span> & Products</h2>
+    <p class="sec-sub">Everything you need in one place — telecom, devices, subscriptions and accessories.</p>
+    <div class="svc-grid">
+      <div class="svc-card hot"><span class="svc-icon">📱</span><div class="svc-name">MTN SIM Registration</div><div class="svc-desc">New SIM, NIN linking and activation for all networks</div></div>
+      <div class="svc-card hot"><span class="svc-icon">⬆️</span><div class="svc-name">3G → 4G Upgrade</div><div class="svc-desc">Upgrade your SIM for faster LTE speeds</div></div>
+      <div class="svc-card"><span class="svc-icon">🪪</span><div class="svc-name">NIN Services</div><div class="svc-desc">NIN enrollment, verification and linkage</div></div>
+      <div class="svc-card"><span class="svc-icon">💳</span><div class="svc-name">eSIM Activation</div><div class="svc-desc">Digital SIM setup for compatible devices</div></div>
+      <div class="svc-card hot"><span class="svc-icon">📡</span><div class="svc-name">MiFi Devices</div><div class="svc-desc">4G and 5G portable WiFi for home and travel</div></div>
+      <div class="svc-card hot"><span class="svc-icon">🌐</span><div class="svc-name">Routers</div><div class="svc-desc">Home and office routers with setup included</div></div>
+      <div class="svc-card"><span class="svc-icon">🔌</span><div class="svc-name">FibreX Internet</div><div class="svc-desc">High-speed broadband for homes and businesses</div></div>
+      <div class="svc-card"><span class="svc-icon">☁️</span><div class="svc-name">Cloud Services</div><div class="svc-desc">Storage, backup and business cloud solutions</div></div>
+      <div class="svc-card hot"><span class="svc-icon">📞</span><div class="svc-name">Phones</div><div class="svc-desc">iPhones, Samsung, Tecno, Infinix and more</div></div>
+      <div class="svc-card"><span class="svc-icon">🎧</span><div class="svc-name">Accessories</div><div class="svc-desc">Chargers, cables, cases and screen protectors</div></div>
+      <div class="svc-card hot"><span class="svc-icon">📺</span><div class="svc-name">DStv Subscriptions</div><div class="svc-desc">New connections, renewals and decoder sales</div></div>
+      <div class="svc-card"><span class="svc-icon">📻</span><div class="svc-name">GOtv Subscriptions</div><div class="svc-desc">Decoder sales and subscription renewals</div></div>
+    </div>
+  </div>
+</section>
+
+<!-- ── WHY ── -->
+<section class="why">
+  <div class="container">
+    <p class="sec-label" style="color:rgba(255,203,5,.65);">Why Choose Us</p>
+    <h2 class="sec-title">The GPSL <span style="color:#fff;">difference</span></h2>
+    <p class="sec-sub">We don't just sell — we serve.</p>
+    <div class="why-grid">
+      <div class="why-card"><span class="why-icon">✅</span><div class="why-t">Genuine products</div><div class="why-d">Every product is 100% original. No clones, no surprises.</div></div>
+      <div class="why-card"><span class="why-icon">💰</span><div class="why-t">Competitive prices</div><div class="why-d">Fair, transparent pricing with no hidden charges.</div></div>
+      <div class="why-card"><span class="why-icon">🧑‍💼</span><div class="why-t">Expert staff</div><div class="why-d">Trained team that gives honest advice for your needs.</div></div>
+      <div class="why-card"><span class="why-icon">📍</span><div class="why-t">Multiple locations</div><div class="why-d">Five branches — always close to where you are.</div></div>
+      <div class="why-card"><span class="why-icon">⚡</span><div class="why-t">Fast service</div><div class="why-d">SIM registration and subscriptions done in minutes.</div></div>
+      <div class="why-card"><span class="why-icon">🤝</span><div class="why-t">After-sale support</div><div class="why-d">We stay with you after the sale for setup and warranty help.</div></div>
+    </div>
+  </div>
+</section>
+
+<!-- ── BRANCHES ── -->
+<section id="branches">
+  <div class="container">
+    <p class="sec-label">Find Us</p>
+    <h2 class="sec-title">Our <span>Branch</span> Locations</h2>
+    <p class="sec-sub">Walk in and get served immediately — no appointment needed.</p>
+    <div class="br-grid">
+      <div class="br-card"><div class="br-name">🏪 Mbierebe Branch</div><div class="br-row">📍 <span>173 Aka Etinan Road, Uyo</span></div><div class="br-row">⏰ <span>Mon–Sat: 8am – 6pm</span></div></div>
+      <div class="br-card"><div class="br-name">🏪 Aka Etinan Branch</div><div class="br-row">📍 <span>Aka Etinan Road, Uyo</span></div><div class="br-row">⏰ <span>Mon–Sat: 8am – 6pm</span></div></div>
+      <div class="br-card"><div class="br-name">🏪 Nung Udoe Branch</div><div class="br-row">📍 <span>14A Akpautong Road, Ibesikpo</span></div><div class="br-row">⏰ <span>Mon–Sat: 8am – 6pm</span></div></div>
+      <div class="br-card"><div class="br-name">🏪 Plaza Branch</div><div class="br-row">📍 <span>7 Ikot Ekpene Road, Uyo</span></div><div class="br-row">⏰ <span>Mon–Sat: 8am – 6pm</span></div></div>
+      <div class="br-card"><div class="br-name">🏪 Okobo Branch</div><div class="br-row">📍 <span>Okobo, Akwa Ibom State</span></div><div class="br-row">⏰ <span>Mon–Sat: 8am – 6pm</span></div></div>
+    </div>
+  </div>
+</section>
+
+
+
+
+<!-- ── CONTACT ── -->
+<section class="contact" id="contact">
+  <div class="container">
+    <p class="sec-label">Get In Touch</p>
+    <h2 class="sec-title">Contact <span>Us</span></h2>
+    <p class="sec-sub">Reach us through any of the channels below — we respond fast.</p>
+    <div class="contact-grid">
+      <div class="cinfo">
+        <div class="ci"><div class="ci-icon">📞</div><div><div class="ci-label">Phone</div><div class="ci-val"><a href="tel:+2348032036766">+234 803 203 6766</a></div></div></div>
+        <div class="ci"><div class="ci-icon">💬</div><div><div class="ci-label">WhatsApp</div><div class="ci-val"><a href="https://wa.me/2349060430534" target="_blank">Chat on WhatsApp →</a></div></div></div>
+        <div class="ci"><div class="ci-icon">✉️</div><div><div class="ci-label">Email</div><div class="ci-val"><a href="mailto:globalphonelinzsystems@gmail.com">globalphonelinzsystems@gmail.com</a></div></div></div>
+        <div class="ci"><div class="ci-icon">📍</div><div><div class="ci-label">Head Office</div><div class="ci-val">128 Aka Etinan Road, Uyo, Akwa Ibom</div></div></div>
+        <div class="ci"><div class="ci-icon">⏰</div><div><div class="ci-label">Business Hours</div><div class="ci-val">Monday – Saturday: 8:00 AM – 6:00 PM</div></div></div>
+      </div>
+      <form class="cform" onsubmit="sendWA(event)">
+        <input type="text" placeholder="Your full name" required id="cf-name">
+        <input type="tel" placeholder="Your phone number" required id="cf-phone">
+        <input type="email" placeholder="Your email (optional)" id="cf-email">
+        <select id="cf-service">
+          <option value="">What do you need help with?</option>
+          <option>SIM Registration / Upgrade</option>
+          <option>Phone Purchase</option>
+          <option>DStv / GOtv Subscription</option>
+          <option>MiFi / Router</option>
+          <option>Internet / FibreX</option>
+          <option>Accessories</option>
+          <option>Other</option>
+        </select>
+        <textarea placeholder="Your message (optional)" id="cf-msg"></textarea>
+        <button type="submit" class="btn-blue">Send Message via WhatsApp</button>
+        <p style="font-size:.72rem;color:var(--muted);text-align:center;">Your message goes straight to our WhatsApp for a faster response.</p>
+      </form>
+    </div>
+  </div>
+</section>
+
+<!-- ── MAP ── -->
+<div class="map-wrap">
+  <iframe
+    src="https://www.google.com/maps/embed?pb=!1m18!1m12!1m3!1d3966.3!2d7.89!3d4.99!2m3!1f0!2f0!3f0!3m2!1i1024!2i768!4f13.1!3m3!1m2!1s0x0%3A0x0!2zNMKwNTknMjQuMCJOIDfCsDUzJzI0LjAiRQ!5e0!3m2!1sen!2sng!4v1234567890"
+    allowfullscreen loading="lazy"
+    referrerpolicy="no-referrer-when-downgrade"
+    title="Global Phonelinz Systems Limited — Uyo">
+  </iframe>
+</div>
+
+<!-- ── FOOTER ── -->
+<footer>
+  <div class="footer-inner">
+    <div class="footer-top">
+      <div class="f-brand">
+        <div class="f-logo-wrap logo-shield">
+          <img src="{% static 'img/gpsl_logo.png' %}" alt="GPSL" draggable="false">
+        </div>
+        <div class="f-name">Global Phonelinz Systems Limited</div>
+        <p class="f-desc">Your trusted technology partner in Uyo, Akwa Ibom. Phones, telecom services, internet and subscriptions across 5 branch locations.</p>
+      </div>
+      <div class="f-col">
+        <h5>Services</h5>
+        <ul>
+          <li><a href="#services">SIM Registration</a></li>
+          <li><a href="#services">4G Upgrade</a></li>
+          <li><a href="#services">eSIM</a></li>
+          <li><a href="#services">MiFi & Routers</a></li>
+          <li><a href="#services">FibreX</a></li>
+        </ul>
+      </div>
+      <div class="f-col">
+        <h5>Products</h5>
+        <ul>
+          <li><a href="#services">Phones</a></li>
+          <li><a href="#services">Accessories</a></li>
+          <li><a href="#services">DStv</a></li>
+          <li><a href="#services">GOtv</a></li>
+          <li><a href="#services">Cloud Services</a></li>
+        </ul>
+      </div>
+      <div class="f-col">
+        <h5>Company</h5>
+        <ul>
+          <li><a href="#about">About Us</a></li>
+          <li><a href="#branches">Our Branches</a></li>
+          <li><a href="#contact">Contact</a></li>
+          <li><a href="{% url 'login' %}">Staff Portal</a></li>
+        </ul>
+      </div>
+    </div>
+    <div class="footer-bottom">
+      <p>© {% now "Y" %} Global Phonelinz Systems Limited. All rights reserved.</p>
+      <div class="socials">
+        <a href="https://wa.me/2349060430534" target="_blank" class="soc" title="WhatsApp">💬</a>
+        <a href="mailto:globalphonelinzsystems@gmail.com" class="soc" title="Email">✉️</a>
+        <a href="tel:+2348032036766" class="soc" title="Call">📞</a>
+      </div>
+    </div>
+  </div>
+</footer>
+
+<script>
+function toggleMob(){document.getElementById('mob').classList.toggle('open')}
+document.addEventListener('click',function(e){
+  const m=document.getElementById('mob');
+  if(!m.contains(e.target)&&!document.querySelector('.hamburger').contains(e.target))m.classList.remove('open');
+});
+function sendWA(e){
+  e.preventDefault();
+  const name=document.getElementById('cf-name').value;
+  const phone=document.getElementById('cf-phone').value;
+  const svc=document.getElementById('cf-service').value||'Not specified';
+  const msg=document.getElementById('cf-msg').value||'None';
+  const text=encodeURIComponent(`Hello GPSL!\n\nName: ${name}\nPhone: ${phone}\nService: ${svc}\nMessage: ${msg}`);
+  window.open(`https://wa.me/2349060430534?text=${text}`,'_blank');
+}
+document.querySelectorAll('a[href^="#"]').forEach(a=>{
+  a.addEventListener('click',function(e){
+    const t=document.querySelector(this.getAttribute('href'));
+    if(t){e.preventDefault();window.scrollTo({top:t.getBoundingClientRect().top+scrollY-60,behavior:'smooth'});}
+  });
+});
+</script>
+
+<script>
+// Slideshow
+let current=0;
+const slides=document.querySelectorAll('.slide');
+const dots=document.querySelectorAll('.slide-dots .dot');
+function showSlide(n){
+  slides.forEach(s=>s.classList.remove('active'));
+  dots.forEach(d=>d.classList.remove('active'));
+  current=(n+slides.length)%slides.length;
+  if(slides[current])slides[current].classList.add('active');
+  if(dots[current])dots[current].classList.add('active');
+}
+function moveSlide(dir){showSlide(current+dir);}
+function goToSlide(n){showSlide(n);}
+if(slides.length>1){setInterval(()=>moveSlide(1),5000);}
+
+// Catalog filter
+function filterCat(catId,btn){
+  document.querySelectorAll('.cat-filter').forEach(b=>b.classList.remove('active'));
+  btn.classList.add('active');
+  document.querySelectorAll('#catalog-grid .prod-card').forEach(card=>{
+    if(catId==='all'||card.dataset.cat===catId){
+      card.style.display='';
+    } else {
+      card.style.display='none';
+    }
+  });
+}
+
+// Catalog search
+function searchCatalog(){
+  const q=document.getElementById('catalog-search').value.toLowerCase();
+  document.querySelectorAll('#catalog-grid .prod-card').forEach(card=>{
+    card.style.display=card.dataset.name.includes(q)?'':'none';
+  });
+}
+</script>
+
+</body>
+</html>
