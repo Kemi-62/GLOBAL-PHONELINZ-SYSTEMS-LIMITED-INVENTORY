@@ -22,6 +22,7 @@ jobs:
           if [ -z "$CRON_KEY" ]; then
             echo "CRON_KEY secret is not set (GitHub repo > Settings > Secrets and variables > Actions)"
             exit 1
-          fi          curl -fsS --retry 2 --retry-delay 20 --retry-all-errors --max-time 120 \
+          fi          
+                    curl -fsS --retry 2 --retry-delay 20 --retry-all-errors --max-time 120 \
             -H "X-Cron-Secret: $CRON_KEY" \
-            "https://globalphonelinz.com"
+            "https://app.globalphonelinz.com/cron/mc-renewal-nudge/"
